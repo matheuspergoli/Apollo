@@ -16,6 +16,7 @@
 // local includes
 #include "display.h"
 #include "misc.h"
+#include "clock_math.h"
 #include "src/logging.h"
 
 namespace platf {
@@ -216,7 +217,7 @@ namespace platf::dxgi {
       return capture_e::error;
     }
     capture_access->GetInterface(IID_ID3D11Texture2D, (void **) out);
-    out_time = consumed_frame.SystemRelativeTime().count();  // raw ticks from query performance counter
+    out_time = clock_math::wgc_to_qpc(consumed_frame.SystemRelativeTime().count(), qpc_frequency());
     return capture_e::ok;
   }
 

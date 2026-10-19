@@ -45,6 +45,7 @@
 
 // local includes
 #include "misc.h"
+#include "clock_math.h"
 #include "utils.h"
 #include "nvprefs/nvprefs_interface.h"
 #include "src/entry_handler.h"
@@ -1730,18 +1731,19 @@ namespace platf {
     return 0;
   }
 
-  std::chrono::nanoseconds qpc_time_difference(int64_t performance_counter1, int64_t performance_counter2) {
+  int64_t qpc_frequency() {
     auto get_frequency = []() {
       LARGE_INTEGER frequency;
       frequency.QuadPart = 0;
       QueryPerformanceFrequency(&frequency);
       return frequency.QuadPart;
     };
-    static const double frequency = get_frequency();
-    if (frequency) {
-      return std::chrono::nanoseconds((int64_t) ((performance_counter1 - performance_counter2) * frequency / std::nano::den));
-    }
-    return {};
+    static const int64_t frequency = get_frequency();
+    return frequency;
+  }
+
+  std::chrono::nanoseconds qpc_time_difference(int64_t performance_counter1, int64_t performance_counter2) {
+    return clock_math::qpc_difference(performance_counter1, performance_counter2, qpc_frequency());
   }
 
   std::wstring from_utf8(const std::string_view &string) {
