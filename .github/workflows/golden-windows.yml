@@ -1,0 +1,92 @@
+name: Golden Windows validation
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.repository == 'matheuspergoli/Apollo'
+    runs-on: windows-2022
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [baseline, candidate]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Select exact baseline
+        if: matrix.variant == 'baseline'
+        shell: bash
+        run: git checkout --detach adc5c5a0bd80831ce495434bb16aee2cd4175fb8
+      - name: Checkout Windows dependencies
+        shell: bash
+        run: >-
+          git submodule update --init --recursive
+          third-party/build-deps third-party/libdisplaydevice
+          third-party/nanors third-party/nv-codec-headers
+          third-party/nvapi-open-source-sdk third-party/Simple-Web-Server
+          third-party/tray third-party/ViGEmClient third-party/moonlight-common-c
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          path-type: inherit
+          install: >-
+            git
+            mingw-w64-ucrt-x86_64-toolchain
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-boost
+            mingw-w64-ucrt-x86_64-cppwinrt
+            mingw-w64-ucrt-x86_64-curl-winssl
+            mingw-w64-ucrt-x86_64-MinHook
+            mingw-w64-ucrt-x86_64-miniupnpc
+            mingw-w64-ucrt-x86_64-nsis
+            mingw-w64-ucrt-x86_64-onevpl
+            mingw-w64-ucrt-x86_64-openssl
+            mingw-w64-ucrt-x86_64-opus
+            mingw-w64-ucrt-x86_64-nlohmann_json
+      - name: Candidate unit checks on Windows
+        if: matrix.variant == 'candidate'
+        shell: msys2 {0}
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -I . tools/golden/test_clock.cpp -o clock-test.exe
+          ./clock-test.exe
+          node --test tools/golden/test_overview.mjs
+      - name: Configure
+        shell: msys2 {0}
+        run: cmake -S . -B build-windows -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_DOCS=OFF -DBUILD_TESTS=OFF
+      - name: Build
+        shell: msys2 {0}
+        run: cmake --build build-windows --parallel 4
+      - name: Package for inspection only
+        shell: msys2 {0}
+        run: |
+          cd build-windows
+          cpack -G ZIP --config CPackConfig.cmake
+          git rev-parse HEAD > SOURCE_COMMIT.txt
+          sha256sum ./*.zip > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: golden-${{ matrix.variant }}-windows-unvalidated
+          path: |
+            build-windows/*.zip
+            build-windows/SOURCE_COMMIT.txt
+            build-windows/SHA256SUMS.txt
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: golden-${{ matrix.variant }}-build-diagnostics
+          path: |
+            build-windows/CMakeFiles/CMakeConfigureLog.yaml
+            build-windows/CMakeCache.txt
+          if-no-files-found: ignore
