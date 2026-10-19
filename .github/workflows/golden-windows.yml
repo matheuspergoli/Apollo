@@ -75,12 +75,12 @@ jobs:
           cd build-windows
           cpack -G ZIP --config CPackConfig.cmake
           git rev-parse HEAD > SOURCE_COMMIT.txt
-          sha256sum ./*.zip > SHA256SUMS.txt
+          sha256sum cpack_artifacts/*.zip > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
           name: golden-${{ matrix.variant }}-windows-unvalidated
           path: |
-            build-windows/*.zip
+            build-windows/cpack_artifacts/*.zip
             build-windows/SOURCE_COMMIT.txt
             build-windows/SHA256SUMS.txt
           if-no-files-found: error
