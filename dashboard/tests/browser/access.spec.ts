@@ -1,0 +1,77 @@
+import { expect, test } from "@playwright/test"
+
+test("setup validates before POST, masks/reveals password and links to login", async ({
+	page
+}) => {
+	let posts = 0
+	await page.route("**/api/password", (route) => {
+		posts++
+		return route.fulfill({ json: { status: true } })
+	})
+	await page.goto("/welcome")
+	await page.getByLabel("Usuário", { exact: true }).fill("Test")
+	await page.getByLabel("Senha", { exact: true }).fill("Test-only-123")
+	await page.getByLabel("Confirmar senha").fill("Different-123")
+	await page.getByRole("button", { name: "Criar acesso e continuar" }).click()
+	await expect(page.getByRole("alert")).toContainText("não coincidem")
+	expect(posts).toBe(0)
+	await page.getByRole("button", { name: "Mostrar senha" }).click()
+	await expect(page.getByLabel("Senha", { exact: true })).toHaveAttribute("type", "text")
+	await page.getByLabel("Confirmar senha").fill("Test-only-123")
+	await page.getByRole("button", { name: "Criar acesso e continuar" }).click()
+	await expect(page.getByRole("status")).toContainText("Acesso criado")
+	expect(posts).toBe(1)
+	await page.getByRole("link", { name: "Entrar no painel →" }).click()
+	await expect(page).toHaveURL(/\/login$/)
+	await expect(page.getByLabel("Senha", { exact: true })).toHaveValue("")
+})
+
+test("rejected login can retry and success reads the actual host API", async ({ page }) => {
+	let accepted = false
+	await page.route("**/api/login", (route) => route.fulfill({ status: accepted ? 200 : 401 }))
+	await page.route("**/api/config", (route) =>
+		route.fulfill({ json: { status: true, sunshine_name: "Mock host", capture: "wgc" } })
+	)
+	await page.goto("/login")
+	await page.getByLabel("Usuário", { exact: true }).fill("Test")
+	await page.getByLabel("Senha", { exact: true }).fill("Test-only-123")
+	await page.getByRole("button", { name: "Entrar no painel" }).click()
+	await expect(page.getByRole("alert")).toContainText("credenciais")
+	await expect(page.getByRole("button", { name: "Entrar no painel" })).toBeEnabled()
+	accepted = true
+	await page.getByRole("button", { name: "Entrar no painel" }).click()
+	await expect(page.getByText("Mock host", { exact: true })).toBeVisible()
+	expect(await page.evaluate(() => localStorage.getItem("login"))).toBeNull()
+})
+
+for (const width of [390, 1280]) {
+	test(`theme persistence and no overflow at ${width}px without legacy assets`, async ({
+		page
+	}) => {
+		const resources: string[] = []
+		const errors: string[] = []
+		page.on("request", (request) => resources.push(request.url()))
+		page.on("pageerror", (error) => errors.push(error.message))
+		await page.setViewportSize({ width, height: 900 })
+		await page.goto("/login")
+		await page.getByLabel("Tema", { exact: true }).selectOption("dark")
+		await expect(page.locator("html")).toHaveClass(/dark/)
+		await page.reload()
+		await expect(page.locator("html")).toHaveClass(/dark/)
+		expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+			true
+		)
+		await page.screenshot({
+			path: `/tmp/opencode/react-login-dark-${width}.png`,
+			fullPage: true
+		})
+		await page.getByLabel("Tema", { exact: true }).selectOption("light")
+		await expect(page.locator("html")).not.toHaveClass(/dark/)
+		await page.screenshot({
+			path: `/tmp/opencode/react-login-light-${width}.png`,
+			fullPage: true
+		})
+		expect(resources.some((url) => /bootstrap|\.vue|golden-auth\.css/.test(url))).toBe(false)
+		expect(errors).toEqual([])
+	})
+}
