@@ -6,11 +6,11 @@
 
 namespace platf::clock_math {
   inline std::int64_t saturating_integer(long double value) {
-    if (value >= static_cast<long double>(std::numeric_limits<std::int64_t>::max())) {
-      return std::numeric_limits<std::int64_t>::max();
+    if (value >= static_cast<long double>((std::numeric_limits<std::int64_t>::max)())) {
+      return (std::numeric_limits<std::int64_t>::max)();
     }
-    if (value <= static_cast<long double>(std::numeric_limits<std::int64_t>::min())) {
-      return std::numeric_limits<std::int64_t>::min();
+    if (value <= static_cast<long double>((std::numeric_limits<std::int64_t>::min)())) {
+      return (std::numeric_limits<std::int64_t>::min)();
     }
     return static_cast<std::int64_t>(value);
   }
