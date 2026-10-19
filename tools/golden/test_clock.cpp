@@ -1,7 +1,14 @@
-#include "src/platform/windows/clock_math.h"
-
 #include <cassert>
+#include <chrono>
+#include <cstdint>
 #include <iostream>
+#include <limits>
+
+#define min(a, b) windows_min_macro_must_not_expand
+#define max(a, b) windows_max_macro_must_not_expand
+#include "src/platform/windows/clock_math.h"
+#undef min
+#undef max
 
 int main() {
   using namespace platf::clock_math;

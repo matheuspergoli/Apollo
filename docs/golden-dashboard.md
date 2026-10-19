@@ -40,6 +40,12 @@ Not yet tested: browser rendering, screen reader, keyboard navigation, light/dar
 contrast, real authentication/session expiration and live Windows host endpoint.
 Those are acceptance gates before distributing this as a validated dashboard.
 
+`tools/golden/inspect-host.ps1` is an optional read-only inventory script. It
+reports QPC, OS build, display GPU/driver versions, Apollo service state and
+tool availability on PATH. It does not read configuration/credentials, query
+network peers, benchmark, stop services or install software. Its output is
+kept in the local audit directory, not committed as machine-specific data.
+
 ## Next UI slices
 
 1. A versioned read-only effective-session endpoint with validity timestamps,
