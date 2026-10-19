@@ -1,6 +1,44 @@
 # First Golden Apollo device test
 
-Status: preparation, not a ready-to-run distribution.
+Status: experimental manual test packages prepared; streaming not yet validated.
+
+## First local test packages
+
+Run 39317972369 passed both native builds, CPack and artifact upload. Candidate
+clock and dashboard tests also passed on Windows. Downloaded original ZIP
+checksums were checked before creating service/driver-installer-free packages.
+
+Local output directory:
+`C:\Users\heizw\Downloads\Golden-Apollo-Teste-39317972369`.
+
+- Candidate ZIP SHA256:
+  `950d2de6338405bc7b6fb8bbae509c456d1b50f9e2b00997425e87425d360640`
+- Control ZIP SHA256:
+  `268fafe5a723ff769f72a7c4f8e2faaae5b2753ade5180cba9700ea2c7714f13`
+
+`tools/golden/package_lab.py` retains only sunshine.exe, zlib1.dll and assets
+from upstream packaging, then adds project license/notice, local metadata,
+hashes, README, isolated config and an explicit manual launcher. No service
+helper, driver binaries/installers, migration or firewall scripts are shipped
+in these derived ZIPs. Packaging scripts live in Git for inspection.
+
+Both extracted executables passed `--version` on the user's Windows with exit
+code 0; ApolloService was Running before and after each probe. This command
+returns before platform display/NVIDIA initialization. It does not establish
+that a full host/session will work. Launcher PowerShell parsing had zero errors;
+its full launch path and refusal paths have not been runtime tested.
+
+Run the supplied CMD, not sunshine.exe directly. It refuses when the original
+service or another sunshine.exe is running and checks the intended port block.
+It never automatically stops/restarts the original. An explicit TESTAR prompt
+precedes full host initialization. ExecutionPolicy Bypass is scoped to that
+PowerShell process; no machine policy is changed. This is not permission to
+disable Defender/SmartScreen or bypass a security warning blindly.
+
+Normal host initialization may adjust shared NVIDIA preferences and display
+state. Alternate hosts and keep local access for recovery. The launcher and
+README do not claim complete sandboxing. No full host launch or stream has
+been performed by the agent. User-controlled test and restoration are pending.
 
 Golden Windows validation builds two independent matrix jobs: exact upstream
 adc5c5a0bd80831ce495434bb16aee2cd4175fb8 and the selected candidate commit.
