@@ -8,8 +8,7 @@
 <body id="app" v-cloak>
   <Navbar></Navbar>
   <div id="content" class="container">
-    <h1 class="my-4">{{ $t('index.welcome') }}</h1>
-    <p>{{ $t('index.description') }}</p>
+    <Golden-Overview></Golden-Overview>
     <div class="alert alert-danger" v-if="fancyLogs.find(x => x.level === 'Fatal')">
       <div style="line-height: 32px;">
         <i class="fas fa-circle-exclamation" style="font-size: 32px;margin-right: 0.25em;"></i>
@@ -81,13 +80,15 @@
   import ClientCard from './ClientCard.vue'
   import ResourceCard from './ResourceCard.vue'
   import ApolloVersion from './apollo_version'
+  import GoldenOverview from './GoldenOverview.vue'
 
   console.log("Hello, Apollo!")
   let app = createApp({
     components: {
       Navbar,
       ClientCard,
-      ResourceCard
+      ResourceCard,
+      GoldenOverview
     },
     data() {
       return {
