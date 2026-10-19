@@ -21,7 +21,9 @@ jobs:
       - name: Select exact baseline
         if: matrix.variant == 'baseline'
         shell: bash
-        run: git checkout --detach adc5c5a0bd80831ce495434bb16aee2cd4175fb8
+        run: |
+          git checkout --detach adc5c5a0bd80831ce495434bb16aee2cd4175fb8
+          git show fcba3f6b74bca3bcbc5c51546073df7b917d2997 --format= -- src/video.cpp | git apply
       - name: Checkout Windows dependencies
         shell: bash
         run: >-

@@ -7,6 +7,16 @@ adc5c5a0bd80831ce495434bb16aee2cd4175fb8 and the selected candidate commit.
 Both use the same runner/dependency setup. Dependencies are not yet completely
 locked, so the result must not be described as a reproducible release.
 
+First run 39314150648 failed in BOTH builds: video.cpp's AMF H.264 option
+referenced config_t.profile, which does not exist. Compatibility commit
+fcba3f6b74bca3bcbc5c51546073df7b917d2997 replaces that unfinished selection with
+its high-profile fallback. This affects the AMD AMF option, not native NVENC.
+The same patch is applied to the baseline by the workflow: it is now an
+upstream-plus-build-fix control, NOT byte-for-byte unmodified upstream.
+Future AMF baseline/main profile support requires proper negotiation plumbing;
+this patch does not claim to implement it. The candidate clock assertions and
+overview model tests passed on the native Windows runner before the build failed.
+
 Artifacts are explicitly named unvalidated. Upstream ZIP packaging includes
 service/driver scripts that must not be run on the production host. A ZIP from
 this workflow is an engineering input, not the final safe laboratory package.
