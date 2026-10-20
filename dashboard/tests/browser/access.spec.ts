@@ -9,11 +9,21 @@ test("setup validates before POST, masks/reveals password and links to login", a
 		return route.fulfill({ json: { status: true } })
 	})
 	await page.goto("/welcome")
+	await expect(page.getByLabel("Usuário", { exact: true })).toHaveAttribute(
+		"data-slot",
+		"input"
+	)
 	await page.getByLabel("Usuário", { exact: true }).fill("Test")
 	await page.getByLabel("Senha", { exact: true }).fill("Test-only-123")
 	await page.getByLabel("Confirmar senha").fill("Different-123")
 	await page.getByRole("button", { name: "Criar acesso e continuar" }).click()
 	await expect(page.getByRole("alert")).toContainText("não coincidem")
+	await expect(page.getByLabel("Confirmar senha")).toHaveAttribute("aria-invalid", "true")
+	await expect(page.getByLabel("Confirmar senha")).toHaveAttribute(
+		"aria-describedby",
+		"confirmation-error"
+	)
+	await expect(page.locator("#confirmation-error")).toHaveAttribute("data-slot", "field-error")
 	expect(posts).toBe(0)
 	await page.getByRole("button", { name: "Mostrar senha" }).click()
 	await expect(page.getByLabel("Senha", { exact: true })).toHaveAttribute("type", "text")
@@ -44,6 +54,34 @@ test("rejected login can retry and success reads the actual host API", async ({ 
 	expect(await page.evaluate(() => localStorage.getItem("login"))).toBeNull()
 })
 
+test("login works by keyboard and exposes rejected authentication through shadcn Alert", async ({
+	page
+}) => {
+	await page.route("**/api/login", (route) => route.fulfill({ status: 401 }))
+	await page.goto("/login")
+	await expect(page.getByLabel("Usuário", { exact: true })).toBeFocused()
+	await page.keyboard.type("Test")
+	await page.keyboard.press("Tab")
+	await expect(page.getByLabel("Senha", { exact: true })).toBeFocused()
+	await page.keyboard.type("Test-only-123")
+	await page.keyboard.press("Enter")
+	await expect(page.getByRole("alert")).toHaveAttribute("data-slot", "alert")
+	await expect(page.getByRole("alert")).toContainText("credenciais")
+	await expect(page.getByRole("button", { name: "Entrar no painel" })).toBeEnabled()
+})
+
+test("expired host session uses the shared alert and provides a working login link", async ({
+	page
+}) => {
+	await page.route("**/api/config", (route) => route.fulfill({ status: 401 }))
+	await page.goto("/")
+	await expect(page.getByRole("alert")).toHaveAttribute("data-slot", "alert")
+	await expect(page.getByRole("alert")).toContainText("Sessão expirada")
+	await page.getByRole("link", { name: "Entrar novamente" }).click()
+	await expect(page).toHaveURL(/\/login$/)
+	await expect(page.getByLabel("Senha", { exact: true })).toBeVisible()
+})
+
 for (const width of [390, 1280]) {
 	test(`theme persistence and no overflow at ${width}px without legacy assets`, async ({
 		page
@@ -54,6 +92,10 @@ for (const width of [390, 1280]) {
 		page.on("pageerror", (error) => errors.push(error.message))
 		await page.setViewportSize({ width, height: 900 })
 		await page.goto("/login")
+		await expect(page.getByLabel("Tema", { exact: true })).toHaveAttribute(
+			"data-slot",
+			"native-select"
+		)
 		await page.getByLabel("Tema", { exact: true }).selectOption("dark")
 		await expect(page.locator("html")).toHaveClass(/dark/)
 		await page.reload()

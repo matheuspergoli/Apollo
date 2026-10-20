@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { type FormEvent, useState } from "react"
 import { ThemeSelect } from "@/components/theme-provider"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
 	Card,
@@ -10,8 +11,8 @@ import {
 	CardHeader,
 	CardTitle
 } from "@/components/ui/card"
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { post } from "@/lib/api"
 
 export function AccessPage({ setup = false }: { setup?: boolean }) {
@@ -56,6 +57,7 @@ export function AccessPage({ setup = false }: { setup?: boolean }) {
 		event.preventDefault()
 		if (mutation.isPending || mutation.isSuccess) return
 		setValidation("")
+		mutation.reset()
 		if (setup && password !== confirmation) {
 			setValidation("As senhas não coincidem. Confira os dois campos.")
 			return
@@ -102,91 +104,97 @@ export function AccessPage({ setup = false }: { setup?: boolean }) {
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
-						<form className="space-y-5" onSubmit={submit}>
-							<div className="space-y-2">
-								<Label htmlFor="usernameInput">Usuário</Label>
-								<Input
-									id="usernameInput"
-									value={username}
-									onChange={(event) => setUsername(event.target.value)}
-									autoComplete="username"
-									autoCapitalize="none"
-									spellCheck={false}
-									required
-									autoFocus
-									disabled={busy}
-									className="h-11 text-base"
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="passwordInput">Senha</Label>
-								<Input
-									id="passwordInput"
-									value={password}
-									onChange={(event) => setPassword(event.target.value)}
-									type={visible ? "text" : "password"}
-									autoComplete={setup ? "new-password" : "current-password"}
-									required
-									disabled={busy}
-									className="h-11 text-base"
-								/>
-							</div>
-							{setup && (
-								<div className="space-y-2">
-									<Label htmlFor="confirmPasswordInput">Confirmar senha</Label>
+						<form onSubmit={submit}>
+							<FieldGroup>
+								<Field data-disabled={busy}>
+									<FieldLabel htmlFor="usernameInput">Usuário</FieldLabel>
 									<Input
-										id="confirmPasswordInput"
-										value={confirmation}
-										onChange={(event) => setConfirmation(event.target.value)}
+										id="usernameInput"
+										value={username}
+										onChange={(event) => setUsername(event.target.value)}
+										autoComplete="username"
+										autoCapitalize="none"
+										spellCheck={false}
+										required
+										autoFocus
+										disabled={busy}
+										className="h-11 text-base"
+									/>
+								</Field>
+								<Field data-disabled={busy}>
+									<FieldLabel htmlFor="passwordInput">Senha</FieldLabel>
+									<Input
+										id="passwordInput"
+										value={password}
+										onChange={(event) => setPassword(event.target.value)}
 										type={visible ? "text" : "password"}
-										autoComplete="new-password"
+										autoComplete={setup ? "new-password" : "current-password"}
 										required
 										disabled={busy}
 										className="h-11 text-base"
 									/>
+								</Field>
+								{setup && (
+									<Field data-disabled={busy} data-invalid={Boolean(validation)}>
+										<FieldLabel htmlFor="confirmPasswordInput">Confirmar senha</FieldLabel>
+										<Input
+											id="confirmPasswordInput"
+											value={confirmation}
+											onChange={(event) => setConfirmation(event.target.value)}
+											type={visible ? "text" : "password"}
+											autoComplete="new-password"
+											aria-invalid={Boolean(validation)}
+											aria-describedby={validation ? "confirmation-error" : undefined}
+											required
+											disabled={busy}
+											className="h-11 text-base"
+										/>
+										{validation && (
+											<FieldError id="confirmation-error">{validation}</FieldError>
+										)}
+									</Field>
+								)}
+								<div className="flex justify-end">
+									<Button
+										type="button"
+										variant="link"
+										aria-pressed={visible}
+										onClick={() => setVisible(!visible)}
+										className="min-h-10"
+									>
+										{visible ? "Ocultar senha" : "Mostrar senha"}
+									</Button>
 								</div>
-							)}
-							<div className="flex justify-end">
 								<Button
-									type="button"
-									variant="link"
-									aria-pressed={visible}
-									onClick={() => setVisible(!visible)}
-									className="min-h-10"
+									type="submit"
+									disabled={busy}
+									aria-busy={mutation.isPending}
+									className="min-h-11 w-full text-sm"
 								>
-									{visible ? "Ocultar senha" : "Mostrar senha"}
+									{mutation.isPending
+										? "Aguarde…"
+										: mutation.isSuccess
+											? "Acesso autorizado"
+											: setup
+												? "Criar acesso e continuar"
+												: "Entrar no painel"}
 								</Button>
-							</div>
-							<Button
-								type="submit"
-								disabled={busy}
-								aria-busy={mutation.isPending}
-								className="min-h-11 w-full text-sm"
-							>
-								{mutation.isPending
-									? "Aguarde…"
-									: mutation.isSuccess
-										? "Acesso autorizado"
-										: setup
-											? "Criar acesso e continuar"
-											: "Entrar no painel"}
-							</Button>
-							{(validation || mutation.error) && (
-								<p
-									role="alert"
-									className="border border-destructive/30 bg-destructive/10 p-3 text-sm leading-6"
-								>
-									{validation || mutation.error?.message}
-								</p>
-							)}
-							{setup && mutation.isSuccess && (
-								<p role="status" className="border bg-muted p-3 text-sm">
-									Acesso criado.{" "}
-									<Link to="/login" className="font-medium underline">
-										Entrar no painel →
-									</Link>
-								</p>
-							)}
+								{mutation.error && (
+									<Alert variant="destructive">
+										<AlertDescription>{mutation.error.message}</AlertDescription>
+									</Alert>
+								)}
+								{setup && mutation.isSuccess && (
+									<Alert role="status">
+										<AlertDescription>
+											Acesso criado.{" "}
+											<Link to="/login" className="font-medium underline">
+												Entrar no painel →
+											</Link>
+										</AlertDescription>
+									</Alert>
+								)}
+							</FieldGroup>
 						</form>
 					</CardContent>
 				</Card>

@@ -45,6 +45,9 @@ output is static under dist; it is not copied into the live host automatically.
 - lib/api.ts: HTTP boundary, cancellation/timeout and allow-listed config cache.
 - lib/query.ts: QueryClient lifecycle/defaults. No persisted auth cache.
 - components/ui/: official shadcn sources; component variants use cva/cn.
+- Form structure/errors, alerts and the theme select also use official shadcn
+  Field/FieldGroup/FieldLabel/FieldError, Alert and NativeSelect components.
+  Do not build bespoke controls when the configured registry already provides one.
 - components/theme-provider.tsx: light/dark/system preference with cleanup.
 - styles.css: semantic shadcn tokens and minimal global base, not handmade
   component selectors. No Bootstrap, Vue, Font Awesome or .golden-* classes.

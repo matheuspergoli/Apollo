@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { ThemeSelect } from "@/components/theme-provider"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
 	Card,
@@ -48,17 +49,17 @@ export function OverviewPage() {
 			</section>
 			{config.isPending && <p role="status">Consultando o host…</p>}
 			{config.error && (
-				<div
-					role="alert"
-					className="space-y-3 border border-destructive/40 bg-destructive/10 p-4"
-				>
-					<p>{config.error.message}</p>
-					{config.error instanceof ApiError && config.error.status === 401 && (
-						<Link to="/login" className="underline">
-							Entrar novamente
-						</Link>
-					)}
-				</div>
+				<Alert variant="destructive">
+					<AlertTitle>Não foi possível consultar o host</AlertTitle>
+					<AlertDescription>
+						<p>{config.error.message}</p>
+						{config.error instanceof ApiError && config.error.status === 401 && (
+							<Link to="/login" className="underline">
+								Entrar novamente
+							</Link>
+						)}
+					</AlertDescription>
+				</Alert>
 			)}
 			{config.data && !config.isError && (
 				<div className="grid gap-5 md:grid-cols-2">
@@ -99,11 +100,14 @@ export function OverviewPage() {
 					</Card>
 				</div>
 			)}
-			<aside className="border bg-muted p-4 text-muted-foreground text-sm leading-6">
-				Esta é a nova base React. Configurações, dispositivos, aplicativos e diagnóstico ainda
-				precisam de migração e testes de paridade antes de substituir o painel em uso. Sem
-				driver novo ou PyroWave nesta interface.
-			</aside>
+			<Alert role="note">
+				<AlertTitle>Migração em andamento</AlertTitle>
+				<AlertDescription>
+					Esta é a nova base React. Configurações, dispositivos, aplicativos e diagnóstico
+					ainda precisam de migração e testes de paridade antes de substituir o painel em uso.
+					Sem driver novo ou PyroWave nesta interface.
+				</AlertDescription>
+			</Alert>
 		</main>
 	)
 }

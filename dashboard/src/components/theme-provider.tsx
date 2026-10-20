@@ -1,4 +1,6 @@
-import { createContext, type ReactNode, useContext, useEffect, useState } from "react"
+import { createContext, type ReactNode, useContext, useEffect, useId, useState } from "react"
+import { Field, FieldLabel } from "@/components/ui/field"
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 
 type Theme = "light" | "dark" | "auto"
 const ThemeContext = createContext<{ theme: Theme; setTheme: (theme: Theme) => void } | null>(
@@ -35,20 +37,25 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 export function ThemeSelect() {
 	const context = useContext(ThemeContext)
+	const id = useId()
 	if (!context) throw new Error("ThemeProvider is required")
 	return (
-		<label className="flex items-center gap-2 text-muted-foreground text-xs">
-			Tema
-			<select
+		<Field orientation="horizontal" className="w-auto">
+			<FieldLabel htmlFor={id}>Tema</FieldLabel>
+			<NativeSelect
+				id={id}
 				aria-label="Tema"
 				value={context.theme}
-				onChange={(event) => context.setTheme(event.target.value as Theme)}
-				className="min-h-10 border border-input bg-background px-3 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+				onChange={(event) => {
+					const value = event.target.value
+					if (value === "light" || value === "dark" || value === "auto")
+						context.setTheme(value)
+				}}
 			>
-				<option value="auto">Sistema</option>
-				<option value="light">Claro</option>
-				<option value="dark">Escuro</option>
-			</select>
-		</label>
+				<NativeSelectOption value="auto">Sistema</NativeSelectOption>
+				<NativeSelectOption value="light">Claro</NativeSelectOption>
+				<NativeSelectOption value="dark">Escuro</NativeSelectOption>
+			</NativeSelect>
+		</Field>
 	)
 }
