@@ -28,10 +28,12 @@ jobs:
           cache: npm
           cache-dependency-path: dashboard/package-lock.json
       - run: npm ci --ignore-scripts
+      - run: npm run routes:generate
       - run: npm run check
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - run: npm run check:dev
       - run: npm exec playwright install -- --with-deps chromium
       - run: npm run test:browser
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

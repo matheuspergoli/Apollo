@@ -12,7 +12,7 @@ export class ApiError extends Error {
 export async function request(
 	path: string,
 	options: RequestInit = {},
-	json = true
+	json: boolean | "text" = true
 ): Promise<unknown> {
 	try {
 		const timeout = AbortSignal.timeout(10_000)
@@ -30,7 +30,7 @@ export async function request(
 					? "Sessão expirada ou credenciais incorretas."
 					: `O host recusou a solicitação (${response.status}).`
 			)
-		return json ? await response.json() : undefined
+		return json === "text" ? await response.text() : json ? await response.json() : undefined
 	} catch (error) {
 		if (error instanceof DOMException && error.name === "TimeoutError")
 			throw new Error("O host demorou para responder. Tente novamente.")

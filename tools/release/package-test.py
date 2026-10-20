@@ -75,6 +75,11 @@ def main():
     if native_hash != (artifact / 'SHA256SUMS.txt').read_text().split()[0]:
         raise ValueError('Native CI archive checksum mismatch')
     dist = ROOT / 'dashboard/dist'
+    if not (dist / 'ui-build.json').is_file():
+        raise ValueError('Missing verified UI build metadata. This legacy preview packager must not package the ongoing full migration.')
+    ui = json.loads((dist / 'ui-build.json').read_text())
+    if ui.get('mode') != 'compatibility-preview':
+        raise ValueError('The legacy preview packager is retired for this frontend. Finish full-migration release gates before creating a replacement test package.')
     if not (dist / 'index.html').is_file():
         raise ValueError('Build and test the React frontend first')
     if output.exists():

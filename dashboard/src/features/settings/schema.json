@@ -1,0 +1,1328 @@
+[
+	{
+		"id": "general",
+		"title": "Geral e automação",
+		"fields": [
+			{
+				"key": "locale",
+				"defaultValue": "en",
+				"label": "Linguagem",
+				"description": "A linguagem usada na interface de usuário do Apollo.",
+				"options": [
+					{
+						"value": "bg",
+						"label": "Български (Bulgarian)"
+					},
+					{
+						"value": "cs",
+						"label": "Čeština (Czech)"
+					},
+					{
+						"value": "de",
+						"label": "Deutsch (German)"
+					},
+					{
+						"value": "en",
+						"label": "English"
+					},
+					{
+						"value": "en_GB",
+						"label": "English, UK"
+					},
+					{
+						"value": "en_US",
+						"label": "English, US"
+					},
+					{
+						"value": "es",
+						"label": "Español (Spanish)"
+					},
+					{
+						"value": "fr",
+						"label": "Français (French)"
+					},
+					{
+						"value": "hu",
+						"label": "Magyar (Hungarian)"
+					},
+					{
+						"value": "it",
+						"label": "Italiano (Italian)"
+					},
+					{
+						"value": "ja",
+						"label": "日本語 (Japanese)"
+					},
+					{
+						"value": "ko",
+						"label": "한국어 (Korean)"
+					},
+					{
+						"value": "pl",
+						"label": "Polski (Polish)"
+					},
+					{
+						"value": "pt",
+						"label": "Português (Portuguese)"
+					},
+					{
+						"value": "pt_BR",
+						"label": "Português, Brasileiro (Portuguese, Brazilian)"
+					},
+					{
+						"value": "ru",
+						"label": "Русский (Russian)"
+					},
+					{
+						"value": "sv",
+						"label": "svenska (Swedish)"
+					},
+					{
+						"value": "tr",
+						"label": "Türkçe (Turkish)"
+					},
+					{
+						"value": "uk",
+						"label": "Українська (Ukranian)"
+					},
+					{
+						"value": "vi",
+						"label": "Tiếng Việt (Vietnamese)"
+					},
+					{
+						"value": "zh",
+						"label": "简体中文 (Chinese Simplified)"
+					},
+					{
+						"value": "zh_TW",
+						"label": "繁體中文 (Chinese Traditional)"
+					}
+				]
+			},
+			{
+				"key": "sunshine_name",
+				"defaultValue": "",
+				"label": "Nome Apollo",
+				"description": "O nome exibido pelo Moonlight. Se não for especificado, será usado o nome do PC servidor"
+			},
+			{
+				"key": "min_log_level",
+				"defaultValue": 2,
+				"label": "Log Level",
+				"description": "The minimum log level printed to standard out",
+				"options": [
+					{
+						"value": "0",
+						"label": "Verbose"
+					},
+					{
+						"value": "1",
+						"label": "Debug"
+					},
+					{
+						"value": "2",
+						"label": "Info"
+					},
+					{
+						"value": "3",
+						"label": "Warning"
+					},
+					{
+						"value": "4",
+						"label": "Error"
+					},
+					{
+						"value": "5",
+						"label": "Fatal"
+					},
+					{
+						"value": "6",
+						"label": "None"
+					}
+				]
+			},
+			{
+				"key": "global_prep_cmd",
+				"defaultValue": [],
+				"label": "Comando Preparativo",
+				"description": "Configure uma lista de comandos a serem executados antes ou depois da execução de qualquer aplicativo. Se algum dos comandos preparativos especificados falhar, o processo de inicialização do aplicativo será abortado."
+			},
+			{
+				"key": "global_state_cmd",
+				"defaultValue": [],
+				"label": "Resume/Pause Commands",
+				"description": "Configure a list of commands to be executed when resuming(first client connects when no clients are connected) or pausing(all clients disconnect) any application. Do commands for resume and Undo command for pause. Please make sure to clean up any side effects of the commands in the preparation undo commands. Please note that pause command will not be executed when the session terminates."
+			},
+			{
+				"key": "server_cmd",
+				"defaultValue": [],
+				"label": "Comandos de Servidor",
+				"description": "Configura uma lista de comandos a serem executados no servidor quando solicitados durante uma transmissão pelo cliente."
+			},
+			{
+				"key": "notify_pre_releases",
+				"defaultValue": "disabled",
+				"label": "Notificações de pré-lançamento",
+				"description": "Se deseja ser notificado sobre novas versões de pré-lançamento do Apollo"
+			},
+			{
+				"key": "system_tray",
+				"defaultValue": "enabled",
+				"label": "Enable System Tray",
+				"description": "Whether to show Apollo icon in the system tray"
+			},
+			{
+				"key": "hide_tray_controls",
+				"defaultValue": "disabled",
+				"label": "Esconder controles no ícone de bandeja",
+				"description": "Não exibir \"Forçar fechamento\", \"Reiniciar\" e \"Sair\" do menu do ícone de bandeja."
+			},
+			{
+				"key": "enable_pairing",
+				"defaultValue": "enabled",
+				"label": "Ativar Pareamento",
+				"description": "Ativa pareamento com um cliente Moonlight. Isso permite o cliente autenticar com o servidor e estabelecer uma conexão segura."
+			},
+			{
+				"key": "enable_discovery",
+				"defaultValue": "enabled",
+				"label": "Enable Auto Discovery",
+				"description": "When disabled, you'll need to manually enter host IP on the client to pair."
+			}
+		]
+	},
+	{
+		"id": "input",
+		"title": "Controles e entrada",
+		"fields": [
+			{
+				"key": "controller",
+				"defaultValue": "enabled",
+				"label": "Ativar entrada do controle de jogo",
+				"description": "Permite que os convidados controlem o servidor com um gamepad/controle"
+			},
+			{
+				"key": "gamepad",
+				"defaultValue": "auto",
+				"label": "Tipo de gamepad emulado",
+				"description": "Escolha o tipo de gamepad a ser emulado no servidor",
+				"options": [
+					{
+						"value": "auto",
+						"label": "Automático"
+					},
+					{
+						"value": "ds5",
+						"label": "DS5 (PS5)"
+					},
+					{
+						"value": "switch",
+						"label": "Nintendo Pro (Switch)"
+					},
+					{
+						"value": "xone",
+						"label": "XOne (Xbox One)"
+					},
+					{
+						"value": "ds4",
+						"label": "DS4 (PS4)"
+					},
+					{
+						"value": "x360",
+						"label": "X360 (Xbox 360)"
+					}
+				]
+			},
+			{
+				"key": "ds4_back_as_touchpad_click",
+				"defaultValue": "enabled",
+				"label": "Mapear Voltar/Selecionar para o clique no touchpad",
+				"description": "Ao forçar a emulação DS4, mapeia o Voltar/Selecionar para o clique no touchpad"
+			},
+			{
+				"key": "motion_as_ds4",
+				"defaultValue": "enabled",
+				"label": "Emular um gamepad DS4 se o gamepad do cliente informar que há sensores de movimento presentes",
+				"description": "Se estiver desativado, os sensores de movimento não serão levados em conta durante a seleção do tipo de gamepad."
+			},
+			{
+				"key": "touchpad_as_ds4",
+				"defaultValue": "enabled",
+				"label": "Emular um gamepad DS4 se o gamepad do cliente informar que há um touchpad presente",
+				"description": "Se estiver desativado, a presença do touchpad não será levada em conta durante a seleção do tipo de gamepad."
+			},
+			{
+				"key": "ds5_inputtino_randomize_mac",
+				"defaultValue": "enabled",
+				"label": "ds5_inputtino_randomize_mac",
+				"description": ""
+			},
+			{
+				"key": "back_button_timeout",
+				"defaultValue": -1,
+				"label": "Tempo limite de emulação do botão Início/Guia",
+				"description": "Se o botão Voltar/Selecionar for mantido pressionado pelo número especificado de milissegundos, um pressionamento do botão Início/Guia será emulado. Se definido com um valor < 0 (padrão), manter pressionado o botão Voltar/Selecionar não emulará o botão Início/Guia."
+			},
+			{
+				"key": "keyboard",
+				"defaultValue": "enabled",
+				"label": "Ativar entrada de teclado",
+				"description": "Permite que os convidados controlem o teclado do servidor"
+			},
+			{
+				"key": "key_repeat_delay",
+				"defaultValue": 500,
+				"label": "Atraso de repetição de tecla",
+				"description": "Controle a velocidade com que as teclas se repetirão. O atraso inicial em milissegundos antes da repetição das teclas."
+			},
+			{
+				"key": "key_repeat_frequency",
+				"defaultValue": 24.9,
+				"label": "Frequência de repetição da tecla",
+				"description": "A frequência com que as teclas se repetem a cada segundo. Essa configuração aceita decimais."
+			},
+			{
+				"key": "always_send_scancodes",
+				"defaultValue": "enabled",
+				"label": "Sempre enviar scancodes do teclado",
+				"description": "O envio dos scancodes de teclado aumenta a compatibilidade com jogos e aplicativos, mas pode resultar em entrada incorreta do teclado de determinados clientes que não estejam usando um layout de teclado em inglês dos EUA. Ative se a entrada do teclado não estiver funcionando em determinados aplicativos. Desative se as teclas do cliente estiverem gerando a entrada incorreta no servidor."
+			},
+			{
+				"key": "key_rightalt_to_key_win",
+				"defaultValue": "disabled",
+				"label": "Tecla Alt direito como tecla Windows",
+				"description": "Pode ser que você não consiga enviar a tecla Windows diretamente do cliente Moonlight. Nesses casos, pode ser útil fazer com que o Apollo interprete a tecla Alt direito como a tecla Windows"
+			},
+			{
+				"key": "mouse",
+				"defaultValue": "enabled",
+				"label": "Ativar entrada do mouse",
+				"description": "Permite que os convidados controlem o mouse do servidor"
+			},
+			{
+				"key": "high_resolution_scrolling",
+				"defaultValue": "enabled",
+				"label": "Suporte à rolagem de alta resolução",
+				"description": "Quando ativado, o Apollo transmitirá os eventos de rolagem de alta resolução dos clientes Moonlight. Isso pode ser útil desativar para aplicativos mais antigos que rolam muito rápido com eventos de rolagem de alta resolução."
+			},
+			{
+				"key": "native_pen_touch",
+				"defaultValue": "enabled",
+				"label": "Suporte nativo a caneta/toque",
+				"description": "Quando ativado, o Apollo transmitirá os eventos nativos de caneta/toque dos clientes Moonlight. Isso pode ser útil desativar para aplicativos mais antigos sem suporte nativo a caneta/toque."
+			},
+			{
+				"key": "enable_input_only_mode",
+				"defaultValue": "disabled",
+				"label": "Ativar Modo de Somente Controle",
+				"description": "Adiciona uma entrada de Aplicativo de Somente Controle. Quando ativado, a lista de aplicativos vai mostrar somente o aplicativo em execução e a entrada de Somente Controle quando estiver transmitindo. A entrada Somente Controle não receberá imagem nem áudio. Isso é útil quando controlando o computador pela TV ou conectando periféricos que a TV não suporta."
+			},
+			{
+				"key": "forward_rumble",
+				"defaultValue": "enabled",
+				"label": "Forward Rumble Messages",
+				"description": "Forward Rumble Messages to clients"
+			},
+			{
+				"key": "keybindings",
+				"defaultValue": "[0x10,0xA0,0x11,0xA2,0x12,0xA4]",
+				"label": "keybindings",
+				"description": ""
+			}
+		]
+	},
+	{
+		"id": "av",
+		"title": "Áudio e display",
+		"fields": [
+			{
+				"key": "audio_sink",
+				"defaultValue": "",
+				"label": "Saída de Áudio",
+				"description": "Especificar manualmente um dispositivo de áudio específico para saída. Se não for definido, o dispositivo será escolhido automaticamente. É altamente recomendável deixar esse campo em branco para usar a seleção automática de dispositivos! Se você tiver vários dispositivos de áudio com nomes idênticos, poderá obter o ID do dispositivo usando o seguinte comando:"
+			},
+			{
+				"key": "virtual_sink",
+				"defaultValue": "",
+				"label": "Saída de Áudio Virtual",
+				"description": "Especificar manualmente um dispositivo de áudio virtual a ser usado. Se não for definido, o dispositivo será escolhido automaticamente. É altamente recomendável deixar esse campo em branco para usar a seleção automática de dispositivos!"
+			},
+			{
+				"key": "stream_audio",
+				"defaultValue": "enabled",
+				"label": "Stream Audio",
+				"description": "Whether to stream audio or not. Disabling this can be useful for streaming headless displays as second monitors."
+			},
+			{
+				"key": "install_steam_audio_drivers",
+				"defaultValue": "enabled",
+				"label": "Instalar os drivers de áudio do Steam",
+				"description": "Se o Steam estiver instalado, isso instalará automaticamente o driver Steam Streaming Speakers para oferecer suporte a som surround 5.1/7.1 e silenciar o áudio do servidor."
+			},
+			{
+				"key": "keep_sink_default",
+				"defaultValue": "enabled",
+				"label": "Manter saída de áudio virtual como padrão",
+				"description": "Se o uso da saída de áudio virtual será forçada como padrão (útil quando a saída de áudio do servidor está desabilitado)"
+			},
+			{
+				"key": "auto_capture_sink",
+				"defaultValue": "enabled",
+				"label": "Capturar automaticamente saída de áudio em uso",
+				"description": "Captura automaticamente a saída de áudio em uso quando a saída padrão é alterada."
+			},
+			{
+				"key": "adapter_name",
+				"defaultValue": "",
+				"label": "Nome da GPU",
+				"description": "Especificar manualmente uma GPU a ser usada para captura. Se não for definido, a GPU será escolhida automaticamente. É altamente recomendável deixar esse campo em branco para usar a seleção automática de GPU! Observação: essa GPU deve ter uma tela conectada e ligada. Os valores apropriados podem ser encontrados usando o seguinte comando:"
+			},
+			{
+				"key": "output_name",
+				"defaultValue": "",
+				"label": "ID do monitor",
+				"description": "Especifique manualmente o ID do monitor a ser usado para captura. Se não for definido, o monitor principal será capturado. Observação: se você especificou uma GPU acima, esse monitor deverá estar conectado a essa GPU. Durante a inicialização do Apollo, você deverá ver a lista de monitores detectados. Abaixo está um exemplo; a saída real pode ser encontrada na guia Solução de Problemas."
+			},
+			{
+				"key": "fallback_mode",
+				"defaultValue": "",
+				"label": "Modo Monitor de Reserva",
+				"description": "Apollo vai usar esse modo quando o cliente não providenciar um modo ou quando o aplicativo é iniciado através da UI da web. Formato: [Largura]x[Altura]x[FPS]"
+			},
+			{
+				"key": "dd_configuration_option",
+				"defaultValue": "disabled",
+				"label": "Device configuration",
+				"description": "",
+				"options": [
+					{
+						"value": "disabled",
+						"label": "Desativado (padrão)"
+					},
+					{
+						"value": "verify_only",
+						"label": "Verifique se a tela está ativada"
+					},
+					{
+						"value": "ensure_active",
+						"label": "Ativar a tela automaticamente"
+					},
+					{
+						"value": "ensure_primary",
+						"label": "Ativar a tela automaticamente e torná-la a tela primária"
+					},
+					{
+						"value": "ensure_only_display",
+						"label": "Desativar outras telas e ativar somente a tela especificada"
+					}
+				]
+			},
+			{
+				"key": "dd_resolution_option",
+				"defaultValue": "auto",
+				"label": "Resolução:",
+				"description": "",
+				"options": [
+					{
+						"value": "disabled",
+						"label": "Não alterar a resolução"
+					},
+					{
+						"value": "auto",
+						"label": "Usar resolução fornecida pelo cliente (padrão)"
+					},
+					{
+						"value": "manual",
+						"label": "Usar resolução inserida manualmente"
+					}
+				]
+			},
+			{
+				"key": "dd_manual_resolution",
+				"defaultValue": "",
+				"label": "dd_manual_resolution",
+				"description": ""
+			},
+			{
+				"key": "dd_refresh_rate_option",
+				"defaultValue": "auto",
+				"label": "Taxa de atualização",
+				"description": "",
+				"options": [
+					{
+						"value": "disabled",
+						"label": "Não alterar a taxa de atualização"
+					},
+					{
+						"value": "auto",
+						"label": "Usar valor de FPS fornecido pelo cliente (padrão)"
+					},
+					{
+						"value": "manual",
+						"label": "Usar taxa de atualização digitada manualmente"
+					}
+				]
+			},
+			{
+				"key": "dd_manual_refresh_rate",
+				"defaultValue": "",
+				"label": "dd_manual_refresh_rate",
+				"description": ""
+			},
+			{
+				"key": "dd_hdr_option",
+				"defaultValue": "auto",
+				"label": "HDR",
+				"description": "",
+				"options": [
+					{
+						"value": "disabled",
+						"label": "Não alterar as configurações do HDR"
+					},
+					{
+						"value": "auto",
+						"label": "Ligar/desligar o modo HDR conforme solicitado pelo cliente (padrão)"
+					}
+				]
+			},
+			{
+				"key": "dd_wa_hdr_toggle_delay",
+				"defaultValue": 0,
+				"label": "Solução alternativa de alto contraste para HDR",
+				"description": "",
+				"min": 0,
+				"max": 3000
+			},
+			{
+				"key": "dd_config_revert_delay",
+				"defaultValue": 3000,
+				"label": "Configurar atraso de reversão",
+				"description": "Atraso adicional em milissegundos para esperar antes de reverter a configuração quando o aplicativo for fechado ou a última sessão for encerrada. O principal é proporcionar uma transição mais suave ao alternar rapidamente entre aplicativos.",
+				"min": 0
+			},
+			{
+				"key": "dd_config_revert_on_disconnect",
+				"defaultValue": "disabled",
+				"label": "Reverter configurações ao desconectar",
+				"description": "Reverter configurações ao se desconectar de todos os clientes, ao invés do encerramento do aplicativo ou da última sessão."
+			},
+			{
+				"key": "dd_mode_remapping",
+				"defaultValue": {
+					"mixed": [],
+					"resolution_only": [],
+					"refresh_rate_only": []
+				},
+				"label": "Modo de Remapeamento da Tela",
+				"description": ""
+			},
+			{
+				"key": "dd_wa_hdr_toggle",
+				"defaultValue": "disabled",
+				"label": "dd_wa_hdr_toggle",
+				"description": ""
+			},
+			{
+				"key": "headless_mode",
+				"defaultValue": "disabled",
+				"label": "Modo Discreto",
+				"description": "Inicia Apollo no modo discreto. Quando ativado, todos os aplicativos vão iniciar no monitor virtual."
+			},
+			{
+				"key": "double_refreshrate",
+				"defaultValue": "disabled",
+				"label": "Taxa de atualização dobrada para Monitores Virtuais",
+				"description": "Dobra a taxa de atualização quando criando monitores virtuais, mantendo a taxa de atualização da transmissão inalterada. Pode potencialmente melhorar problemas com engasgos de quadros em alguns sistemas."
+			},
+			{
+				"key": "max_bitrate",
+				"defaultValue": 0,
+				"label": "Taxa de bits máximo",
+				"description": "A taxa máxima de bits (em Kbps) que Apollo usará para condificar a transmissão. Se for 0, sempre usará a taxa de bits solicitada pelo cliente Artemis/Moonlight."
+			},
+			{
+				"key": "minimum_fps_target",
+				"defaultValue": 0,
+				"label": "Minimum FPS Target",
+				"description": "The lowest effective FPS a stream can reach. Set 0 for automatic.",
+				"min": 0,
+				"max": 1000
+			},
+			{
+				"key": "isolated_virtual_display_option",
+				"defaultValue": "disabled",
+				"label": "Move the Virtual Display to the bottom right-most corner of the display layout",
+				"description": "This makes the display isolated from all other display and contains mouse movements to the virtual screen. This reorganizes the displays such that the all other displays are to the left of the virtual display."
+			}
+		]
+	},
+	{
+		"id": "network",
+		"title": "Rede e segurança",
+		"fields": [
+			{
+				"key": "upnp",
+				"defaultValue": "disabled",
+				"label": "UPnP",
+				"description": "Configurar automaticamente o redirecionamento de portas para transmissão pela Internet"
+			},
+			{
+				"key": "address_family",
+				"defaultValue": "ipv4",
+				"label": "Tipo de Endereço IP",
+				"description": "Definir os tipos de endereços IP usados pelo Apollo",
+				"options": [
+					{
+						"value": "ipv4",
+						"label": "Somente IPv4"
+					},
+					{
+						"value": "both",
+						"label": "IPv4+IPv6"
+					}
+				]
+			},
+			{
+				"key": "port",
+				"defaultValue": 47989,
+				"label": "Porta",
+				"description": "Definir a família de portas usadas pelo Apollo",
+				"min": 1029,
+				"max": 65514
+			},
+			{
+				"key": "origin_web_ui_allowed",
+				"defaultValue": "lan",
+				"label": "Origens permitidas para acesso da UI da Web",
+				"description": "Onde na rede o usuário é deve estar para possuir acesso à interface de usuário da Web",
+				"options": [
+					{
+						"value": "pc",
+						"label": "Somente o localhost pode acessar a interface do usuário da Web"
+					},
+					{
+						"value": "lan",
+						"label": "Somente as pessoas na LAN podem acessar a interface do usuário da Web"
+					},
+					{
+						"value": "wan",
+						"label": "Qualquer pessoa pode acessar interface de usuário da Web"
+					}
+				]
+			},
+			{
+				"key": "external_ip",
+				"defaultValue": "",
+				"label": "IP externo",
+				"description": "Se nenhum endereço IP externo for fornecido, o Apollo detectará automaticamente o IP externo"
+			},
+			{
+				"key": "lan_encryption_mode",
+				"defaultValue": 0,
+				"label": "Modo de criptografia da LAN",
+				"description": "Isso determina quando a criptografia será usada durante a transmissão pela rede local. A criptografia pode reduzir o desempenho da transmissão, principalmente em servidores e clientes menos potentes.",
+				"options": [
+					{
+						"value": "0",
+						"label": "Desativado (padrão)"
+					},
+					{
+						"value": "1",
+						"label": "Ativado para clientes compatíveis"
+					},
+					{
+						"value": "2",
+						"label": "Necessário para todos os clientes"
+					}
+				]
+			},
+			{
+				"key": "wan_encryption_mode",
+				"defaultValue": 1,
+				"label": "Modo de criptografia WAN",
+				"description": "Isso determina quando a criptografia será usada durante a transmissão pela Internet. A criptografia pode reduzir o desempenho da transmissão, principalmente em servidores e clientes menos potentes.",
+				"options": [
+					{
+						"value": "0",
+						"label": "Desativado"
+					},
+					{
+						"value": "1",
+						"label": "Ativado para clientes compatíveis (padrão)"
+					},
+					{
+						"value": "2",
+						"label": "Necessário para todos os clientes"
+					}
+				]
+			},
+			{
+				"key": "ping_timeout",
+				"defaultValue": 10000,
+				"label": "Tempo limite de ping",
+				"description": "Quanto tempo esperar, em milissegundos, pelos dados do Moonlight antes de encerrar a transmissão"
+			}
+		]
+	},
+	{
+		"id": "files",
+		"title": "Arquivos e certificados",
+		"fields": [
+			{
+				"key": "file_apps",
+				"defaultValue": "",
+				"label": "Arquivo de aplicativos",
+				"description": "O arquivo em que são armazenados os aplicativos atuais do Apollo."
+			},
+			{
+				"key": "credentials_file",
+				"defaultValue": "",
+				"label": "Arquivo de credenciais",
+				"description": "Armazenar o nome de usuário/senha separadamente do arquivo de estado do Apollo."
+			},
+			{
+				"key": "log_path",
+				"defaultValue": "",
+				"label": "Caminho do arquivo de log",
+				"description": "O arquivo em que os logs atuais do Apollo são armazenados."
+			},
+			{
+				"key": "pkey",
+				"defaultValue": "",
+				"label": "Chave privada",
+				"description": "A chave privada usada para a interface do usuário da Web e o pareamento do cliente Moonlight. Para melhor compatibilidade, essa deve ser uma chave privada RSA-2048."
+			},
+			{
+				"key": "cert",
+				"defaultValue": "",
+				"label": "Certificado",
+				"description": "O certificado usado para a interface Web e o emparelhamento do cliente Moonlight. Para melhor compatibilidade, ele deve ter uma chave pública RSA-2048."
+			},
+			{
+				"key": "file_state",
+				"defaultValue": "",
+				"label": "Arquivo de estado",
+				"description": "O arquivo em que são armazenados o estado atual do Apollo"
+			}
+		]
+	},
+	{
+		"id": "advanced",
+		"title": "Captura e codecs",
+		"fields": [
+			{
+				"key": "fec_percentage",
+				"defaultValue": 20,
+				"label": "Porcentagem de FEC",
+				"description": "Porcentagem de pacotes de correção de erros por pacote de dados em cada quadro de vídeo. Valores mais altos podem corrigir mais perdas de pacotes na rede, mas ao custo de aumentar o uso da largura de banda."
+			},
+			{
+				"key": "qp",
+				"defaultValue": 28,
+				"label": "Parâmetro de quantização",
+				"description": "Alguns dispositivos podem não suportar Constant Bit Rate. Para esses dispositivos, o QP (parâmetro de quantização) é usado em seu lugar. Um valor mais alto significa mais compactação, mas menos qualidade."
+			},
+			{
+				"key": "min_threads",
+				"defaultValue": 2,
+				"label": "Quantidade mínima de threads da CPU",
+				"description": "Aumentar o valor reduz ligeiramente a eficiência da codificação, mas a troca geralmente vale a pena para obter o uso de mais núcleos de CPU para codificação. O valor ideal é o menor valor que pode ser codificado de forma confiável nas configurações de transmissão desejadas em seu hardware.",
+				"min": 1
+			},
+			{
+				"key": "limit_framerate",
+				"defaultValue": "enabled",
+				"label": "Limitar taxa de quadros da captura",
+				"description": "Limita a taxa de quadros da captura pela taxa de quadros solicitado pelo cliente. Pode não executar com taxa de quadros máxima se VSync estiver ativado e a taxa de atualização do monitor não for igual ao solicitado. Pode causar lag em algums clientes se desabilitado."
+			},
+			{
+				"key": "envvar_compatibility_mode",
+				"defaultValue": "disabled",
+				"label": "ENVVAR compatibility mode",
+				"description": "Enable compatibility mode for environment variables. This will modify the behavior of certain environment variables to be more compatible with older tools."
+			},
+			{
+				"key": "legacy_ordering",
+				"defaultValue": "disabled",
+				"label": "App ordering for legacy clients",
+				"description": "Enable ordering support workaround for legacy clients. Can cause issues with clients or scripts that can't handle UTF8 correctly. Artemis clients support this by default."
+			},
+			{
+				"key": "ignore_encoder_probe_failure",
+				"defaultValue": "disabled",
+				"label": "Ignore Encoder Probe Failure",
+				"description": "Allow streaming to continue even if probing for encoders fails. This may result in streaming failure if no encoder is available."
+			},
+			{
+				"key": "hevc_mode",
+				"defaultValue": 0,
+				"label": "Suporte a HEVC",
+				"description": "Permite que o cliente solicite transmissões de vídeo HEVC Main ou HEVC Main10. A codificação do HEVC consome mais CPU, portanto, ativar essa opção pode reduzir o desempenho ao usar a codificação de software.",
+				"options": [
+					{
+						"value": "0",
+						"label": "O Apollo anunciará o suporte para HEVC com base nos recursos do codificador (recomendado)"
+					},
+					{
+						"value": "1",
+						"label": "O Apollo não anunciará suporte para HEVC"
+					},
+					{
+						"value": "2",
+						"label": "O Apollo anunciará o suporte ao perfil principal HEVC"
+					},
+					{
+						"value": "3",
+						"label": "O Apollo anunciará o suporte aos perfis HEVC Main e Main10 (HDR)"
+					}
+				]
+			},
+			{
+				"key": "av1_mode",
+				"defaultValue": 0,
+				"label": "Suporte AV1",
+				"description": "Permite que o cliente solicite fluxos de vídeo AV1 Main de 8 ou 10 bits. A codificação do AV1 consome mais CPU, portanto, a ativação dessa opção pode reduzir o desempenho ao usar a codificação de software.",
+				"options": [
+					{
+						"value": "0",
+						"label": "O Apollo anunciará o suporte para AV1 com base nos recursos do codificador (recomendado)"
+					},
+					{
+						"value": "1",
+						"label": "O Apollo não anunciará o suporte ao AV1"
+					},
+					{
+						"value": "2",
+						"label": "O Apollo anunciará o suporte ao perfil AV1 Main de 8 bits"
+					},
+					{
+						"value": "3",
+						"label": "O Apollo anunciará o suporte aos perfis AV1 Main de 8 e 10 bits (HDR)"
+					}
+				]
+			},
+			{
+				"key": "capture",
+				"defaultValue": "",
+				"label": "Forçar um método de captura específico",
+				"description": "No modo automático, o Apollo usará o primeiro método que funcionar. O NvFBC requer drivers nvidia corrigidos.",
+				"options": [
+					{
+						"value": "",
+						"label": "Autodetecção (recomendado)"
+					},
+					{
+						"value": "nvfbc",
+						"label": "NvFBC"
+					},
+					{
+						"value": "wlr",
+						"label": "wlroots"
+					},
+					{
+						"value": "kms",
+						"label": "KMS"
+					},
+					{
+						"value": "x11",
+						"label": "X11"
+					},
+					{
+						"value": "ddx",
+						"label": "Desktop Duplication API"
+					},
+					{
+						"value": "wgc",
+						"label": "Windows.Graphics.Capture (beta)"
+					}
+				]
+			},
+			{
+				"key": "encoder",
+				"defaultValue": "",
+				"label": "Forçar um codificador específico",
+				"description": "Force um codificador específico; caso contrário, o Apollo selecionará a melhor opção disponível. Observação: se você especificar um codificador de hardware no Windows, ele deverá corresponder à GPU em que o monitor está conectado.",
+				"options": [
+					{
+						"value": "",
+						"label": "Autodetecção (recomendado)"
+					},
+					{
+						"value": "nvenc",
+						"label": "NVIDIA NVENC"
+					},
+					{
+						"value": "quicksync",
+						"label": "Intel QuickSync"
+					},
+					{
+						"value": "amdvce",
+						"label": "AMD AMF/VCE"
+					},
+					{
+						"value": "vaapi",
+						"label": "VA-API"
+					},
+					{
+						"value": "videotoolbox",
+						"label": "VideoToolbox"
+					},
+					{
+						"value": "software",
+						"label": "Software"
+					}
+				]
+			}
+		]
+	},
+	{
+		"id": "nv",
+		"title": "NVIDIA NVENC",
+		"fields": [
+			{
+				"key": "nvenc_preset",
+				"defaultValue": 1,
+				"label": "Predefinição de desempenho",
+				"description": "Números mais altos melhoram a compactação (qualidade em uma determinada taxa de bits) ao custo de uma maior latência de codificação. Recomenda-se alterar somente quando limitado pela rede ou pelo decodificador; caso contrário, prefira aumentar a taxa de bits para ter maior qualidade.",
+				"options": [
+					{
+						"value": "1",
+						"label": "P1 (mais rápido, padrão)"
+					},
+					{
+						"value": "2",
+						"label": "P2"
+					},
+					{
+						"value": "3",
+						"label": "P3"
+					},
+					{
+						"value": "4",
+						"label": "P4"
+					},
+					{
+						"value": "5",
+						"label": "P5"
+					},
+					{
+						"value": "6",
+						"label": "P6"
+					},
+					{
+						"value": "7",
+						"label": "P7 (mais lento)"
+					}
+				]
+			},
+			{
+				"key": "nvenc_twopass",
+				"defaultValue": "quarter_res",
+				"label": "Modo de duas passagens",
+				"description": "Adiciona uma passagem de codificação preliminar. Isso permite detectar mais vetores de movimento, distribuir melhor a taxa de bits pelo quadro e aderir mais rigorosamente aos limites de taxa de bits. Não é recomendável desativá-lo, pois isso pode levar a um excesso ocasional de taxa de bits e à subsequente perda de pacotes.",
+				"options": [
+					{
+						"value": "disabled",
+						"label": "Desativado (mais rápido, não recomendado)"
+					},
+					{
+						"value": "quarter_res",
+						"label": "Resolução de um quarto (mais rápida, padrão)"
+					},
+					{
+						"value": "full_res",
+						"label": "Resolução total (mais lenta)"
+					}
+				]
+			},
+			{
+				"key": "nvenc_spatial_aq",
+				"defaultValue": "disabled",
+				"label": "AQ espacial",
+				"description": "Atribui valores de QP (parâmetros de quantização) mais altos a regiões planas do vídeo. Recomenda-se ativá-lo ao fazer transmissão com taxas de bits mais baixas."
+			},
+			{
+				"key": "nvenc_vbv_increase",
+				"defaultValue": 0,
+				"label": "Aumento percentual de VBV/HRD em um único quadro",
+				"description": "Por padrão, o Apollo usa VBV/HRD de quadro único, o que significa que não se espera que o tamanho do quadro de vídeo codificado exceda a taxa de bits solicitada dividida pela taxa de quadros solicitada. O relaxamento dessa restrição pode ser benéfico e atuar como taxa de bits variável de baixa latência, mas também pode levar à perda de pacotes se a rede não tiver espaço no buffer para lidar com picos de taxa de bits. O valor máximo aceito é 400, o que corresponde a um limite superior de tamanho de quadro de vídeo codificado 5x maior.",
+				"min": 0,
+				"max": 400
+			},
+			{
+				"key": "nvenc_realtime_hags",
+				"defaultValue": "enabled",
+				"label": "Usar prioridade Tempo Real no escalonador GPU acelerado por hardware",
+				"description": "Atualmente, os drivers da NVIDIA podem travar no codificador quando o HAGS está ativado, a prioridade em tempo real é usada e a utilização da VRAM está próxima do máximo. A desativação dessa opção reduz a prioridade de Tempo Real para Alta, evitando o congelamento ao custo de um desempenho de captura reduzido quando a GPU está muito carregada."
+			},
+			{
+				"key": "nvenc_latency_over_power",
+				"defaultValue": "enabled",
+				"label": "Preferir uma latência de codificação menor do que a economia de energia",
+				"description": "O Apollo solicita a velocidade máxima do clock da GPU durante a transmissão para reduzir a latência da codificação. Não é recomendável desativar, pois isso pode levar a um aumento significativo da latência de codificação."
+			},
+			{
+				"key": "nvenc_opengl_vulkan_on_dxgi",
+				"defaultValue": "enabled",
+				"label": "Apresentar OpenGL/Vulkan por cima do DXGI",
+				"description": "O Apollo não consegue capturar programas OpenGL e Vulkan em tela cheia com taxa de quadros total, a menos que eles sejam apresentados em cima do DXGI. Essa é uma configuração de todo o sistema e que é revertida ao sair do programa Apollo."
+			},
+			{
+				"key": "nvenc_h264_cavlc",
+				"defaultValue": "disabled",
+				"label": "Prefira o CAVLC ao CABAC em H.264",
+				"description": "Forma mais simples de codificação de entropia. O CAVLC precisa de cerca de 10% a mais de taxa de bits para obter a mesma qualidade. Só é relevante para dispositivos de decodificação muito antigos."
+			},
+			{
+				"key": "nvenc_intra_refresh",
+				"defaultValue": "disabled",
+				"label": "Intra Refresh",
+				"description": "Ativa Intra Refresh para que alguns clientes consigam continuamente renderizar corretamente (por ex. Clientes Xbox)",
+				"options": [
+					{
+						"value": "disabled",
+						"label": "Automático"
+					},
+					{
+						"value": "enabled",
+						"label": "Ativado"
+					}
+				]
+			}
+		]
+	},
+	{
+		"id": "qsv",
+		"title": "Intel QuickSync",
+		"fields": [
+			{
+				"key": "qsv_preset",
+				"defaultValue": "medium",
+				"label": "Predefinição de QuickSync",
+				"description": "",
+				"options": [
+					{
+						"value": "veryfast",
+						"label": "mais rápido (qualidade mais baixa)"
+					},
+					{
+						"value": "faster",
+						"label": "mais rápido (qualidade inferior)"
+					},
+					{
+						"value": "fast",
+						"label": "rápido (baixa qualidade)"
+					},
+					{
+						"value": "medium",
+						"label": "médio (padrão)"
+					},
+					{
+						"value": "slow",
+						"label": "lento (boa qualidade)"
+					},
+					{
+						"value": "slower",
+						"label": "mais lento (melhor qualidade)"
+					},
+					{
+						"value": "slowest",
+						"label": "mais lento (melhor qualidade)"
+					}
+				]
+			},
+			{
+				"key": "qsv_coder",
+				"defaultValue": "auto",
+				"label": "Codificador QuickSync (H264)",
+				"description": "",
+				"options": [
+					{
+						"value": "auto",
+						"label": "auto -- deixa o ffmpeg decidir (padrão)"
+					},
+					{
+						"value": "cabac",
+						"label": "cabac -- codificação aritmética binária adaptável ao contexto - qualidade superior"
+					},
+					{
+						"value": "cavlc",
+						"label": "cavlc -- codificação de comprimento variável adaptável ao contexto - decodificação mais rápida"
+					}
+				]
+			},
+			{
+				"key": "qsv_slow_hevc",
+				"defaultValue": "disabled",
+				"label": "Permitir codificação lenta de HEVC",
+				"description": "Isso pode permitir a codificação HEVC em GPUs Intel mais antigas, ao custo de maior uso da GPU e pior desempenho."
+			}
+		]
+	},
+	{
+		"id": "amd",
+		"title": "AMD AMF",
+		"fields": [
+			{
+				"key": "amd_usage",
+				"defaultValue": "ultralowlatency",
+				"label": "Uso do AMF",
+				"description": "Isso define o perfil de codificação básico. Todas as opções apresentadas abaixo substituirão um subconjunto do perfil de uso, mas há configurações ocultas adicionais aplicadas que não podem ser configuradas em outro lugar.",
+				"options": [
+					{
+						"value": "transcoding",
+						"label": "transcoding -- transcodificação (mais lento)"
+					},
+					{
+						"value": "webcam",
+						"label": "webcam -- webcam (lento)"
+					},
+					{
+						"value": "lowlatency_high_quality",
+						"label": "lowlatency_high_quality - baixa latência, alta qualidade (rápido)"
+					},
+					{
+						"value": "lowlatency",
+						"label": "lowlatency - baixa latência (mais rápido)"
+					},
+					{
+						"value": "ultralowlatency",
+						"label": "ultralowlatency - latência ultra baixa (mais rápido; padrão)"
+					}
+				]
+			},
+			{
+				"key": "amd_rc",
+				"defaultValue": "vbr_latency",
+				"label": "Controle de taxa AMF",
+				"description": "Isso controla o método de controle de taxa para garantir que não estamos excedendo a meta de taxa de bits do cliente. O \"cqp\" não é adequado para o direcionamento da taxa de bits, e outras opções além do \"vbr_latency\" dependem da aplicação do HRD para ajudar a restringir os excessos de taxa de bits.",
+				"options": [
+					{
+						"value": "cbr",
+						"label": "cbr -- taxa de bits constante (recomendado se o HRD estiver ativado)"
+					},
+					{
+						"value": "cqp",
+						"label": "cqp -- modo qp constante"
+					},
+					{
+						"value": "vbr_latency",
+						"label": "vbr_latency -- taxa de bits variável com restrição de latência (recomendado se o HRD estiver desativado; padrão)"
+					},
+					{
+						"value": "vbr_peak",
+						"label": "vbr_peak -- taxa de bits variável com restrição de pico"
+					}
+				]
+			},
+			{
+				"key": "amd_enforce_hrd",
+				"defaultValue": "disabled",
+				"label": "Execução do Decodificador de Referência Hipotético (HRD) da AMF",
+				"description": "Aumenta as restrições do controle de taxa para atender aos requisitos do modelo HRD. Isso reduz bastante os excessos de taxa de bits, mas pode causar artefatos de codificação ou qualidade reduzida em determinadas placas."
+			},
+			{
+				"key": "amd_quality",
+				"defaultValue": "balanced",
+				"label": "Qualidade AMF",
+				"description": "Isso controla o equilíbrio entre a velocidade e a qualidade da codificação.",
+				"options": [
+					{
+						"value": "speed",
+						"label": "velocidade -- preferir velocidade"
+					},
+					{
+						"value": "balanced",
+						"label": "balanced -- balanceado (padrão)"
+					},
+					{
+						"value": "quality",
+						"label": "qualidade -- preferir qualidade"
+					}
+				]
+			},
+			{
+				"key": "amd_preanalysis",
+				"defaultValue": "disabled",
+				"label": "Pré-análise da AMF",
+				"description": "Isso permite a pré-análise de controle de taxa, que pode aumentar a qualidade às custas de uma maior latência de codificação."
+			},
+			{
+				"key": "amd_vbaq",
+				"defaultValue": "enabled",
+				"label": "Quantização adaptativa baseada em variância AMF (VBAQ)",
+				"description": "Em geral, o sistema visual humano é menos sensível a artefatos em áreas altamente texturizadas. No modo VBAQ, a variação de pixels é usada para indicar a complexidade das texturas espaciais, permitindo que o codificador aloque mais bits para áreas mais suaves. A ativação desse recurso leva a melhorias na qualidade visual subjetiva com alguns conteúdos."
+			},
+			{
+				"key": "amd_coder",
+				"defaultValue": "auto",
+				"label": "Codificador AMF (H264)",
+				"description": "Permite que você selecione a codificação de entropia para priorizar a qualidade ou a velocidade de codificação. Somente H.264.",
+				"options": [
+					{
+						"value": "auto",
+						"label": "auto -- deixa o ffmpeg decidir (padrão)"
+					},
+					{
+						"value": "cabac",
+						"label": "cabac -- codificação aritmética binária adaptável ao contexto - qualidade superior"
+					},
+					{
+						"value": "cavlc",
+						"label": "cavlc -- codificação de comprimento variável adaptável ao contexto - decodificação mais rápida"
+					}
+				]
+			}
+		]
+	},
+	{
+		"id": "vt",
+		"title": "VideoToolbox",
+		"fields": [
+			{
+				"key": "vt_coder",
+				"defaultValue": "auto",
+				"label": "Codificador do VideoToolbox",
+				"description": "",
+				"options": [
+					{
+						"value": "auto",
+						"label": "auto -- deixa o ffmpeg decidir (padrão)"
+					},
+					{
+						"value": "cabac",
+						"label": "cabac -- codificação aritmética binária adaptável ao contexto - qualidade superior"
+					},
+					{
+						"value": "cavlc",
+						"label": "cavlc -- codificação de comprimento variável adaptável ao contexto - decodificação mais rápida"
+					}
+				]
+			},
+			{
+				"key": "vt_software",
+				"defaultValue": "auto",
+				"label": "Codificação de software VideoToolbox",
+				"description": "",
+				"options": [
+					{
+						"value": "auto",
+						"label": "Automático"
+					},
+					{
+						"value": "disabled",
+						"label": "Desativado"
+					},
+					{
+						"value": "allowed",
+						"label": "Permitido"
+					},
+					{
+						"value": "forced",
+						"label": "Forçado"
+					}
+				]
+			},
+			{
+				"key": "vt_realtime",
+				"defaultValue": "enabled",
+				"label": "Codificação em tempo real do VideoToolbox",
+				"description": ""
+			}
+		]
+	},
+	{
+		"id": "vaapi",
+		"title": "VA-API",
+		"fields": [
+			{
+				"key": "vaapi_strict_rc_buffer",
+				"defaultValue": "disabled",
+				"label": "Impor limites estritos de taxa de bits de quadros para H.264/HEVC em GPUs AMD",
+				"description": "A ativação dessa opção pode evitar a queda de quadros na rede durante as mudanças de cena, mas a qualidade do vídeo pode ser reduzida durante o movimento."
+			}
+		]
+	},
+	{
+		"id": "sw",
+		"title": "Encoder de software",
+		"fields": [
+			{
+				"key": "sw_preset",
+				"defaultValue": "superfast",
+				"label": "Predefinições de SW",
+				"description": "Otimiza o equilíbrio entre a velocidade de codificação (quadros codificados por segundo) e a eficiência da compactação (qualidade por bit no fluxo de bits). O padrão é super rápido.",
+				"options": [
+					{
+						"value": "ultrafast",
+						"label": "ultra rápido"
+					},
+					{
+						"value": "superfast",
+						"label": "super rápido (padrão)"
+					},
+					{
+						"value": "veryfast",
+						"label": "muito rápido"
+					},
+					{
+						"value": "faster",
+						"label": "mais rápido"
+					},
+					{
+						"value": "fast",
+						"label": "rápido"
+					},
+					{
+						"value": "medium",
+						"label": "médio"
+					},
+					{
+						"value": "slow",
+						"label": "lento"
+					},
+					{
+						"value": "slower",
+						"label": "mais lento"
+					},
+					{
+						"value": "veryslow",
+						"label": "muito lento"
+					}
+				]
+			},
+			{
+				"key": "sw_tune",
+				"defaultValue": "zerolatency",
+				"label": "Ajustes finos do SW",
+				"description": "Opções de ajuste, que são aplicadas após a predefinição. O padrão é zerolatency.",
+				"options": [
+					{
+						"value": "film",
+						"label": "filme - use para conteúdo de filme de alta qualidade; reduz a desblocagem"
+					},
+					{
+						"value": "animation",
+						"label": "animação -- bom para desenhos animados; usa desblocagem mais alta e mais quadros de referência"
+					},
+					{
+						"value": "grain",
+						"label": "granulação -- preserva a estrutura de granulação em material de filme antigo e granulado"
+					},
+					{
+						"value": "stillimage",
+						"label": "stillimage -- bom para conteúdo do tipo apresentação de slides"
+					},
+					{
+						"value": "fastdecode",
+						"label": "fastdecode -- permite uma decodificação mais rápida ao desativar determinados filtros"
+					},
+					{
+						"value": "zerolatency",
+						"label": "zerolatency -- bom para codificação rápida e transmissão de baixa latência (padrão)"
+					}
+				]
+			}
+		]
+	}
+]

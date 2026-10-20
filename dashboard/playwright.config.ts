@@ -15,7 +15,7 @@ export default defineConfig({
 		},
 		{
 			command: "node tests/fixtures/packaged-host.mjs",
-			url: "http://127.0.0.1:4175/assets/apollo-preview/index.html",
+			url: "http://127.0.0.1:4175/",
 			reuseExistingServer: false
 		}
 	]

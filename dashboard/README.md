@@ -1,122 +1,97 @@
 # Apollo dashboard
 
-React frontend migration. This is **not yet a replacement** for the currently
-installed dashboard: settings, pairing, applications and recovery flows still
-need functional parity. No host binary, driver, configuration or pairing data
-is modified by developing/building this package.
+Full React migration **in progress**, not yet a replacement release. All eight
+host page entries have React implementations. The remaining gates—action-flow
+tests, English/pt-BR localization, native integration and legacy removal—are
+tracked in [MIGRATION.md](MIGRATION.md). No complete test ZIP is claimed yet.
 
 ## Stack
 
-Stable registry versions checked on 19 October 2026:
+React/DOM 19.3.1, strict TypeScript 7.0.2, Vite 8.3.4/React plugin 6.1.2,
+Tailwind/Vite plugin 4.3.3, Query 5.104.5, Router 1.170.45, official Router Vite
+plugin 1.168.47/generator 1.167.45. Biome 2.5.15, Vitest 5.0.5, Playwright 1.64.1.
+Versions are exact-pinned with package-lock.json and checked against actual peer
+compatibility; TanStack packages do not all share identical release numbers.
 
-- React/React DOM 19.3.1; TypeScript 7.0.2, strict mode.
-- Vite 8.3.4 and official React plugin 6.1.2.
-- Tailwind CSS and Vite plugin 4.3.3, standard utilities and semantic tokens.
-- shadcn CLI 4.22.1, base-lyra/Base UI 1.9.0; component source checked in.
-- TanStack Router 1.170.45 and Query 5.104.5.
-- Biome 2.5.15, Vitest 5.0.5, Playwright 1.64.1.
+Use official shadcn base-lyra/Base UI sources for primitives. Use the regular
+Select, not NativeSelect. Own components compose Apollo behavior/screens rather
+than recreating controls. Tailwind utilities and semantic tokens replace bespoke
+visual classes; .dark is the standard theme selector. No Vue/Bootstrap runtime
+exists in this package. Only English and Brazilian Portuguese are in UI scope.
 
-Production and development dependencies are exact-pinned. This standalone
-package commits package-lock.json; use npm ci. Existing host tooling and the
-legacy Vue frontend have separate dependencies during migration.
-
-The frontend workflow uses an explicit Ubuntu 24.04 runner and Node 24,
-read-only permissions, no persisted Git credentials, a ten-minute timeout and
-per-branch cancellation of superseded runs. Official checkout/setup-node/artifact
-actions are pinned by commit (release versions annotated); preview retention is
-seven days. This workflow does not install or operate the user's host.
+The user's ~/monorepo was read for Biome, shadcn, theme, TS and Router/Query
+conventions. No private auth, tRPC, infrastructure, DB or environment was copied.
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for source/license changes.
 
 ## Commands
 
 ```sh
 npm ci --ignore-scripts
+npm run routes:generate
 npm run check
 npm run typecheck
 npm test
-npm run build
+npm run check:dev
 npm exec playwright install --with-deps chromium
 npm run test:browser
+npm run dev
 ```
 
-`npm run dev` serves only on 127.0.0.1:5174. No proxy to your real Apollo is
-configured: deliberately avoid accidental credential/config writes during
-development. Browser tests intercept the API and test a simulated host. Build
-output is static under dist; it is not copied into the live host automatically.
+`pnpm dev` also runs the script when dependencies are installed. The committed
+installation lock is npm's; do not mix installers/lockfiles in one checkout.
+Dev binds 127.0.0.1:5174 and does not proxy to the real host automatically. Without
+the native API or test fixture, API-backed screens show an error, not fake data.
+`test:browser` builds fresh assets first to prevent stale-dist test results.
 
-## Organization
+## File-based routes
 
-- main.tsx: provider composition and browser mount only.
-- router.tsx: typed route tree and router factory; QueryClient in router context.
-- pages/: page-specific orchestration; no artificial domain/repository layers.
-- lib/api.ts: HTTP boundary, cancellation/timeout and allow-listed config cache.
-- lib/query.ts: QueryClient lifecycle/defaults. No persisted auth cache.
-- components/ui/: official shadcn sources; component variants use cva/cn.
-- Form structure/errors, alerts and the theme select also use official shadcn
-  Field/FieldGroup/FieldLabel/FieldError, Alert and NativeSelect components.
-  Do not build bespoke controls when the configured registry already provides one.
-- components/theme-provider.tsx: light/dark/system preference with cleanup.
-- styles.css: semantic shadcn tokens and minimal global base, not handmade
-  component selectors. No Bootstrap, Vue, Font Awesome or .golden-* classes.
+`src/routes/__root.tsx` owns typed QueryClient context and global boundaries.
+`_host.tsx` is the pathless sidebar layout; its files map to the existing host
+URLs. Login/welcome are outside that layout. Screen/domain logic stays in pages/,
+features/ and lib/. router.tsx only creates the router from routeTree.gen.ts.
 
-## Reference to the user's monorepo
+The official Vite plugin runs **before React**, generates the tree and splits
+route components automatically. Generated files/.tanstack output are ignored by
+Git and Biome. Pre-typecheck generation uses the official ESM Generator/getConfig
+API, avoiding the current CLI CommonJS circular-export warning without hiding
+warnings or manually generating a tree. No TanStack Start is required.
 
-Read-only reference: biome.json; packages/ui/components.json, button.tsx and
-libs/utils.ts; tooling/tailwind/index.css; apps/website/{vite.config.ts,
-tsconfig.json,src/router.tsx,src/libs/query.ts,src/libs/db.ts}.
+Intent preloading loads route code, never mutations. Query owns freshness and
+cancellation. No automatic mutation retries or focus refetch. No DB was added
+merely to duplicate Query's server-state cache. Start does support static SPA;
+revisit it only for concrete deployment/SSR/server-function requirements.
 
-Adopted tabs, double quotes, no semicolons/trailing commas, 95-column formatting,
-organized imports, exhaustive-dependency checks, no floating promises,
-exhaustive switches and safe Tailwind class sorting (cva/cn/cx). Lint currently
-has no suppressions/exclusions for application code. The Label source explicitly
-forwards htmlFor/children so the association is visible to accessibility tooling.
+## Organization and integrity
 
-Adapted rather than copied:
+- main.tsx: mount/providers; router.tsx: router factory.
+- routes/: small typed file routes/search/boundaries.
+- pages/: screens and request/user-action orchestration.
+- features/settings/: 104 baseline fields, defaults, validators and structured
+  command/display editors; apps/devices: payload and protocol handling.
+- lib/: HTTP/cache/download boundaries; components/: Apollo composition.
+- components/ui/: official shadcn source, cva/cn variants and recorded adaptations.
+- styles.css: semantic tokens, minimal base and local font imports.
 
-- Query uses a short stale window for host configuration, not infinite freshness.
-  No automatic mutation retries or focus refetch. Mutations invalidate only the
-  relevant data as flows are migrated; auth clears query snapshots.
-- No SSR serializer or process-global SSR cache: the host serves static assets.
-- Routes are code-based for three current screens; file-based generation is
-  unnecessary yet. The tree remains typed and can grow without introducing a
-  generator solely for convention.
-- No tRPC/auth/database infrastructure from the monorepo was copied.
+Config POST rewrites the file. Preserve unknown fields/structures, strip response
+metadata/defaults, validate first and compare a fresh snapshot before saving.
+This is a best-effort conflict check, not atomic CAS: the backend has no revision
+contract. Saving and restarting are separate. Destructive/session actions require
+confirmation; connection loss is not evidence a restart/quit succeeded. Logs can
+contain private data. Never invent metrics or claim device performance gains.
 
-## TanStack Start and DB
+## Build/development regression checks
 
-Start **does support static SPA mode**; it is not rejected as incompatible.
-It currently adds a build/shell convention without server functions or SSR that
-Apollo needs. Router + the existing C++ API suffice for the first migration.
-Reconsider Start if routing/prerender/deployment needs justify it.
+Fontsource 5.3.0 does not contain latin.css despite its wildcard export. Supported
+package entry imports are used; unicode-range limits actual browser font downloads.
+`check:dev` starts/closes its own ephemeral server and verifies CSS, generated
+routes and both Latin font resources over HTTP, without stopping the user's dev.
 
-TanStack DB is not installed just to duplicate Query's server-state cache.
-Reconsider for collection-heavy application editing, local drafts/live queries
-and synchronization when actual endpoint semantics and conflict handling exist.
-Do not invent local persistence of security or driver settings.
+`build` emits all eight HTML filenames read by C++ and absolute /assets URLs,
+supporting direct URLs/trailing slashes. `build:host` also stages generated assets
+under SUNSHINE_ASSETS_DIR/assets/web, not the user's installation. Source maps
+are opt-in with APOLLO_UI_SOURCEMAP=true. The host fixture serves the actual HTML
+files, not a catch-all that could conceal missing host entries.
 
-## Current implementation and gates
-
-Implemented: /welcome, /login and a factual read-only overview, light/dark/system,
-API-backed auth mutations (not tested against a live host), safe config reads,
-explicit missing-data and migration notices. Passwords stay in component state,
-never localStorage or mutation variables. Native browser password-manager
-autocomplete remains supported; this does not clear legacy saved credentials.
-
-Before production replacement, migrate all existing routes: pairing/client
-permissions, apps launch/edit/reorder, access/password management, full settings
-(General, Files, Inputs, Network, AudioVideo, encoder-specific and Advanced),
-logs, recovery and confirmations. Preserve current fields/unknown configuration
-keys, validation and error behavior. Test direct URLs, refresh, authentication
-expiry and C++ routes/static assets before changing the host packaging.
-
-No settings editing, stream measurement or performance claim is made by this
-package. Never deploy a partial React shell over a user's functioning dashboard.
-Keep the existing installation and package as rollback until those gates pass.
-
-An opt-in packaged preview may be served at
-`/assets/apollo-preview/index.html#/` beside the unchanged full UI. That entry
-uses hash history and relative assets, avoiding backend rewrite changes. All API
-calls still use the existing same-origin authorization. Compatibility links force
-document navigation to the complete existing pages; no incomplete React settings
-screen replaces them. The packaged-host browser fixture tests this boundary but
-does not substitute for native host/stream validation. See
-`../docs/apollo-single-test-package.md` for packaging and cleanup gates.
+The old hash-preview packager rejects this new full-migration output. Do not
+deploy over the working host, remove rollback data or release a "complete" ZIP
+until the migration matrix and native integration gates are satisfied.

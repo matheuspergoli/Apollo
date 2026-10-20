@@ -1,6 +1,12 @@
+import {
+	IconApps,
+	IconDeviceDesktop,
+	IconDeviceGamepad,
+	IconRefresh
+} from "@tabler/icons-react"
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { ThemeSelect } from "@/components/theme-provider"
+import { RequestError } from "@/components/request-error"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
@@ -11,10 +17,18 @@ import {
 	CardTitle
 } from "@/components/ui/card"
 import { ApiError, configOptions } from "@/lib/api"
-import { isPackagedPreview } from "@/lib/runtime"
+import { applicationsOptions, clientsOptions, text } from "@/lib/documents"
 
 export function OverviewPage() {
 	const config = useQuery(configOptions)
+	const clients = useQuery({ ...clientsOptions, enabled: config.isSuccess })
+	const apps = useQuery({ ...applicationsOptions, enabled: config.isSuccess })
+	const connected = clients.data?.clients.every(
+		(client) => typeof client.connected === "boolean"
+	)
+		? clients.data.clients.filter((client) => client.connected === true).length
+		: undefined
+	const current = apps.data?.apps.find((app) => app.uuid === apps.data.current)
 	const fields = [
 		["Host", config.data?.sunshine_name || "Nome padrão"],
 		["Captura configurada", config.data?.capture || "Automática"],
@@ -24,45 +38,67 @@ export function OverviewPage() {
 		["Preset NVENC", config.data?.nvenc_preset || "Padrão do Apollo"]
 	]
 	return (
-		<main className="mx-auto max-w-6xl space-y-8 px-5 py-8 md:px-10">
-			<header className="flex flex-wrap items-center justify-between gap-4 border-b pb-5">
-				<span className="font-semibold">Apollo</span>
-				<ThemeSelect />
-			</header>
+		<>
 			<section className="flex flex-wrap items-start justify-between gap-4">
 				<div>
-					<p className="mb-2 text-muted-foreground text-xs uppercase">
-						Visão geral · migração React
-					</p>
-					<h1 className="font-semibold text-3xl tracking-tight">Seu host, sem adivinhação.</h1>
+					<p className="mb-2 text-muted-foreground text-xs uppercase">Central do host</p>
+					<h1 className="font-semibold text-3xl tracking-tight">Visão geral</h1>
 					<p className="mt-3 text-muted-foreground text-sm">
-						Alvo: RTX 4060 → S25+ · 1080p120. Não é uma detecção da sessão atual.
+						{config.data?.sunshine_name || "Apollo"} · acesso rápido ao streaming e à
+						configuração.
 					</p>
 				</div>
 				<Button
 					variant="outline"
-					disabled={config.isFetching}
-					onClick={() => void config.refetch()}
+					disabled={config.isFetching || clients.isFetching || apps.isFetching}
+					onClick={() => {
+						void Promise.all([config.refetch(), clients.refetch(), apps.refetch()])
+					}}
 					className="min-h-10"
 				>
-					{config.isFetching ? "Lendo host…" : "Atualizar leitura"}
+					<IconRefresh />
+					{config.isFetching || clients.isFetching || apps.isFetching
+						? "Lendo host…"
+						: "Atualizar leitura"}
 				</Button>
 			</section>
-			{isPackagedPreview() && (
-				<nav aria-label="Painel completo" className="flex flex-wrap gap-3">
-					{[
-						["/", "Painel completo"],
-						["/pin", "Dispositivos"],
-						["/apps", "Aplicativos"],
-						["/config", "Configurações"],
-						["/troubleshooting", "Diagnóstico"]
-					].map(([href, label]) => (
-						<a key={href} href={href} className={buttonVariants({ variant: "outline" })}>
-							{label} · compatibilidade
-						</a>
-					))}
-				</nav>
-			)}
+			<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+				{[
+					[
+						"Aplicativos",
+						apps.data ? String(apps.data.apps.length) : "—",
+						"Entradas cadastradas no host"
+					],
+					[
+						"Dispositivos",
+						clients.data ? String(clients.data.clients.length) : "—",
+						"Clientes vinculados"
+					],
+					[
+						"Conectados",
+						connected === undefined ? "—" : String(connected),
+						"Estado informado pelo host"
+					],
+					[
+						"Driver virtual",
+						config.data?.vdisplayStatus === 0
+							? "Disponível"
+							: config.data?.vdisplayStatus === undefined
+								? "—"
+								: "Verificar",
+						"Estado de inicialização, não FPS"
+					]
+				].map(([label, value, help]) => (
+					<Card key={label}>
+						<CardHeader>
+							<CardDescription>{label}</CardDescription>
+							<CardTitle className="font-semibold text-2xl tracking-tight">{value}</CardTitle>
+						</CardHeader>
+						<CardContent className="text-muted-foreground text-xs">{help}</CardContent>
+					</Card>
+				))}
+			</div>
+			<RequestError error={clients.error || apps.error} />
 			{config.isPending && <p role="status">Consultando o host…</p>}
 			{config.error && (
 				<Alert variant="destructive">
@@ -102,28 +138,94 @@ export function OverviewPage() {
 					</Card>
 					<Card>
 						<CardHeader>
-							<CardTitle>Medições ainda indisponíveis</CardTitle>
-							<CardDescription>Não representamos ausência de dados como zero.</CardDescription>
+							<CardTitle>Operação e ajustes</CardTitle>
+							<CardDescription>
+								Abra a função certa sem procurar entre opções irrelevantes.
+							</CardDescription>
 						</CardHeader>
 						<CardContent>
-							<ul className="space-y-4 text-muted-foreground text-sm">
-								<li>Codec, HDR e FPS negociados</li>
-								<li>Captura, encode e filas</li>
-								<li>Decode e apresentação no S25+</li>
-								<li>Perdas, jitter e rota Tailscale</li>
-							</ul>
+							<div className="grid gap-3">
+								<Link
+									to="/config"
+									search={{ section: "av" }}
+									className={buttonVariants({
+										variant: "outline",
+										className: "justify-start"
+									})}
+								>
+									<IconDeviceDesktop />
+									Display, HDR e áudio
+								</Link>
+								<Link
+									to="/config"
+									search={{ section: "nv" }}
+									className={buttonVariants({
+										variant: "outline",
+										className: "justify-start"
+									})}
+								>
+									<IconDeviceGamepad />
+									Encoder NVIDIA NVENC
+								</Link>
+								<Link
+									to="/pin"
+									className={buttonVariants({
+										variant: "outline",
+										className: "justify-start"
+									})}
+								>
+									<IconDeviceDesktop />
+									Vincular e revisar dispositivos
+								</Link>
+								<Link
+									to="/troubleshooting"
+									className={buttonVariants({
+										variant: "outline",
+										className: "justify-start"
+									})}
+								>
+									Logs e recuperação
+								</Link>
+							</div>
+							<p className="mt-5 text-muted-foreground text-xs leading-6">
+								Codec negociado, FPS, rede e decode devem ser conferidos no Artemis. O painel
+								não transforma configuração declarada em telemetria nem mede input-to-photon.
+							</p>
 						</CardContent>
 					</Card>
 				</div>
 			)}
-			<Alert role="note">
-				<AlertTitle>Migração em andamento</AlertTitle>
-				<AlertDescription>
-					Esta é a nova base React. Configurações, dispositivos, aplicativos e diagnóstico
-					ainda precisam de migração e testes de paridade antes de substituir o painel em uso.
-					Sem driver novo ou PyroWave nesta interface.
-				</AlertDescription>
-			</Alert>
-		</main>
+			<Card>
+				<CardHeader>
+					<div className="flex flex-wrap items-center justify-between gap-3">
+						<div>
+							<CardTitle>Aplicativo atual</CardTitle>
+							<CardDescription>
+								Estado retornado pelo processo do host, sem inferência por configuração.
+							</CardDescription>
+						</div>
+						<Link to="/apps" className={buttonVariants({ variant: "outline" })}>
+							<IconApps />
+							Abrir biblioteca
+						</Link>
+					</div>
+				</CardHeader>
+				<CardContent>
+					<p className="font-medium">
+						{apps.data
+							? current
+								? text(current.name)
+								: apps.data.current
+									? "Aplicativo não identificado na biblioteca"
+									: "Nenhum aplicativo em execução"
+							: "Estado ainda não disponível"}
+					</p>
+					<p className="mt-2 text-muted-foreground text-sm">
+						Inicie ou encerre aplicativos pela biblioteca. Ações que interrompem a sessão
+						exigem confirmação.
+					</p>
+				</CardContent>
+			</Card>
+		</>
 	)
 }

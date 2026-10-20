@@ -42,6 +42,14 @@ test("rejected login can retry and success reads the actual host API", async ({ 
 	await page.route("**/api/config", (route) =>
 		route.fulfill({ json: { status: true, sunshine_name: "Mock host", capture: "wgc" } })
 	)
+	await page.route("**/api/clients/list", (route) =>
+		route.fulfill({ json: { status: true, named_certs: [], platform: "windows" } })
+	)
+	await page.route("**/api/apps", (route) =>
+		route.fulfill({
+			json: { apps: [], current_app: "", host_name: "Mock host", host_uuid: "test-host" }
+		})
+	)
 	await page.goto("/login")
 	await page.getByLabel("Usuário", { exact: true }).fill("Test")
 	await page.getByLabel("Senha", { exact: true }).fill("Test-only-123")
@@ -50,7 +58,7 @@ test("rejected login can retry and success reads the actual host API", async ({ 
 	await expect(page.getByRole("button", { name: "Entrar no painel" })).toBeEnabled()
 	accepted = true
 	await page.getByRole("button", { name: "Entrar no painel" }).click()
-	await expect(page.getByText("Mock host", { exact: true })).toBeVisible()
+	await expect(page.getByText("Mock host", { exact: true }).first()).toBeVisible()
 	expect(await page.evaluate(() => localStorage.getItem("login"))).toBeNull()
 })
 
@@ -92,11 +100,12 @@ for (const width of [390, 1280]) {
 		page.on("pageerror", (error) => errors.push(error.message))
 		await page.setViewportSize({ width, height: 900 })
 		await page.goto("/login")
-		await expect(page.getByLabel("Tema", { exact: true })).toHaveAttribute(
+		await expect(page.getByRole("combobox", { name: "Tema", exact: true })).toHaveAttribute(
 			"data-slot",
-			"native-select"
+			"select-trigger"
 		)
-		await page.getByLabel("Tema", { exact: true }).selectOption("dark")
+		await page.getByRole("combobox", { name: "Tema", exact: true }).click()
+		await page.getByRole("option", { name: "Escuro", exact: true }).click()
 		await expect(page.locator("html")).toHaveClass(/dark/)
 		await page.reload()
 		await expect(page.locator("html")).toHaveClass(/dark/)
@@ -107,7 +116,8 @@ for (const width of [390, 1280]) {
 			path: `/tmp/opencode/react-login-dark-${width}.png`,
 			fullPage: true
 		})
-		await page.getByLabel("Tema", { exact: true }).selectOption("light")
+		await page.getByRole("combobox", { name: "Tema", exact: true }).click()
+		await page.getByRole("option", { name: "Claro", exact: true }).click()
 		await expect(page.locator("html")).not.toHaveClass(/dark/)
 		await page.screenshot({
 			path: `/tmp/opencode/react-login-light-${width}.png`,

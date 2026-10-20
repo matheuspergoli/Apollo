@@ -1,5 +1,7 @@
 node_modules/
 dist/
+.tanstack/
+src/routeTree.gen.ts
 test-results/
 playwright-report/
 !package-lock.json

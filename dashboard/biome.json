@@ -2,7 +2,16 @@
 	"$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
 	"files": {
 		"ignoreUnknown": true,
-		"includes": ["src/**", "tests/**", "*.json", "*.ts", "index.html", "!package-lock.json"]
+		"includes": [
+			"src/**",
+			"tests/**",
+			"scripts/**",
+			"*.json",
+			"*.ts",
+			"index.html",
+			"!package-lock.json",
+			"!src/routeTree.gen.ts"
+		]
 	},
 	"formatter": { "enabled": true, "indentStyle": "tab", "lineWidth": 95 },
 	"linter": {

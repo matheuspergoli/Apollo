@@ -1,6 +1,12 @@
 import { createContext, type ReactNode, useContext, useEffect, useId, useState } from "react"
 import { Field, FieldLabel } from "@/components/ui/field"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue
+} from "@/components/ui/select"
 
 type Theme = "light" | "dark" | "auto"
 const ThemeContext = createContext<{ theme: Theme; setTheme: (theme: Theme) => void } | null>(
@@ -42,20 +48,27 @@ export function ThemeSelect() {
 	return (
 		<Field orientation="horizontal" className="w-auto">
 			<FieldLabel htmlFor={id}>Tema</FieldLabel>
-			<NativeSelect
-				id={id}
-				aria-label="Tema"
+			<Select
+				items={[
+					{ value: "auto", label: "Sistema" },
+					{ value: "light", label: "Claro" },
+					{ value: "dark", label: "Escuro" }
+				]}
 				value={context.theme}
-				onChange={(event) => {
-					const value = event.target.value
+				onValueChange={(value) => {
 					if (value === "light" || value === "dark" || value === "auto")
 						context.setTheme(value)
 				}}
 			>
-				<NativeSelectOption value="auto">Sistema</NativeSelectOption>
-				<NativeSelectOption value="light">Claro</NativeSelectOption>
-				<NativeSelectOption value="dark">Escuro</NativeSelectOption>
-			</NativeSelect>
+				<SelectTrigger id={id} aria-label="Tema" className="min-w-28">
+					<SelectValue />
+				</SelectTrigger>
+				<SelectContent>
+					<SelectItem value="auto">Sistema</SelectItem>
+					<SelectItem value="light">Claro</SelectItem>
+					<SelectItem value="dark">Escuro</SelectItem>
+				</SelectContent>
+			</Select>
 		</Field>
 	)
 }

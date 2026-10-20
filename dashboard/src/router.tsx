@@ -1,50 +1,16 @@
 import type { QueryClient } from "@tanstack/react-query"
-import {
-	createHashHistory,
-	createRootRouteWithContext,
-	createRoute,
-	createRouter,
-	Outlet
-} from "@tanstack/react-router"
-import { isPackagedPreview } from "./lib/runtime"
-import { AccessPage } from "./pages/access"
-import { OverviewPage } from "./pages/overview"
-
-const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-	component: Outlet,
-	notFoundComponent: () => (
-		<main className="mx-auto max-w-xl p-8">
-			<h1 className="font-semibold text-2xl">Tela ainda não migrada</h1>
-			<p className="mt-4 text-muted-foreground">
-				Use o painel atual para esta função. A migração não está pronta para substituí-lo.
-			</p>
-			<a href="/" className="mt-4 inline-block underline">
-				Voltar à visão geral
-			</a>
-		</main>
-	)
-})
-const routeTree = rootRoute.addChildren([
-	createRoute({ getParentRoute: () => rootRoute, path: "/", component: OverviewPage }),
-	createRoute({
-		getParentRoute: () => rootRoute,
-		path: "/welcome",
-		component: () => <AccessPage setup />
-	}),
-	createRoute({
-		getParentRoute: () => rootRoute,
-		path: "/login",
-		component: () => <AccessPage />
-	})
-])
+import { createRouter } from "@tanstack/react-router"
+import { routeTree } from "./routeTree.gen"
 
 export function createAppRouter(queryClient: QueryClient) {
 	return createRouter({
 		routeTree,
-		history: isPackagedPreview() ? createHashHistory() : undefined,
 		context: { queryClient },
 		scrollRestoration: true,
-		defaultPreload: false
+		defaultPreload: "intent",
+		defaultPreloadStaleTime: 0,
+		defaultPendingMs: 150,
+		defaultPendingMinMs: 100
 	})
 }
 
