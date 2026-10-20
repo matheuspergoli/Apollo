@@ -111,3 +111,12 @@ expiry and C++ routes/static assets before changing the host packaging.
 No settings editing, stream measurement or performance claim is made by this
 package. Never deploy a partial React shell over a user's functioning dashboard.
 Keep the existing installation and package as rollback until those gates pass.
+
+An opt-in packaged preview may be served at
+`/assets/apollo-preview/index.html#/` beside the unchanged full UI. That entry
+uses hash history and relative assets, avoiding backend rewrite changes. All API
+calls still use the existing same-origin authorization. Compatibility links force
+document navigation to the complete existing pages; no incomplete React settings
+screen replaces them. The packaged-host browser fixture tests this boundary but
+does not substitute for native host/stream validation. See
+`../docs/apollo-single-test-package.md` for packaging and cleanup gates.

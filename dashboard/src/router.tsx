@@ -1,10 +1,12 @@
 import type { QueryClient } from "@tanstack/react-query"
 import {
+	createHashHistory,
 	createRootRouteWithContext,
 	createRoute,
 	createRouter,
 	Outlet
 } from "@tanstack/react-router"
+import { isPackagedPreview } from "./lib/runtime"
 import { AccessPage } from "./pages/access"
 import { OverviewPage } from "./pages/overview"
 
@@ -39,6 +41,7 @@ const routeTree = rootRoute.addChildren([
 export function createAppRouter(queryClient: QueryClient) {
 	return createRouter({
 		routeTree,
+		history: isPackagedPreview() ? createHashHistory() : undefined,
 		context: { queryClient },
 		scrollRestoration: true,
 		defaultPreload: false

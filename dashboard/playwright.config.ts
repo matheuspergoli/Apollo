@@ -7,9 +7,16 @@ export default defineConfig({
 		browserName: "chromium",
 		screenshot: "only-on-failure"
 	},
-	webServer: {
-		command: "npm exec vite preview -- --host 127.0.0.1 --port 4174 --strictPort",
-		url: "http://127.0.0.1:4174",
-		reuseExistingServer: false
-	}
+	webServer: [
+		{
+			command: "npm exec vite preview -- --host 127.0.0.1 --port 4174 --strictPort",
+			url: "http://127.0.0.1:4174",
+			reuseExistingServer: false
+		},
+		{
+			command: "node tests/fixtures/packaged-host.mjs",
+			url: "http://127.0.0.1:4175/assets/apollo-preview/index.html",
+			reuseExistingServer: false
+		}
+	]
 })

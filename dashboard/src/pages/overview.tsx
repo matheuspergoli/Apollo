@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { ThemeSelect } from "@/components/theme-provider"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import {
 	Card,
 	CardContent,
@@ -11,6 +11,7 @@ import {
 	CardTitle
 } from "@/components/ui/card"
 import { ApiError, configOptions } from "@/lib/api"
+import { isPackagedPreview } from "@/lib/runtime"
 
 export function OverviewPage() {
 	const config = useQuery(configOptions)
@@ -47,6 +48,21 @@ export function OverviewPage() {
 					{config.isFetching ? "Lendo host…" : "Atualizar leitura"}
 				</Button>
 			</section>
+			{isPackagedPreview() && (
+				<nav aria-label="Painel completo" className="flex flex-wrap gap-3">
+					{[
+						["/", "Painel completo"],
+						["/pin", "Dispositivos"],
+						["/apps", "Aplicativos"],
+						["/config", "Configurações"],
+						["/troubleshooting", "Diagnóstico"]
+					].map(([href, label]) => (
+						<a key={href} href={href} className={buttonVariants({ variant: "outline" })}>
+							{label} · compatibilidade
+						</a>
+					))}
+				</nav>
+			)}
 			{config.isPending && <p role="status">Consultando o host…</p>}
 			{config.error && (
 				<Alert variant="destructive">

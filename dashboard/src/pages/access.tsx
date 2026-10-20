@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import { type FormEvent, useState } from "react"
 import { ThemeSelect } from "@/components/theme-provider"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -22,6 +22,7 @@ export function AccessPage({ setup = false }: { setup?: boolean }) {
 	const [visible, setVisible] = useState(false)
 	const [validation, setValidation] = useState("")
 	const client = useQueryClient()
+	const navigate = useNavigate()
 	const mutation = useMutation({
 		mutationKey: ["access", setup ? "setup" : "login"],
 		gcTime: 0,
@@ -45,11 +46,11 @@ export function AccessPage({ setup = false }: { setup?: boolean }) {
 				}
 			} else await post("login", { username, password }, false)
 		},
-		onSuccess: () => {
+		onSuccess: async () => {
 			setPassword("")
 			setConfirmation("")
 			client.removeQueries()
-			if (!setup) window.location.assign("/")
+			if (!setup) await navigate({ to: "/" })
 		}
 	})
 
