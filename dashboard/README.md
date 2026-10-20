@@ -20,6 +20,12 @@ Production and development dependencies are exact-pinned. This standalone
 package commits package-lock.json; use npm ci. Existing host tooling and the
 legacy Vue frontend have separate dependencies during migration.
 
+The frontend workflow uses an explicit Ubuntu 24.04 runner and Node 24,
+read-only permissions, no persisted Git credentials, a ten-minute timeout and
+per-branch cancellation of superseded runs. Official checkout/setup-node/artifact
+actions are pinned by commit (release versions annotated); preview retention is
+seven days. This workflow does not install or operate the user's host.
+
 ## Commands
 
 ```sh
