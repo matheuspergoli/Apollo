@@ -17,6 +17,7 @@ instead of an unconsumed server cookie in this client-only app; redundant setter
 dependencies were removed. Components use the registry's Tabler icon selection.
 Dialog and Sheet close-button text is fixed to pt-BR ("Fechar"), including
 screen-reader-only labels; no translation provider or catalog is used.
+Sidebar mobile title/description and toggle labels also use fixed pt-BR text.
 
 Geist/Geist Mono variable font data are Fontsource 5.3.0 packages under OFL-1.1;
 their supported CSS entry points and local font files are used, not a CDN. The

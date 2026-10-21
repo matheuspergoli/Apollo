@@ -1,6 +1,43 @@
 import { expect, test } from "@playwright/test"
 import { mockHost } from "../fixtures/mock-api"
 
+test("failed log reads can be explicitly refreshed without recovery writes", async ({
+	page
+}) => {
+	const host = await mockHost(page)
+	let fail = true
+	await page.route("**/api/logs", async (route) => {
+		if (fail) return route.fulfill({ status: 503 })
+		return route.fallback()
+	})
+	await page.goto("/troubleshooting")
+	await expect(page.getByRole("alert")).toContainText("503")
+	fail = false
+	await page.getByRole("button", { name: "Atualizar log", exact: true }).click()
+	await expect(
+		page.getByRole("region", { name: "Conteúdo do log", exact: true })
+	).toContainText("test warning")
+	await expect(page.getByRole("alert")).toHaveCount(0)
+	expect(host.calls.some((call) => call.method === "POST")).toBe(false)
+})
+
+test("denied clipboard access shows an error instead of claiming a copy", async ({ page }) => {
+	await mockHost(page)
+	await page.addInitScript(() => {
+		Object.defineProperty(navigator, "clipboard", {
+			value: {
+				writeText: async () => {
+					throw new DOMException("denied", "NotAllowedError")
+				}
+			}
+		})
+	})
+	await page.goto("/troubleshooting")
+	await page.getByRole("button", { name: "Copiar trecho", exact: true }).click()
+	await expect(page.getByRole("alert")).toContainText("Não foi possível copiar o trecho.")
+	await expect(page.getByText("Trecho visível copiado.", { exact: false })).toHaveCount(0)
+})
+
 test("recovery requires confirmation and cancellation sends nothing", async ({ page }) => {
 	const host = await mockHost(page)
 	await page.goto("/troubleshooting")

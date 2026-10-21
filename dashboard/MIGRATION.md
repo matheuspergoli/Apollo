@@ -10,12 +10,12 @@
 | Settings | 102 active keys/12 groups, OS filtering, search, command/display editors, review/save | More write/retry cases and malformed-data recovery |
 | Config integrity | Unknown-key preservation, defaults, semantic conflict checks; mocked save/stale-save/unsaved-navigation and native Windows UTF-8 file roundtrip pass | Final-source rerun; best-effort conflict detection remains non-atomic |
 | Devices | PIN, OTP/QR/host override, 13 permissions, mode/hooks, disconnect/unpair/all; browser PIN validation/rejection, OTP expiry/phrase invalidation, permission toggle/save, rename/permission preservation, invalid display rejection and disconnect/revoke/unpair-all/cancel/failure verified | Full hook editing and native pairing |
-| Apps | All original fields, hooks, covers, order, launch/stop, .art/deep links; browser create/filter/edit/unknown-field preservation/rejected save/order/launch/stop/delete, PNG validation/upload, online cover success/failure and export verified | Native application roundtrip |
+| Apps | All original fields, hooks, covers, order, launch/stop, .art/deep links; browser create/filter/edit/unknown-field preservation/rejected save/order/launch/stop/delete, PNG validation/upload, online cover success/failure and export verified; native Windows create/edit/delete and unknown-field roundtrip passed | Real host execution/streaming |
 | Account | Current/new credentials; browser mismatch/rejection/success/clearing/relogin and native session invalidation verified | Final-source rerun and real host verification |
 | Diagnostics | Bounded/deferred logs; browser text safety/filter/full download, recovery confirmation/cancel and connection-loss semantics verified | Clipboard/error flows and native checks |
 | Layout | Official sidebar/sheet/Select, themes, local fonts; six authenticated pages and app/device editors fit 390/1280px without runtime errors | Complete keyboard/a11y/visual sweep |
-| Language | Fixed pt-BR; i18n/providers/catalogs/selector/Crowdin/gettext and language API removed; locale writes rejected | Verify native build and scan runtime dependency graph |
-| Build | HTML aliases, managed clean staging, native CMake now uses the single React package; legacy source/dependencies removed | Verify native packaging and preserved tray assets |
+| Language | Fixed pt-BR; i18n/providers/catalogs/selector/Crowdin/gettext and language API removed; locale writes rejected; Windows native build and package legacy-path scan passed | Final accessible-copy sweep |
+| Build | HTML aliases, managed clean staging, native CMake now uses the single React package; Windows packaging and web entry/tray paths verified | Final-source rerun |
 | Packaging | Old incompatible preview creation is blocked | Full package only after all gates; preserve private state |
 
 ## Current evidence
@@ -26,7 +26,7 @@
   The one-time multilingual extraction tool and its old sources are gone.
 - 34 unit tests passed: single-language source/dependency guards, API/cache, settings preservation/defaults/validation/
   fingerprints, app payloads/exports, device permission/URL handling.
-- 51 Chromium tests with simulated APIs passed: access cases, all eight actual
+- 56 Chromium tests with simulated APIs passed: access cases, all eight actual
   emitted HTML entries/reload, sidebar/search parameters, config saves preserving
   unknown structures, repeat saves, stale-save rejection, unsaved-navigation
   confirmation, regular NVENC Select and fixed pt-BR. Additional account/device/
@@ -79,12 +79,27 @@
   retain 10s. The native harness uses the same library-write budget. This change
   is based on measured server completion, not a blanket timeout increase, and no
   mutation retries were added. The complete native rerun remains pending.
+- Run 39633089724 passed the complete native test on source `86bc895`: host build,
+  config contracts, packaging, authenticated pages/assets, config UTF-8 roundtrip,
+  native application create/edit/delete, unknown-field preservation and account
+  session invalidation. This supersedes the earlier pending/failure entries above.
+- The downloaded CI ZIP checksum matched its SHA256SUMS:
+  `65b2915755a881e824d71de5fc4a159b03e2924e4d4554bd97615e41cc69e87c`.
+  Its 146 entries include all eight React HTML pages and tray assets. No old UI,
+  translation catalog paths, credentials, private keys or host-state files were
+  found by the package-path audit. `releaseReady` remains false; the artifact has
+  not been deployed over the user's installation.
+- Additional browser checks verify device connection hooks/elevation, explicit
+  recovery from log read errors, denied clipboard feedback, keyboard dialog close/
+  focus restoration and Portuguese mobile navigation labels. These do not replace
+  a comprehensive assistive-technology audit or actual device testing.
 - Standalone native clock regression passed 19 assertions with UBSan. This is not
   a Windows host compilation or native web integration result.
 - Strict TS and production build passed with generated route chunks.
 - Dev HTTP regression passed for CSS, generated routes and Geist/Mono fonts.
 
-These are not native authentication, live device action or streaming benchmarks.
+Browser mock tests are not native authentication, live device action or streaming
+benchmarks; only the separately identified Windows runner tests exercise the host.
 No user's working host files/services/credentials/pairing were changed in this work.
 
 ## Visual reference

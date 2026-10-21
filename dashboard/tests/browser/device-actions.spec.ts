@@ -1,6 +1,32 @@
 import { expect, test } from "@playwright/test"
 import { mockHost } from "../fixtures/mock-api"
 
+test("connection hooks and elevation are saved only for the edited device", async ({
+	page
+}) => {
+	const host = await mockHost(page)
+	await page.goto("/pin")
+	await page.getByRole("button", { name: "Editar permissões", exact: true }).click()
+	const connect = page
+		.locator("section")
+		.filter({ has: page.getByRole("heading", { name: "Ao conectar", exact: true }) })
+	await connect.getByRole("button", { name: "Adicionar etapa", exact: true }).click()
+	await page.locator("#client-do-0-cmd").fill("echo conectado ç")
+	await connect
+		.getByRole("switch", { name: "Executar com privilégios elevados", exact: true })
+		.click()
+	expect(host.clients[0]?.do).toEqual([])
+	await page.getByRole("button", { name: "Salvar dispositivo", exact: true }).click()
+	await expect(
+		page.getByRole("button", { name: "Editar permissões", exact: true })
+	).toBeVisible()
+	expect(host.clients[0]?.do).toEqual([{ cmd: "echo conectado ç", elevated: true }])
+	expect(host.clients[0]?.undo).toEqual([])
+	expect(
+		host.calls.filter((call) => call.path === "clients/update").map((call) => call.body.uuid)
+	).toEqual(["device-1"])
+})
+
 test("unpair-all requires confirmation and does not run after cancellation", async ({
 	page
 }) => {

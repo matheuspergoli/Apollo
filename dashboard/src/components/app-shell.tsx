@@ -108,7 +108,7 @@ export function AppShell() {
 			<SidebarInset>
 				<header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-3 border-b bg-background/95 px-4 backdrop-blur-sm md:px-8">
 					<div className="flex min-w-0 items-center gap-3">
-						<SidebarTrigger aria-label="Abrir navegação" />
+						<SidebarTrigger />
 						<Separator orientation="vertical" className="h-4" />
 						<span className="truncate text-sm">{title}</span>
 						<Badge variant="outline" className="hidden sm:inline-flex">
