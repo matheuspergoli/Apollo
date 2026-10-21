@@ -2,7 +2,7 @@
 
 Full React migration **in progress**, not yet a replacement release. All eight
 host page entries have React implementations. The remaining gates—action-flow
-tests, English/pt-BR localization, native integration and legacy removal—are
+tests, native integration and release validation—are
 tracked in [MIGRATION.md](MIGRATION.md). No complete test ZIP is claimed yet.
 
 ## Stack
@@ -17,7 +17,8 @@ Use official shadcn base-lyra/Base UI sources for primitives. Use the regular
 Select, not NativeSelect. Own components compose Apollo behavior/screens rather
 than recreating controls. Tailwind utilities and semantic tokens replace bespoke
 visual classes; .dark is the standard theme selector. No Vue/Bootstrap runtime
-exists in this package. Only English and Brazilian Portuguese are in UI scope.
+exists in this package. The interface is fixed to pt-BR: no i18n dependencies,
+providers, catalogs, language selector, language endpoint or opaque locale adapter.
 
 The user's ~/monorepo was read for Biome, shadcn, theme, TS and Router/Query
 conventions. No private auth, tRPC, infrastructure, DB or environment was copied.
@@ -66,7 +67,7 @@ revisit it only for concrete deployment/SSR/server-function requirements.
 - main.tsx: mount/providers; router.tsx: router factory.
 - routes/: small typed file routes/search/boundaries.
 - pages/: screens and request/user-action orchestration.
-- features/settings/: 104 baseline fields, defaults, validators and structured
+- features/settings/: 102 active backend fields, defaults, validators and structured
   command/display editors; apps/devices: payload and protocol handling.
 - lib/: HTTP/cache/download boundaries; components/: Apollo composition.
 - components/ui/: official shadcn source, cva/cn variants and recorded adaptations.
@@ -74,6 +75,8 @@ revisit it only for concrete deployment/SSR/server-function requirements.
 
 Config POST rewrites the file. Preserve unknown fields/structures, strip response
 metadata/defaults, validate first and compare a fresh snapshot before saving.
+The removed locale key is rejected by the server and excluded from new saves,
+not preserved as a compatibility option. Other unrelated values remain intact.
 This is a best-effort conflict check, not atomic CAS: the backend has no revision
 contract. Saving and restarting are separate. Destructive/session actions require
 confirmation; connection loss is not evidence a restart/quit succeeded. Logs can
@@ -92,6 +95,9 @@ under SUNSHINE_ASSETS_DIR/assets/web, not the user's installation. Source maps
 are opt-in with APOLLO_UI_SOURCEMAP=true. The host fixture serves the actual HTML
 files, not a catch-all that could conceal missing host entries.
 
-The old hash-preview packager rejects this new full-migration output. Do not
+The old hash-preview source and packager were removed. CMake builds only the
+React package and replaces its managed staging output rather than merging old
+catalogs/chunks into it. Native tray/favicon assets were preserved unchanged.
+Do not
 deploy over the working host, remove rollback data or release a "complete" ZIP
 until the migration matrix and native integration gates are satisfied.

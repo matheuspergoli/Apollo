@@ -16,7 +16,7 @@ export type SettingField = {
 export type SettingSection = { id: string; title: string; fields: SettingField[] }
 export const sections = extracted as SettingSection[]
 export const fields = sections.flatMap((section) => section.fields)
-const metadata = new Set(["status", "platform", "version", "vdisplayStatus"])
+const excludedKeys = new Set(["status", "platform", "version", "vdisplayStatus", "locale"])
 export const complexKeys = new Set([
 	"global_prep_cmd",
 	"global_state_cmd",
@@ -28,7 +28,9 @@ export type Snapshot = { values: Document; platform: string; version: string }
 export function snapshot(value: unknown): Snapshot {
 	const response = accepted(value)
 	return {
-		values: Object.fromEntries(Object.entries(response).filter(([key]) => !metadata.has(key))),
+		values: Object.fromEntries(
+			Object.entries(response).filter(([key]) => !excludedKeys.has(key))
+		),
 		platform: typeof response.platform === "string" ? response.platform : "",
 		version: typeof response.version === "string" ? response.version : ""
 	}
@@ -108,7 +110,7 @@ export function visibleSections(platform: string) {
 export function serializeSettings(draft: Document): Document {
 	const result = structuredClone(draft)
 	for (const key of Object.keys(result)) {
-		if (metadata.has(key)) {
+		if (excludedKeys.has(key)) {
 			delete result[key]
 			continue
 		}

@@ -61,7 +61,7 @@ function DialogContent({
 						}
 					>
 						<IconX />
-						<span className="sr-only">Close</span>
+						<span className="sr-only">Fechar</span>
 					</DialogPrimitive.Close>
 				)}
 			</DialogPrimitive.Popup>
@@ -96,7 +96,7 @@ function DialogFooter({
 			{children}
 			{showCloseButton && (
 				<DialogPrimitive.Close render={<Button variant="outline" />}>
-					Close
+					Fechar
 				</DialogPrimitive.Close>
 			)}
 		</div>

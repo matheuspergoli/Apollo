@@ -162,10 +162,7 @@ export function SettingControl({
 	platform: string
 }) {
 	const help = `${field.key}-help`
-	let options =
-		field.key === "locale"
-			? field.options?.filter((option) => ["en", "pt_BR"].includes(option.value))
-			: field.options
+	let options = field.options
 	if (platform === "windows" && options) {
 		const allowed = {
 			gamepad: ["auto", "ds4", "x360"],

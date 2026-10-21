@@ -78,7 +78,7 @@ test("unsaved navigation uses shadcn confirmation instead of silently discarding
 	).toHaveLength(0)
 })
 
-test("regular Select changes NVENC settings and only exposes the two supported locale choices", async ({
+test("regular Select changes NVENC settings and the UI remains fixed to pt-BR", async ({
 	page
 }) => {
 	await mockHost(page)
@@ -88,8 +88,7 @@ test("regular Select changes NVENC settings and only exposes the two supported l
 	await page.getByRole("option", { name: "P2", exact: true }).click()
 	await expect(page.locator("#nvenc_preset")).toContainText("P2")
 	await page.getByRole("button", { name: "Geral e automação", exact: true }).click()
-	await page.locator("#locale").click()
-	await expect(page.getByRole("option")).toHaveCount(2)
-	await page.keyboard.press("Escape")
+	await expect(page.locator("#locale")).toHaveCount(0)
+	await expect(page.locator("html")).toHaveAttribute("lang", "pt-BR")
 	await expect(page.locator('[data-slot="native-select"]')).toHaveCount(0)
 })

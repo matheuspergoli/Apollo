@@ -3,6 +3,7 @@ import { RouterProvider } from "@tanstack/react-router"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { ThemeProvider } from "./components/theme-provider"
+import { TooltipProvider } from "./components/ui/tooltip"
 import { createQueryClient } from "./lib/query"
 import { createAppRouter } from "./router"
 import "./styles.css"
@@ -16,7 +17,9 @@ createRoot(rootElement).render(
 	<StrictMode>
 		<ThemeProvider>
 			<QueryClientProvider client={queryClient}>
-				<RouterProvider router={router} />
+				<TooltipProvider>
+					<RouterProvider router={router} />
+				</TooltipProvider>
 			</QueryClientProvider>
 		</ThemeProvider>
 	</StrictMode>

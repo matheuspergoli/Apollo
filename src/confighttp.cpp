@@ -1010,24 +1010,11 @@ namespace confighttp {
 #endif
     auto vars = config::parse_config(file_handler::read_file(config::sunshine.config_file.c_str()));
     for (auto &[name, value] : vars) {
+      if (name == "locale") {
+        continue;
+      }
       output_tree[name] = value;
     }
-    send_response(response, output_tree);
-  }
-
-  /**
-   * @brief Get the locale setting.
-   * @param response The HTTP response object.
-   * @param request The HTTP request object.
-   *
-   * @api_examples{/api/configLocale| GET| null}
-   */
-  void getLocale(resp_https_t response, req_https_t request) {
-    print_req(request);
-
-    nlohmann::json output_tree;
-    output_tree["status"] = true;
-    output_tree["locale"] = config::sunshine.locale;
     send_response(response, output_tree);
   }
 
@@ -1060,6 +1047,10 @@ namespace confighttp {
       std::stringstream config_stream;
       nlohmann::json output_tree;
       nlohmann::json input_tree = nlohmann::json::parse(ss);
+      if (input_tree.contains("locale")) {
+        bad_request(response, request, "A interface usa apenas pt-BR; a opcao locale foi removida.");
+        return;
+      }
       for (const auto &[k, v] : input_tree.items()) {
         if (v.is_null() || (v.is_string() && v.get<std::string>().empty())) {
           continue;
@@ -1542,7 +1533,6 @@ namespace confighttp {
     server.resource["^/api/logs$"]["GET"] = getLogs;
     server.resource["^/api/config$"]["GET"] = getConfig;
     server.resource["^/api/config$"]["POST"] = saveConfig;
-    server.resource["^/api/configLocale$"]["GET"] = getLocale;
     server.resource["^/api/restart$"]["POST"] = restart;
     server.resource["^/api/quit$"]["POST"] = quit;
     server.resource["^/api/reset-display-device-persistence$"]["POST"] = resetDisplayDevicePersistence;

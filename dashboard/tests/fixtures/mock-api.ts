@@ -60,7 +60,6 @@ export async function mockHost(page: Page): Promise<MockHost> {
 			parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Item) : {}
 		state.calls.push({ path, method, body })
 		const json = (data: unknown) => route.fulfill({ json: data })
-		if (path === "configLocale") return json({ locale: "pt_BR" })
 		if (path === "login") {
 			state.authorized = true
 			return route.fulfill({ status: 200 })

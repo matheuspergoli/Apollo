@@ -162,7 +162,7 @@ function Pairing({ refresh }: { refresh: () => Promise<unknown> }) {
 										Quatro dígitos exibidos pelo Artemis ao solicitar o pareamento.
 									</FieldDescription>
 								</Field>
-								<Button disabled={pair.isPending}>
+								<Button type="submit" disabled={pair.isPending}>
 									{pair.isPending ? "Vinculando…" : "Confirmar PIN"}
 								</Button>
 								<RequestError error={pair.error} />
@@ -289,11 +289,12 @@ function DeviceEditor({
 		}
 	})
 	const mask = Number(draft.perm) || 0
+	const changed = comparable(draft) !== comparable(deviceDraft(original))
 	const set = (key: string, value: unknown) =>
 		setDraft((previous) => ({ ...previous, [key]: value }))
 	return (
 		<>
-			<UnsavedChanges dirty={comparable(draft) !== comparable(deviceDraft(original))} />
+			<UnsavedChanges dirty={changed} pending={mutation.isPending} />
 			<div className="flex flex-wrap justify-between gap-3">
 				<div>
 					<p className="text-muted-foreground text-xs uppercase tracking-widest">
@@ -303,9 +304,18 @@ function DeviceEditor({
 						{text(original.name) || "Dispositivo"}
 					</h1>
 				</div>
-				<Button variant="outline" onClick={onClose} disabled={mutation.isPending}>
-					Cancelar edição
-				</Button>
+				{changed ? (
+					<ConfirmedAction
+						label="Cancelar edição"
+						description="Descarta os ajustes de dispositivo que ainda não foram salvos. As permissões no host permanecem intactas."
+						disabled={mutation.isPending}
+						execute={async () => onClose()}
+					/>
+				) : (
+					<Button variant="outline" onClick={onClose} disabled={mutation.isPending}>
+						Cancelar edição
+					</Button>
+				)}
 			</div>
 			<RequestError error={mutation.error} />
 			<form

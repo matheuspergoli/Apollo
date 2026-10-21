@@ -1,7 +1,9 @@
-import { cp, mkdir, readFile, writeFile } from "node:fs/promises"
+import { cp, lstat, mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { resolve } from "node:path"
+import { fileURLToPath } from "node:url"
 
-const dist = resolve("dist")
+const packageRoot = fileURLToPath(new URL("../", import.meta.url))
+const dist = resolve(packageRoot, "dist")
 const html = await readFile(resolve(dist, "index.html"), "utf8")
 for (const page of [
 	"apps",
@@ -39,10 +41,30 @@ await writeFile(
 )
 
 if (process.argv.includes("--host")) {
-	const destination = process.env.SUNSHINE_ASSETS_DIR
-		? resolve(process.env.SUNSHINE_ASSETS_DIR, "assets/web")
-		: resolve("../build/assets/web")
-	await mkdir(destination, { recursive: true })
+	const source = resolve(packageRoot, "..")
+	const defaultBuild = resolve(source, "build")
+	const build = process.env.SUNSHINE_ASSETS_DIR
+		? resolve(process.env.SUNSHINE_ASSETS_DIR)
+		: defaultBuild
+	const normalize = (value) =>
+		process.platform === "win32" ? value.replaceAll("\\", "/").toLowerCase() : value
+	if (build !== defaultBuild) {
+		const cache = await readFile(resolve(build, "CMakeCache.txt"), "utf8")
+		const owner = cache.match(/^CMAKE_HOME_DIRECTORY:INTERNAL=(.+)$/m)?.[1].trim()
+		if (!owner || normalize(owner) !== normalize(source))
+			throw new Error("O destino não é um diretório CMake deste checkout.")
+	}
+	for (const path of [build, resolve(build, "assets"), resolve(build, "assets/web")]) {
+		try {
+			if ((await lstat(path)).isSymbolicLink())
+				throw new Error("O destino de assets não pode ser um link simbólico.")
+		} catch (error) {
+			if (error.code !== "ENOENT") throw error
+		}
+	}
+	const destination = resolve(build, "assets/web")
+	await mkdir(resolve(build, "assets"), { recursive: true })
+	await rm(destination, { recursive: true, force: true })
 	await cp(dist, destination, { recursive: true })
 	console.log(`Apollo UI assets staged: ${destination}`)
 }

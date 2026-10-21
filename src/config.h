@@ -261,7 +261,6 @@ namespace config {
     bool enable_pairing;
     bool enable_discovery;
     bool envvar_compatibility_mode;
-    std::string locale;
     int min_log_level;
     std::bitset<flag::FLAG_SIZE> flags;
     std::string credentials_file;

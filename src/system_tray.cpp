@@ -114,7 +114,6 @@ namespace system_tray {
     .tooltip = PROJECT_NAME,
     .menu =
       (struct tray_menu[]) {
-        // todo - use boost/locale to translate menu strings
         { .text = "Open Apollo", .cb = tray_open_ui_cb },
         { .text = "-" },
         // { .text = "-" },

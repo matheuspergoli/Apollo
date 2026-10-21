@@ -100,7 +100,7 @@ function AppEditor({
 	]
 	return (
 		<>
-			<UnsavedChanges dirty={changed} />
+			<UnsavedChanges dirty={changed} pending={mutation.isPending} />
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
 					<p className="text-muted-foreground text-xs uppercase tracking-widest">
@@ -110,9 +110,18 @@ function AppEditor({
 						{text(original.uuid) ? text(draft.name) || "Editar aplicativo" : "Novo aplicativo"}
 					</h1>
 				</div>
-				<Button variant="outline" onClick={onClose} disabled={mutation.isPending}>
-					Cancelar edição
-				</Button>
+				{changed ? (
+					<ConfirmedAction
+						label="Cancelar edição"
+						description="Descarta as alterações deste aplicativo que ainda não foram salvas. O arquivo no host permanece intacto."
+						disabled={mutation.isPending}
+						execute={async () => onClose()}
+					/>
+				) : (
+					<Button variant="outline" onClick={onClose} disabled={mutation.isPending}>
+						Cancelar edição
+					</Button>
+				)}
 			</div>
 			<RequestError error={mutation.error} />
 			<form

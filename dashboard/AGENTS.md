@@ -4,8 +4,10 @@
 - Use React/TypeScript, TanStack Router/Query, Tailwind utilities and semantic shadcn tokens.
 - Use TanStack Router file-based routes and the official Vite plugin/code splitter.
   Do not maintain a manual createRoute/lazyRouteComponent tree or hand-edit generated routes.
-- Use the regular shadcn Select, not NativeSelect. UI language scope is English and
-  Brazilian Portuguese only; preserve old host locale values until explicitly changed.
+- Use the regular shadcn Select, not NativeSelect. The interface is fixed pt-BR.
+  Do not add i18n libraries, providers, catalogs, language selectors, legacy language
+  endpoints or opaque locale compatibility. The removed locale option must not be
+  returned to the UI or persisted by a new config save. Never edit the active host autonomously.
 - Before implementing a UI primitive, check the configured official shadcn registry.
   Use its source for controls, forms, dialogs, alerts, menus, tables and navigation
   wherever appropriate. Do not recreate an available primitive or wrap every primitive

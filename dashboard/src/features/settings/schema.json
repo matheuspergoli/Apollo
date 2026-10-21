@@ -4,102 +4,6 @@
 		"title": "Geral e automação",
 		"fields": [
 			{
-				"key": "locale",
-				"defaultValue": "en",
-				"label": "Linguagem",
-				"description": "A linguagem usada na interface de usuário do Apollo.",
-				"options": [
-					{
-						"value": "bg",
-						"label": "Български (Bulgarian)"
-					},
-					{
-						"value": "cs",
-						"label": "Čeština (Czech)"
-					},
-					{
-						"value": "de",
-						"label": "Deutsch (German)"
-					},
-					{
-						"value": "en",
-						"label": "English"
-					},
-					{
-						"value": "en_GB",
-						"label": "English, UK"
-					},
-					{
-						"value": "en_US",
-						"label": "English, US"
-					},
-					{
-						"value": "es",
-						"label": "Español (Spanish)"
-					},
-					{
-						"value": "fr",
-						"label": "Français (French)"
-					},
-					{
-						"value": "hu",
-						"label": "Magyar (Hungarian)"
-					},
-					{
-						"value": "it",
-						"label": "Italiano (Italian)"
-					},
-					{
-						"value": "ja",
-						"label": "日本語 (Japanese)"
-					},
-					{
-						"value": "ko",
-						"label": "한국어 (Korean)"
-					},
-					{
-						"value": "pl",
-						"label": "Polski (Polish)"
-					},
-					{
-						"value": "pt",
-						"label": "Português (Portuguese)"
-					},
-					{
-						"value": "pt_BR",
-						"label": "Português, Brasileiro (Portuguese, Brazilian)"
-					},
-					{
-						"value": "ru",
-						"label": "Русский (Russian)"
-					},
-					{
-						"value": "sv",
-						"label": "svenska (Swedish)"
-					},
-					{
-						"value": "tr",
-						"label": "Türkçe (Turkish)"
-					},
-					{
-						"value": "uk",
-						"label": "Українська (Ukranian)"
-					},
-					{
-						"value": "vi",
-						"label": "Tiếng Việt (Vietnamese)"
-					},
-					{
-						"value": "zh",
-						"label": "简体中文 (Chinese Simplified)"
-					},
-					{
-						"value": "zh_TW",
-						"label": "繁體中文 (Chinese Traditional)"
-					}
-				]
-			},
-			{
 				"key": "sunshine_name",
 				"defaultValue": "",
 				"label": "Nome Apollo",
@@ -108,28 +12,28 @@
 			{
 				"key": "min_log_level",
 				"defaultValue": 2,
-				"label": "Log Level",
-				"description": "The minimum log level printed to standard out",
+				"label": "Nível do log",
+				"description": "Menor nível de gravidade registrado na saída padrão e no log.",
 				"options": [
 					{
 						"value": "0",
-						"label": "Verbose"
+						"label": "Detalhado"
 					},
 					{
 						"value": "1",
-						"label": "Debug"
+						"label": "Depuração"
 					},
 					{
 						"value": "2",
-						"label": "Info"
+						"label": "Informação"
 					},
 					{
 						"value": "3",
-						"label": "Warning"
+						"label": "Aviso"
 					},
 					{
 						"value": "4",
-						"label": "Error"
+						"label": "Erro"
 					},
 					{
 						"value": "5",
@@ -137,7 +41,7 @@
 					},
 					{
 						"value": "6",
-						"label": "None"
+						"label": "Nenhum"
 					}
 				]
 			},
@@ -150,8 +54,8 @@
 			{
 				"key": "global_state_cmd",
 				"defaultValue": [],
-				"label": "Resume/Pause Commands",
-				"description": "Configure a list of commands to be executed when resuming(first client connects when no clients are connected) or pausing(all clients disconnect) any application. Do commands for resume and Undo command for pause. Please make sure to clean up any side effects of the commands in the preparation undo commands. Please note that pause command will not be executed when the session terminates."
+				"label": "Comandos de retomada e pausa",
+				"description": "Executa os comandos de retomada quando o primeiro cliente conecta e os de pausa quando o último desconecta. Use desfazer para limpar efeitos dos comandos. O comando de pausa não é executado ao encerrar definitivamente a sessão."
 			},
 			{
 				"key": "server_cmd",
@@ -168,8 +72,8 @@
 			{
 				"key": "system_tray",
 				"defaultValue": "enabled",
-				"label": "Enable System Tray",
-				"description": "Whether to show Apollo icon in the system tray"
+				"label": "Mostrar ícone na bandeja",
+				"description": "Exibe o ícone do Apollo na área de notificação do sistema."
 			},
 			{
 				"key": "hide_tray_controls",
@@ -186,8 +90,8 @@
 			{
 				"key": "enable_discovery",
 				"defaultValue": "enabled",
-				"label": "Enable Auto Discovery",
-				"description": "When disabled, you'll need to manually enter host IP on the client to pair."
+				"label": "Descoberta automática do host",
+				"description": "Quando desativada, informe manualmente o IP do computador no Artemis para parear."
 			}
 		]
 	},
@@ -254,8 +158,8 @@
 			{
 				"key": "ds5_inputtino_randomize_mac",
 				"defaultValue": "enabled",
-				"label": "ds5_inputtino_randomize_mac",
-				"description": ""
+				"label": "MAC aleatório para DualSense no Linux",
+				"description": "Usa um endereço MAC aleatório na emulação DualSense do Inputtino. Não se aplica ao driver de controles do Windows."
 			},
 			{
 				"key": "back_button_timeout",
@@ -320,14 +224,14 @@
 			{
 				"key": "forward_rumble",
 				"defaultValue": "enabled",
-				"label": "Forward Rumble Messages",
-				"description": "Forward Rumble Messages to clients"
+				"label": "Encaminhar vibração ao cliente",
+				"description": "Envia ao cliente as mensagens de vibração recebidas dos jogos no host."
 			},
 			{
 				"key": "keybindings",
 				"defaultValue": "[0x10,0xA0,0x11,0xA2,0x12,0xA4]",
-				"label": "keybindings",
-				"description": ""
+				"label": "Mapeamento de teclas",
+				"description": "Lista de pares de códigos origem/destino no formato do host. Mantenha a lista em uma única linha; os códigos podem usar a notação hexadecimal aceita pelo Apollo."
 			}
 		]
 	},
@@ -350,8 +254,8 @@
 			{
 				"key": "stream_audio",
 				"defaultValue": "enabled",
-				"label": "Stream Audio",
-				"description": "Whether to stream audio or not. Disabling this can be useful for streaming headless displays as second monitors."
+				"label": "Transmitir áudio",
+				"description": "Ativa o áudio do stream. Desative ao usar a tela remota como monitor adicional sem áudio."
 			},
 			{
 				"key": "install_steam_audio_drivers",
@@ -392,7 +296,7 @@
 			{
 				"key": "dd_configuration_option",
 				"defaultValue": "disabled",
-				"label": "Device configuration",
+				"label": "Gerenciamento do display",
 				"description": "",
 				"options": [
 					{
@@ -440,8 +344,8 @@
 			{
 				"key": "dd_manual_resolution",
 				"defaultValue": "",
-				"label": "dd_manual_resolution",
-				"description": ""
+				"label": "Resolução manual",
+				"description": "Usada quando a configuração de resolução está em modo manual. Informe largura x altura, como 1920x1080."
 			},
 			{
 				"key": "dd_refresh_rate_option",
@@ -466,8 +370,8 @@
 			{
 				"key": "dd_manual_refresh_rate",
 				"defaultValue": "",
-				"label": "dd_manual_refresh_rate",
-				"description": ""
+				"label": "Frequência manual",
+				"description": "Frequência usada no modo manual, em Hz. O display deve suportar o valor solicitado."
 			},
 			{
 				"key": "dd_hdr_option",
@@ -517,12 +421,6 @@
 				"description": ""
 			},
 			{
-				"key": "dd_wa_hdr_toggle",
-				"defaultValue": "disabled",
-				"label": "dd_wa_hdr_toggle",
-				"description": ""
-			},
-			{
 				"key": "headless_mode",
 				"defaultValue": "disabled",
 				"label": "Modo Discreto",
@@ -543,16 +441,16 @@
 			{
 				"key": "minimum_fps_target",
 				"defaultValue": 0,
-				"label": "Minimum FPS Target",
-				"description": "The lowest effective FPS a stream can reach. Set 0 for automatic.",
+				"label": "FPS mínimo alvo",
+				"description": "Menor frequência efetiva permitida ao stream. Zero deixa o comportamento automático; não é uma medição do FPS do jogo.",
 				"min": 0,
 				"max": 1000
 			},
 			{
 				"key": "isolated_virtual_display_option",
 				"defaultValue": "disabled",
-				"label": "Move the Virtual Display to the bottom right-most corner of the display layout",
-				"description": "This makes the display isolated from all other display and contains mouse movements to the virtual screen. This reorganizes the displays such that the all other displays are to the left of the virtual display."
+				"label": "Isolar posicionamento do display virtual",
+				"description": "Move o display virtual para a extremidade inferior direita e reorganiza os demais à esquerda, limitando a passagem do ponteiro entre eles. Revise o layout dos monitores após o teste."
 			}
 		]
 	},
@@ -738,20 +636,20 @@
 			{
 				"key": "envvar_compatibility_mode",
 				"defaultValue": "disabled",
-				"label": "ENVVAR compatibility mode",
-				"description": "Enable compatibility mode for environment variables. This will modify the behavior of certain environment variables to be more compatible with older tools."
+				"label": "Variáveis de ambiente para ferramentas antigas",
+				"description": "Altera o comportamento de determinadas variáveis de ambiente para scripts e ferramentas antigos. Mantenha desativado se seus comandos atuais não exigirem essa opção."
 			},
 			{
 				"key": "legacy_ordering",
 				"defaultValue": "disabled",
-				"label": "App ordering for legacy clients",
-				"description": "Enable ordering support workaround for legacy clients. Can cause issues with clients or scripts that can't handle UTF8 correctly. Artemis clients support this by default."
+				"label": "Ordenação para clientes antigos",
+				"description": "Ativa o ajuste de ordenação destinado a clientes antigos. Pode afetar ferramentas sem suporte correto a UTF-8. O Artemis já oferece suporte à ordenação."
 			},
 			{
 				"key": "ignore_encoder_probe_failure",
 				"defaultValue": "disabled",
-				"label": "Ignore Encoder Probe Failure",
-				"description": "Allow streaming to continue even if probing for encoders fails. This may result in streaming failure if no encoder is available."
+				"label": "Ignorar falha na detecção do encoder",
+				"description": "Permite continuar a inicialização quando a detecção falha. Isso não cria um encoder disponível e a conexão ainda pode falhar. Use apenas para diagnóstico."
 			},
 			{
 				"key": "hevc_mode",
@@ -976,7 +874,7 @@
 			{
 				"key": "nvenc_intra_refresh",
 				"defaultValue": "disabled",
-				"label": "Intra Refresh",
+				"label": "Atualização intraquadro",
 				"description": "Ativa Intra Refresh para que alguns clientes consigam continuamente renderizar corretamente (por ex. Clientes Xbox)",
 				"options": [
 					{

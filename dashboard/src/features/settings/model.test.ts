@@ -21,9 +21,9 @@ const base = (values: Record<string, unknown> = {}) =>
 	})
 
 describe("configuration migration inventory", () => {
-	it("covers all 104 baseline keys without duplicates across 12 groups", () => {
-		expect(fields).toHaveLength(104)
-		expect(new Set(fields.map((field) => field.key)).size).toBe(104)
+	it("covers all 102 active backend settings without duplicates across 12 groups", () => {
+		expect(fields).toHaveLength(102)
+		expect(new Set(fields.map((field) => field.key)).size).toBe(102)
 		expect(sections).toHaveLength(12)
 		expect(fields.every((field) => field.label && field.key)).toBe(true)
 	})
@@ -46,6 +46,14 @@ describe("configuration migration inventory", () => {
 })
 
 describe("safe full-file save", () => {
+	it("removes unsupported locale instead of retaining opaque compatibility data", () => {
+		expect(
+			visibleSections("windows")
+				.flatMap((section) => section.fields)
+				.some((field) => field.key === "locale")
+		).toBe(false)
+		expect(serializeSettings(draftFrom(base({ locale: "de" })))).not.toHaveProperty("locale")
+	})
 	it("preserves unusual own keys without treating them as object prototypes", () => {
 		const original = snapshot(
 			JSON.parse('{"status":true,"__proto__":"keep","constructor":"also-keep"}')

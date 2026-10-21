@@ -66,6 +66,7 @@ function HostNavigation() {
 								<SidebarMenuButton
 									isActive={path.replace(/\/$/, "") === item.to.replace(/\/$/, "")}
 									render={<Link to={item.to} />}
+									tooltip={item.label}
 									onClick={() => setOpenMobile(false)}
 									className="min-h-10"
 								>
