@@ -59,6 +59,12 @@
   desktop overflow checks passed with simulated APIs. The Windows integration
   script now also exercises real application create/edit/delete and unknown-field
   preservation; this extension is pending its first runner execution.
+- Run 39625317398 compiled and packaged commit `424302b`, but failed at the first
+  authenticated browser page. The harness copied native cookies with split('='),
+  truncating tokens that contain '=' (a character in the native token alphabet).
+  The harness now splits at the first delimiter, verifies authenticated access
+  through the browser context, and retains failure screenshots/HTML/request errors.
+  Application native roundtrips remain unverified until the corrected rerun passes.
 - Standalone native clock regression passed 19 assertions with UBSan. This is not
   a Windows host compilation or native web integration result.
 - Strict TS and production build passed with generated route chunks.

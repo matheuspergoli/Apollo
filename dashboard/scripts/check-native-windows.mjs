@@ -44,6 +44,8 @@ const child = spawn(resolve(home, "sunshine.exe"), [config], {
 child.stdout.pipe(log, { end: false })
 child.stderr.pipe(log, { end: false })
 let browser
+let page
+const browserFailures = []
 
 function http(path, { method = "GET", data, cookie } = {}) {
 	return new Promise((resolveResult, reject) => {
@@ -132,9 +134,31 @@ try {
 
 	browser = await chromium.launch({ headless: true })
 	const context = await browser.newContext({ ignoreHTTPSErrors: true })
-	const [name, value] = cookie.split("=")
+	// Native session tokens may themselves contain '='. Split only at the first one.
+	const separator = cookie.indexOf("=")
+	const name = cookie.slice(0, separator)
+	const value = cookie.slice(separator + 1)
+	assert.equal(`${name}=${value}`, cookie)
 	await context.addCookies([{ name, value, url: base, secure: true, sameSite: "Strict" }])
-	const page = await context.newPage()
+	assert.equal(
+		(await context.request.get(`${base}/api/config`)).status(),
+		200,
+		"Browser context must retain the complete native session token"
+	)
+	page = await context.newPage()
+	page.on("requestfailed", (request) =>
+		browserFailures.push({
+			path: new URL(request.url()).pathname,
+			error: request.failure()?.errorText
+		})
+	)
+	page.on("response", (response) => {
+		if (response.status() >= 400)
+			browserFailures.push({
+				path: new URL(response.url()).pathname,
+				status: response.status()
+			})
+	})
 	const errors = []
 	page.on("pageerror", (error) => errors.push(error.message))
 	for (const [path, heading] of [
@@ -229,6 +253,22 @@ try {
 	console.log(
 		"Native Windows integration passed: authenticated React pages/assets, config file roundtrip, application create/edit/delete and unknown-field preservation, no language endpoint/option, UTF-8 credentials, session invalidation."
 	)
+} catch (error) {
+	await writeFile(
+		"native-browser-diagnostics.json",
+		JSON.stringify(
+			{ url: page?.url(), failures: browserFailures, error: String(error) },
+			null,
+			2
+		)
+	)
+	if (page) {
+		await page
+			.screenshot({ path: "native-browser-failure.png", fullPage: true })
+			.catch(() => {})
+		await writeFile("native-browser-failure.html", await page.content().catch(() => ""))
+	}
+	throw error
 } finally {
 	await browser?.close()
 	if (child.exitCode === null) child.kill()

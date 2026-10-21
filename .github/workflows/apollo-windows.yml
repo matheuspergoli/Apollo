@@ -93,5 +93,8 @@ jobs:
             build-windows/CMakeFiles/CMakeConfigureLog.yaml
             build-windows/CMakeCache.txt
             dashboard/native-test.log
+            dashboard/native-browser-diagnostics.json
+            dashboard/native-browser-failure.png
+            dashboard/native-browser-failure.html
           if-no-files-found: ignore
           retention-days: 7
