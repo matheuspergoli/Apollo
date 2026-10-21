@@ -24,7 +24,7 @@
   inert old UI-only HDR toggle was retired in favor of the already supported HDR
   toggle-delay field. The schema now has 102 real native settings in 12 groups.
   The one-time multilingual extraction tool and its old sources are gone.
-- 32 unit tests passed: single-language source/dependency guards, API/cache, settings preservation/defaults/validation/
+- 33 unit tests passed: single-language source/dependency guards, API/cache, settings preservation/defaults/validation/
   fingerprints, app payloads/exports, device permission/URL handling.
 - 51 Chromium tests with simulated APIs passed: access cases, all eight actual
   emitted HTML entries/reload, sidebar/search parameters, config saves preserving
@@ -65,6 +65,13 @@
   The harness now splits at the first delimiter, verifies authenticated access
   through the browser context, and retains failure screenshots/HTML/request errors.
   Application native roundtrips remain unverified until the corrected rerun passes.
+- Run 39627489597 passed authenticated pages and config writes after the cookie
+  fix, then timed out during native application creation. Browser evidence shows
+  the 10-second API timeout, not a confirmed rejection. Debug-level native runner
+  logs and save-stage markers were added to locate the blocked/slow phase. The UI
+  now warns that a timed-out write may have applied and must be checked before
+  repetition; a unit regression verifies it is sent only once. No timeout increase
+  or automatic write retry was introduced.
 - Standalone native clock regression passed 19 assertions with UBSan. This is not
   a Windows host compilation or native web integration result.
 - Strict TS and production build passed with generated route chunks.

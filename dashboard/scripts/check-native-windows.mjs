@@ -32,7 +32,7 @@ const config = resolve(home, "config/sunshine.conf")
 await mkdir(dirname(config), { recursive: true })
 await writeFile(
 	config,
-	"port = 50989\nsunshine_name = CI Apollo\nsystem_tray = disabled\nenable_discovery = disabled\nupnp = disabled\norigin_web_ui_allowed = pc\nheadless_mode = disabled\nignore_encoder_probe_failure = enabled\nmin_log_level = 4\nnvenc_realtime_hags = disabled\nnvenc_latency_over_power = disabled\nnvenc_opengl_vulkan_on_dxgi = disabled\n"
+	"port = 50989\nsunshine_name = CI Apollo\nsystem_tray = disabled\nenable_discovery = disabled\nupnp = disabled\norigin_web_ui_allowed = pc\nheadless_mode = disabled\nignore_encoder_probe_failure = enabled\nmin_log_level = 0\nnvenc_realtime_hags = disabled\nnvenc_latency_over_power = disabled\nnvenc_opengl_vulkan_on_dxgi = disabled\n"
 )
 const base = "https://127.0.0.1:50990"
 const log = createWriteStream(resolve(process.cwd(), "native-test.log"))

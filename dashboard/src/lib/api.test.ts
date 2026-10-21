@@ -51,6 +51,12 @@ describe("host API boundary", () => {
 			name: "AbortError"
 		})
 	})
+	it("does not recommend repeating a write whose outcome is unknown after timeout", async () => {
+		const fetcher = vi.fn().mockRejectedValue(new DOMException("timeout", "TimeoutError"))
+		vi.stubGlobal("fetch", fetcher)
+		await expect(post("apps", { name: "Teste" })).rejects.toThrow("Ela pode ter sido aplicada")
+		expect(fetcher).toHaveBeenCalledTimes(1)
+	})
 })
 
 describe("safe configuration cache", () => {

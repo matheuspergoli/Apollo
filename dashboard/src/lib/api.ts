@@ -33,7 +33,11 @@ export async function request(
 		return json === "text" ? await response.text() : json ? await response.json() : undefined
 	} catch (error) {
 		if (error instanceof DOMException && error.name === "TimeoutError")
-			throw new Error("O host demorou para responder. Tente novamente.")
+			throw new Error(
+				options.method === "POST"
+					? "O host não confirmou a operação dentro do prazo. Ela pode ter sido aplicada; verifique o estado no host antes de repetir."
+					: "O host demorou para responder. Tente novamente."
+			)
 		if (error instanceof TypeError)
 			throw new Error("Não foi possível conectar ao Apollo. Verifique se o host está aberto.")
 		if (error instanceof SyntaxError)

@@ -646,11 +646,14 @@ namespace confighttp {
       nlohmann::json fileTree = nlohmann::json::parse(content);
 
       // Migrate/merge the new app into the file tree.
+      BOOST_LOG(debug) << "SaveApp: merging application entry"sv;
       proc::migrate_apps(&fileTree, &inputTree);
 
       // Write the updated file tree back to disk.
       file_handler::write_file(config::stream.file_apps.c_str(), fileTree.dump(4));
+      BOOST_LOG(debug) << "SaveApp: application file written; refreshing runtime library"sv;
       proc::refresh(config::stream.file_apps);
+      BOOST_LOG(debug) << "SaveApp: runtime library refreshed"sv;
 
       // Prepare and send the output response.
       nlohmann::json outputTree;
