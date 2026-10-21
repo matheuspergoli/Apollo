@@ -81,7 +81,12 @@ function http(path, { method = "GET", data, cookie } = {}) {
 				})
 			}
 		)
-		request.setTimeout(3000, () => request.destroy(new Error("Native request timeout")))
+		const libraryWrite =
+			method === "POST" &&
+			["/api/apps", "/api/apps/reorder", "/api/apps/delete"].includes(path)
+		request.setTimeout(libraryWrite ? 30_000 : 3000, () =>
+			request.destroy(new Error("Native request timeout"))
+		)
 		request.on("error", reject)
 		request.end(body)
 	})

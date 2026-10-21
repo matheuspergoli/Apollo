@@ -15,7 +15,11 @@ export async function request(
 	json: boolean | "text" = true
 ): Promise<unknown> {
 	try {
-		const timeout = AbortSignal.timeout(10_000)
+		// These writes refresh the native library and may retry virtual-display detection.
+		// The isolated Windows run measured 11.4s without that driver; never retry writes.
+		const libraryWrite =
+			options.method === "POST" && ["apps", "apps/reorder", "apps/delete"].includes(path)
+		const timeout = AbortSignal.timeout(libraryWrite ? 30_000 : 10_000)
 		const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout
 		const response = await fetch(`/api/${path}`, {
 			...options,

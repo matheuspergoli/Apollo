@@ -1,9 +1,27 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { ApiError, parseConfig, post, request } from "./api"
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+	vi.unstubAllGlobals()
+	vi.restoreAllMocks()
+})
 
 describe("host API boundary", () => {
+	it("allows bounded native library refresh time without extending unrelated requests", async () => {
+		const timeout = vi.spyOn(AbortSignal, "timeout")
+		vi.stubGlobal(
+			"fetch",
+			vi.fn().mockImplementation(() => Promise.resolve(new Response('{"status":true}')))
+		)
+		for (const path of ["apps", "apps/reorder", "apps/delete"]) {
+			await post(path, {})
+			expect(timeout).toHaveBeenLastCalledWith(30_000)
+		}
+		await request("apps")
+		expect(timeout).toHaveBeenLastCalledWith(10_000)
+		await post("restart", {}, false)
+		expect(timeout).toHaveBeenLastCalledWith(10_000)
+	})
 	it("uses same-origin credentials, explicit JSON and no-store", async () => {
 		const fetcher = vi.fn().mockResolvedValue(new Response(null, { status: 200 }))
 		vi.stubGlobal("fetch", fetcher)
