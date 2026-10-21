@@ -1,9 +1,14 @@
 import { expect, test } from "@playwright/test"
 import { mockHost } from "../fixtures/mock-api"
 
-for (const width of [390, 1280]) {
-	test(`host pages and editors fit ${width}px without runtime errors`, async ({ page }) => {
+for (const { width, theme } of [390, 1280].flatMap((width) =>
+	["light", "dark"].map((theme) => ({ width, theme }))
+)) {
+	test(`host pages and editors fit ${width}px in ${theme} theme without runtime errors`, async ({
+		page
+	}) => {
 		await mockHost(page)
+		await page.addInitScript((theme) => localStorage.setItem("theme", theme), theme)
 		await page.setViewportSize({ width, height: 844 })
 		const errors: string[] = []
 		page.on("pageerror", (error) => errors.push(error.message))
@@ -14,6 +19,8 @@ for (const width of [390, 1280]) {
 				.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
 				.toBe(true)
 			await expect(page.locator("html")).toHaveAttribute("lang", "pt-BR")
+			if (theme === "dark") await expect(page.locator("html")).toHaveClass(/dark/)
+			else await expect(page.locator("html")).not.toHaveClass(/dark/)
 		}
 		await page.goto("/apps")
 		await page.getByRole("button", { name: "Editar", exact: true }).click()

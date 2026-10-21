@@ -32,7 +32,9 @@ await writeFile(
 				"/welcome",
 				"/troubleshooting"
 			],
-			mode: "full-migration-in-progress",
+			mode: "react-dashboard",
+			language: "pt-BR",
+			validation: "candidate",
 			releaseReady: false
 		},
 		null,

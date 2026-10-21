@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { RequestError } from "@/components/request-error"
 import { Button } from "@/components/ui/button"
 import {
@@ -72,6 +72,8 @@ export function CoverPicker({
 	onChange: (path: string) => void
 }) {
 	const [open, setOpen] = useState(false)
+	const fileInput = useRef<HTMLInputElement>(null)
+	const [fileName, setFileName] = useState("")
 	const search = useMutation({ mutationFn: () => findCovers(name) })
 	const upload = useMutation({
 		mutationFn: async (cover: Cover) =>
@@ -111,16 +113,32 @@ export function CoverPicker({
 				>
 					{search.isPending ? "Buscando…" : "Buscar capas online"}
 				</Button>
+				<Button
+					type="button"
+					variant="outline"
+					disabled={fileUpload.isPending}
+					onClick={() => fileInput.current?.click()}
+				>
+					{fileUpload.isPending ? "Enviando capa…" : "Selecionar capa PNG"}
+				</Button>
+				<span className="self-center text-muted-foreground text-xs">
+					{fileName || "Nenhum arquivo selecionado"}
+				</span>
 				<Input
+					ref={fileInput}
 					type="file"
 					accept="image/png"
 					aria-label="Enviar capa PNG"
 					disabled={fileUpload.isPending}
 					onChange={(event) => {
 						const file = event.target.files?.[0]
-						if (file) fileUpload.mutate(file)
+						if (file) {
+							setFileName(file.name)
+							fileUpload.mutate(file)
+						}
+						event.target.value = ""
 					}}
-					className="max-w-xs"
+					className="hidden"
 				/>
 			</div>
 			<p className="text-muted-foreground text-xs">

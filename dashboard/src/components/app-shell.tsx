@@ -49,6 +49,7 @@ function HostNavigation() {
 					<SidebarMenuItem>
 						<SidebarMenuButton
 							render={<Link to="/" />}
+							onClick={() => setOpenMobile(false)}
 							className="h-10 font-semibold text-base"
 						>
 							<IconAdjustments />

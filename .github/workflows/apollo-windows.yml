@@ -9,6 +9,7 @@ on:
       - src/**
       - dashboard/**
       - tests/**
+      - tools/release/**
 permissions:
   contents: read
 jobs:
@@ -73,6 +74,10 @@ jobs:
       - name: Install browser for isolated native integration
         working-directory: dashboard
         run: npm exec playwright install -- chromium
+      - name: Audit React package and preserved assets without installation
+        run: |
+          python tools/release/test_audit_dashboard_package.py
+          python tools/release/audit-dashboard-package.py build-windows/cpack_artifacts/Apollo.zip
       - name: Native HTTPS and React integration on the isolated runner
         working-directory: dashboard
         run: node scripts/check-native-windows.mjs ../build-windows/cpack_artifacts/Apollo.zip

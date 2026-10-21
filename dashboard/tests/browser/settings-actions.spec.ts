@@ -1,6 +1,36 @@
 import { expect, test } from "@playwright/test"
 import { mockHost } from "../fixtures/mock-api"
 
+test("rejected config saves keep the draft and expose the error inside the review dialog", async ({
+	page
+}) => {
+	const host = await mockHost(page)
+	let fail = true
+	let attempts = 0
+	await page.route("**/api/config", async (route) => {
+		if (route.request().method() === "POST") {
+			attempts++
+			if (fail) return route.fulfill({ status: 503 })
+		}
+		return route.fallback()
+	})
+	await page.goto("/config")
+	await page.locator("#sunshine_name").fill("Rascunho para salvar")
+	await page.getByRole("button", { name: "Revisar e salvar", exact: true }).click()
+	const dialog = page.getByRole("dialog")
+	await dialog.getByRole("button", { name: "Salvar arquivo", exact: true }).click()
+	await expect(dialog.getByRole("alert")).toContainText("503")
+	expect(attempts).toBe(1)
+	expect(host.config.sunshine_name).toBe("Test host")
+	fail = false
+	await dialog.getByRole("button", { name: "Salvar arquivo", exact: true }).click()
+	await expect(dialog).toBeHidden()
+	await expect(page.getByRole("status")).toContainText("Arquivo salvo")
+	expect(host.config.sunshine_name).toBe("Rascunho para salvar")
+	expect(host.config.future_option).toBe("keep-me")
+	expect(attempts).toBe(2)
+})
+
 test("saving config preserves unknown data and structures without restarting the host", async ({
 	page
 }) => {

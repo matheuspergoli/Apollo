@@ -392,8 +392,8 @@
 			{
 				"key": "dd_wa_hdr_toggle_delay",
 				"defaultValue": 0,
-				"label": "Solução alternativa de alto contraste para HDR",
-				"description": "",
+				"label": "Atraso da correção de cores HDR (ms)",
+				"description": "Atraso em milissegundos da alternância de HDR usada como solução para cores com contraste incorreto. Zero desativa essa correção; não altera o driver instalado.",
 				"min": 0,
 				"max": 3000
 			},
@@ -423,8 +423,8 @@
 			{
 				"key": "headless_mode",
 				"defaultValue": "disabled",
-				"label": "Modo Discreto",
-				"description": "Inicia Apollo no modo discreto. Quando ativado, todos os aplicativos vão iniciar no monitor virtual."
+				"label": "Modo sem monitor físico (headless)",
+				"description": "Inicia os aplicativos em um monitor virtual. Exige que o driver de display virtual esteja instalado e funcional; ativar esta opção não instala o driver."
 			},
 			{
 				"key": "double_refreshrate",
@@ -435,8 +435,8 @@
 			{
 				"key": "max_bitrate",
 				"defaultValue": 0,
-				"label": "Taxa de bits máximo",
-				"description": "A taxa máxima de bits (em Kbps) que Apollo usará para condificar a transmissão. Se for 0, sempre usará a taxa de bits solicitada pelo cliente Artemis/Moonlight."
+				"label": "Taxa de bits máxima",
+				"description": "Limite de taxa de bits em Kbps para codificar o stream. Zero usa a taxa solicitada pelo Artemis/Moonlight; não representa a taxa efetivamente medida na rede."
 			},
 			{
 				"key": "minimum_fps_target",

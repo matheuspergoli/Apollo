@@ -35,11 +35,6 @@ export function AccountPage() {
 		onSuccess: () => {
 			setFields(empty)
 			client.removeQueries()
-			try {
-				localStorage.removeItem("login")
-			} catch {
-				/* Legacy storage can be unavailable. */
-			}
 		}
 	})
 	const labels = {
@@ -51,7 +46,10 @@ export function AccountPage() {
 	}
 	return (
 		<>
-			<UnsavedChanges dirty={Object.values(fields).some(Boolean) && !mutation.isSuccess} />
+			<UnsavedChanges
+				dirty={Object.values(fields).some(Boolean) && !mutation.isSuccess}
+				pending={mutation.isPending}
+			/>
 			<div>
 				<p className="text-muted-foreground text-xs uppercase tracking-widest">
 					Segurança do painel

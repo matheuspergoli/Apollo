@@ -121,7 +121,7 @@ function Editor({ initial }: { initial: Snapshot }) {
 					</AlertDescription>
 				</Alert>
 			)}
-			<RequestError error={error || save.error} />
+			<RequestError error={error || (!review ? save.error : null)} />
 			<div className="relative">
 				<IconSearch className="pointer-events-none absolute top-3 left-3 size-4 text-muted-foreground" />
 				<Input

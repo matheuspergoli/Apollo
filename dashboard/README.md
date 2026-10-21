@@ -1,9 +1,10 @@
 # Apollo dashboard
 
-Full React migration **in progress**, not yet a replacement release. All eight
-host page entries have React implementations. The remaining gates—action-flow
-tests, native integration and release validation—are
-tracked in [MIGRATION.md](MIGRATION.md). No complete test ZIP is claimed yet.
+Apollo's only web implementation is this React package, with all eight host page
+entries and no parallel legacy frontend. It is a validation candidate, not yet a
+hardware-accepted replacement release. Evidence and limitations are tracked in
+[MIGRATION.md](MIGRATION.md); the isolated hardware acceptance procedure is in
+[TESTE-NO-HOST.md](TESTE-NO-HOST.md).
 
 ## Stack
 
