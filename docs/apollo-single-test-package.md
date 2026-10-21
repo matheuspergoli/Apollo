@@ -1,5 +1,10 @@
 # One experimental Apollo package
 
+> Historical delivery record, not the current build or launch procedure. The
+> preview and its packager were removed. Use `dashboard/MIGRATION.md` and
+> `dashboard/TESTE-NO-HOST.md` for the full React candidate. Descriptions below
+> apply only to the earlier package and do not authorize reusing its native binary.
+
 The user requested a single test ZIP and removal of older agent-generated ZIPs
 and executables. Never remove the official installation or unknown downloads.
 Preserve the user's settings, private keys, paired clients and app configuration.

@@ -32,7 +32,7 @@ replaced by that snapshot's value in future diagnostics.
 
 ```
 g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=undefined \
-  -fno-sanitize-recover=all -I . tools/golden/test_clock.cpp \
+  -fno-sanitize-recover=all -I . tools/tests/test_clock.cpp \
   -o /tmp/opencode/apollo-clock-test
 /tmp/opencode/apollo-clock-test
 ```

@@ -1,5 +1,9 @@
 # First Golden Apollo device test
 
+> Historical candidate/control record. Its packaging scripts and launchers were
+> retired; do not follow the commands below for the React candidate. Current
+> validation instructions are in `dashboard/TESTE-NO-HOST.md`.
+
 Status: experimental manual test packages prepared; streaming not yet validated.
 
 ## First local test packages

@@ -1,5 +1,9 @@
 # Golden dashboard — first functional slice
 
+> Historical record of the retired frontend, not current build instructions.
+> The overview tests and preview below were removed. Use `dashboard/MIGRATION.md`
+> and `dashboard/TESTE-NO-HOST.md` for current implementation and validation.
+
 Branch golden/dashboard includes the isolated clock correction commit.
 This is a first implementation, not the completed UI redesign.
 

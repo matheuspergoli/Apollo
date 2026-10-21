@@ -1,9 +1,19 @@
 # API
 
-Sunshine has a RESTful API which can be used to interact with the service.
+Apollo exposes the following native web API contracts.
 
-Unless otherwise specified, authentication is required for all API calls. You can authenticate using
-basic authentication with the admin username and password.
+Authentication uses the session cookie issued by `POST /api/login`, not Basic
+authentication. Browser requests are same-origin HTTPS. `POST /api/password`
+creates initial credentials only when no account exists; later changes require
+the current credentials and invalidate the existing session.
+
+The dashboard is fixed to pt-BR. No language endpoint exists and configuration
+writes containing the removed `locale` key are rejected. Configuration saves
+rewrite the file and do not restart the host; callers must preserve unrelated
+keys. A timed-out write may already have applied: verify before repeating it.
+
+## POST /api/login
+@copydoc confighttp::login()
 
 @htmlonly
 <script src="api.js"></script>
@@ -18,11 +28,23 @@ basic authentication with the admin username and password.
 ## POST /api/apps/close
 @copydoc confighttp::closeApp()
 
-## DELETE /api/apps/{index}
+## POST /api/apps/reorder
+@copydoc confighttp::reorderApps()
+
+## POST /api/apps/launch
+@copydoc confighttp::launchApp()
+
+## POST /api/apps/delete
 @copydoc confighttp::deleteApp()
 
 ## GET /api/clients/list
 @copydoc confighttp::getClients()
+
+## POST /api/clients/update
+@copydoc confighttp::updateClient()
+
+## POST /api/clients/disconnect
+@copydoc confighttp::disconnect()
 
 ## POST /api/clients/unpair
 @copydoc confighttp::unpair()
@@ -32,9 +54,6 @@ basic authentication with the admin username and password.
 
 ## GET /api/config
 @copydoc confighttp::getConfig()
-
-## GET /api/configLocale
-@copydoc confighttp::getLocale()
 
 ## POST /api/config
 @copydoc confighttp::saveConfig()
@@ -51,11 +70,17 @@ basic authentication with the admin username and password.
 ## POST /api/pin
 @copydoc confighttp::savePin()
 
+## POST /api/otp
+@copydoc confighttp::getOTP()
+
 ## POST /api/reset-display-device-persistence
 @copydoc confighttp::resetDisplayDevicePersistence()
 
 ## POST /api/restart
 @copydoc confighttp::restart()
+
+## POST /api/quit
+@copydoc confighttp::quit()
 
 <div class="section_buttons">
 
