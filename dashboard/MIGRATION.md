@@ -28,13 +28,19 @@ Não é uma declaração de perfeição nem de validação no hardware do usuár
 - Windows aprovado em `86bc895` (run 39633089724) e `4b334fc` (run 39639763722):
   compilação, contratos, pacote, HTTPS e assets React autenticados, gravação UTF-8,
   criação/edição/exclusão de aplicativos, campos desconhecidos e invalidação de sessão.
+- O candidato final `b838a8e` também passou no Windows (run 39643282091), incluindo
+  auditoria automatizada do pacote e integração HTTPS/React. O ZIP foi baixado e
+  auditado novamente: 146 entradas, oito páginas e 19 imagens. SHA-256 final:
+  `be2135c924b52c633d49b8ef99ab29907c2b731ce4afa663df20e7ff8f50e55d`.
+  As alterações posteriores em `b156223` corrigem documentação/geração de ícones,
+  sem alterar os fontes ou assets executáveis desse candidato.
 - O ZIP aprovado de `86bc895` foi auditado: oito HTMLs, 19 imagens preservadas,
   nenhum caminho legado ou arquivo privado identificado. SHA-256:
   `65b2915755a881e824d71de5fc4a159b03e2924e4d4554bd97615e41cc69e87c`.
 
-As últimas alterações de fechamento precisam passar no CI do mesmo commit antes
-de o artefato correspondente ser entregue. Não substituir um binário aprovado
-por assets de outro commit. `releaseReady:false` significa candidato aguardando
+O artefato final foi aprovado e preparado separadamente para aceitação manual,
+sem iniciar ou instalar o host. Não substituir o binário aprovado por assets de
+outro commit. `releaseReady:false` significa candidato aguardando
 aceitação no hardware, não existência de um segundo frontend incompleto.
 
 ## O que depende do usuário
