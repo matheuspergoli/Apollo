@@ -1,6 +1,48 @@
 import { expect, test } from "@playwright/test"
 import { mockHost } from "../fixtures/mock-api"
 
+test("unpair-all requires confirmation and does not run after cancellation", async ({
+	page
+}) => {
+	const host = await mockHost(page)
+	host.clients.push({
+		uuid: "device-2",
+		name: "Segundo cliente",
+		perm: 0x03000000,
+		connected: false
+	})
+	await page.goto("/pin")
+	await page.getByRole("button", { name: "Desvincular todos", exact: true }).click()
+	await page
+		.getByRole("alertdialog")
+		.getByRole("button", { name: "Cancelar", exact: true })
+		.click()
+	expect(host.clients).toHaveLength(2)
+	expect(host.calls.some((call) => call.path === "clients/unpair-all")).toBe(false)
+	await page.getByRole("button", { name: "Desvincular todos", exact: true }).click()
+	await page
+		.getByRole("alertdialog")
+		.getByRole("button", { name: "Confirmar", exact: true })
+		.click()
+	await expect(page.getByText("Nenhum dispositivo encontrado", { exact: true })).toBeVisible()
+	expect(host.clients).toHaveLength(0)
+	expect(host.calls.filter((call) => call.path === "clients/unpair-all")).toHaveLength(1)
+})
+
+test("permission changes remain local until explicitly saved", async ({ page }) => {
+	const host = await mockHost(page)
+	await page.goto("/pin")
+	await page.getByRole("button", { name: "Editar permissões", exact: true }).click()
+	await page.getByRole("switch", { name: "Teclado", exact: true }).click()
+	await expect(page.getByRole("switch", { name: "Teclado", exact: true })).toBeChecked()
+	expect(host.clients[0]?.perm).toBe(0x03000000)
+	await page.getByRole("button", { name: "Salvar dispositivo", exact: true }).click()
+	await expect(
+		page.getByRole("button", { name: "Editar permissões", exact: true })
+	).toBeVisible()
+	expect(host.clients[0]?.perm).toBe(0x03001000)
+})
+
 test("invalid display mode blocks device writes and retains the entered value", async ({
 	page
 }) => {

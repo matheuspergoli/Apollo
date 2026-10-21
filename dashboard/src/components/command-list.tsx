@@ -1,5 +1,5 @@
 import { IconArrowDown, IconArrowUp, IconPlus, IconTrash } from "@tabler/icons-react"
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -8,6 +8,38 @@ import { Textarea } from "@/components/ui/textarea"
 import { bool, type Document, object, text } from "@/lib/documents"
 
 type Column = { key: string; label: string }
+function InvalidCommands({
+	value,
+	onChange
+}: {
+	value: unknown
+	onChange: (value: Document[]) => void
+}) {
+	const [raw, setRaw] = useState(() =>
+		typeof value === "string" ? value : (JSON.stringify(value) ?? "")
+	)
+	return (
+		<div className="space-y-3">
+			<p className="text-destructive text-sm">
+				A estrutura existente é inválida. Corrija o JSON antes de salvar; nada foi descartado.
+			</p>
+			<Textarea
+				aria-label="Corrigir JSON"
+				value={raw}
+				onChange={(event) => {
+					setRaw(event.target.value)
+					try {
+						const parsed: unknown = JSON.parse(event.target.value)
+						if (Array.isArray(parsed)) onChange(parsed.map(object))
+					} catch {
+						/* Preserve both the original data and incomplete correction until valid. */
+					}
+				}}
+			/>
+		</div>
+	)
+}
+
 export function CommandList({
 	value,
 	onChange,
@@ -25,27 +57,11 @@ export function CommandList({
 	id: string
 }) {
 	const identities = useRef(new WeakMap<object, string>())
-	if (!Array.isArray(value))
-		return (
-			<div className="space-y-3">
-				<p className="text-destructive text-sm">
-					A estrutura existente é inválida. Corrija o JSON antes de salvar; nada foi
-					descartado.
-				</p>
-				<Textarea
-					aria-label="Corrigir JSON"
-					value={typeof value === "string" ? value : JSON.stringify(value)}
-					onChange={(event) => {
-						try {
-							const parsed: unknown = JSON.parse(event.target.value)
-							if (Array.isArray(parsed)) onChange(parsed.map(object))
-						} catch {
-							/* Keep the existing data until valid JSON is entered. */
-						}
-					}}
-				/>
-			</div>
-		)
+	if (
+		!Array.isArray(value) ||
+		value.some((row) => !row || typeof row !== "object" || Array.isArray(row))
+	)
+		return <InvalidCommands value={value} onChange={onChange} />
 	const rows = value.map(object)
 	const keyed = rows.map((row) => {
 		if (!identities.current.has(row)) identities.current.set(row, crypto.randomUUID())

@@ -1,5 +1,5 @@
 import { IconPlus, IconTrash } from "@tabler/icons-react"
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import { CommandList } from "@/components/command-list"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
@@ -24,6 +24,49 @@ import { Textarea } from "@/components/ui/textarea"
 import { bool, type Document, object } from "@/lib/documents"
 import type { SettingField } from "./model"
 
+function validMappings(value: unknown): value is Document {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return false
+	const groups = value as Document
+	return ["mixed", "resolution_only", "refresh_rate_only"].every(
+		(key) =>
+			Array.isArray(groups[key]) &&
+			groups[key].every((row) => row && typeof row === "object" && !Array.isArray(row))
+	)
+}
+
+function MappingRecovery({
+	value,
+	onChange
+}: {
+	value: unknown
+	onChange: (value: Document) => void
+}) {
+	const [raw, setRaw] = useState(() =>
+		typeof value === "string" ? value : (JSON.stringify(value) ?? "")
+	)
+	return (
+		<div className="space-y-3">
+			<p className="text-destructive text-sm">
+				As regras de display existentes são inválidas. Corrija o JSON completo com as listas
+				mixed, resolution_only e refresh_rate_only. Nenhum dado foi descartado.
+			</p>
+			<Textarea
+				aria-label="Corrigir JSON de regras de display"
+				value={raw}
+				onChange={(event) => {
+					setRaw(event.target.value)
+					try {
+						const parsed: unknown = JSON.parse(event.target.value)
+						if (validMappings(parsed)) onChange(parsed)
+					} catch {
+						/* Preserve incomplete correction separately from the original data. */
+					}
+				}}
+			/>
+		</div>
+	)
+}
+
 function DisplayMappings({
 	value,
 	onChange
@@ -32,6 +75,7 @@ function DisplayMappings({
 	onChange: (value: Document) => void
 }) {
 	const identities = useRef(new WeakMap<object, string>())
+	if (!validMappings(value)) return <MappingRecovery value={value} onChange={onChange} />
 	const mappings = object(value)
 	return (
 		<div className="space-y-6">

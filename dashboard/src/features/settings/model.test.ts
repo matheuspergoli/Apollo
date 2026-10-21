@@ -111,6 +111,9 @@ describe("safe full-file save", () => {
 		for (const values of [
 			{ sunshine_name: "name\nport = 1" },
 			{ fallback_mode: "broken" },
+			{ global_prep_cmd: [null] },
+			{ global_state_cmd: ["invalid row"] },
+			{ server_cmd: [[]] },
 			{
 				dd_mode_remapping: {
 					mixed: [{ final_resolution: "invalid" }],

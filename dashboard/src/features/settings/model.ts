@@ -152,8 +152,11 @@ export function serializeSettings(draft: Document): Document {
 						}
 					}
 				}
-			} else if (!Array.isArray(value))
-				throw new Error(`${field.label}: a lista de comandos é inválida.`)
+			} else {
+				if (!Array.isArray(value))
+					throw new Error(`${field.label}: a lista de comandos é inválida.`)
+				for (const row of value) object(row)
+			}
 		}
 		const normalized = result[field.key]
 		if (

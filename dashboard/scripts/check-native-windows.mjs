@@ -154,6 +154,53 @@ try {
 	await page.getByRole("button", { name: "Salvar arquivo", exact: true }).click()
 	await page.getByRole("status").filter({ hasText: "Arquivo salvo" }).waitFor()
 	assert.match(await readFile(config, "utf8"), /sunshine_name = Teste nativo ç/)
+	await page.goto(`${base}/apps`)
+	await page.getByRole("button", { name: "Novo aplicativo", exact: true }).click()
+	await page.locator("#app-name").fill("Aplicativo CI ç")
+	await page.getByRole("button", { name: "Salvar aplicativo", exact: true }).click()
+	await page.getByRole("button", { name: "Excluir Aplicativo CI ç", exact: true }).waitFor()
+	const library = await http("/api/apps", { cookie })
+	assert.equal(library.status, 200)
+	const entry = library.json.apps.find((app) => app.name === "Aplicativo CI ç")
+	assert(entry?.uuid, "Native application creation did not persist a UUID")
+	assert.equal(
+		(
+			await http("/api/apps", {
+				method: "POST",
+				cookie,
+				data: { ...entry, ci_unknown_field: "preserve" }
+			})
+		).json.status,
+		true
+	)
+	await page.reload()
+	await page
+		.locator('[data-slot="card"]')
+		.filter({
+			has: page.getByRole("button", { name: "Excluir Aplicativo CI ç", exact: true })
+		})
+		.getByRole("button", { name: "Editar", exact: true })
+		.click()
+	await page.locator("#app-name").fill("Aplicativo CI editado ç")
+	await page.getByRole("button", { name: "Salvar aplicativo", exact: true }).click()
+	await page
+		.getByRole("button", { name: "Excluir Aplicativo CI editado ç", exact: true })
+		.waitFor()
+	const updatedLibrary = await http("/api/apps", { cookie })
+	const updatedEntry = updatedLibrary.json.apps.find((app) => app.uuid === entry.uuid)
+	assert.equal(updatedEntry?.name, "Aplicativo CI editado ç")
+	assert.equal(updatedEntry?.ci_unknown_field, "preserve")
+	await page
+		.getByRole("button", { name: "Excluir Aplicativo CI editado ç", exact: true })
+		.click()
+	await page
+		.getByRole("alertdialog")
+		.getByRole("button", { name: "Confirmar", exact: true })
+		.click()
+	await page.getByRole("alertdialog").waitFor({ state: "hidden" })
+	assert(
+		!(await http("/api/apps", { cookie })).json.apps.some((app) => app.uuid === entry.uuid)
+	)
 	assert.deepEqual(errors, [])
 
 	const changed = await http("/api/password", {
@@ -180,7 +227,7 @@ try {
 		200
 	)
 	console.log(
-		"Native Windows integration passed: authenticated React pages/assets, config file roundtrip, no language endpoint/option, UTF-8 credentials, session invalidation."
+		"Native Windows integration passed: authenticated React pages/assets, config file roundtrip, application create/edit/delete and unknown-field preservation, no language endpoint/option, UTF-8 credentials, session invalidation."
 	)
 } finally {
 	await browser?.close()
