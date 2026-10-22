@@ -7,20 +7,19 @@ test("partial import preserves unsaved edits in a different section", async ({ p
 	await page.goto("/config")
 	await page.locator("#sunshine_name").fill("Outro rascunho")
 	await page.getByRole("button", { name: "NVIDIA NVENC", exact: true }).click()
-	await page
-		.getByLabel("Arquivo JSON da seção", { exact: true })
-		.setInputFiles({
-			name: "partial.json",
-			mimeType: "application/json",
-			buffer: Buffer.from(
-				JSON.stringify({
-					format: "apollo-settings-section",
-					version: 1,
-					section: "nv",
-					settings: { nvenc_preset: 4 }
-				})
-			)
-		})
+	const sectionFile = page.getByLabel("Arquivo JSON da seção", { exact: true })
+	await sectionFile.setInputFiles({
+		name: "partial.json",
+		mimeType: "application/json",
+		buffer: Buffer.from(
+			JSON.stringify({
+				format: "apollo-settings-section",
+				version: 1,
+				section: "nv",
+				settings: { nvenc_preset: 4 }
+			})
+		)
+	})
 	await page
 		.getByRole("dialog")
 		.getByRole("button", { name: "Aplicar ao rascunho", exact: true })

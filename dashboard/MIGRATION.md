@@ -68,8 +68,13 @@ conta, chave, serviço ou pareamento ativo foi alterado automaticamente.
   Biome, build e integração dev. Templates das 12 seções, ZIP/documentação, erros
   de validação, importação parcial e preservação de rascunhos foram exercitados.
 - O ensaio Windows foi ampliado para importar JSON no rascunho e verificar que
-  só a gravação explícita altera o arquivo nativo. Esse novo ensaio ainda depende
-  do CI do commit correspondente; o pacote anterior não contém estas alterações.
+  só a gravação explícita altera o arquivo nativo. Passou no commit `6a26ceb`, run
+  39719003879, incluindo build e auditoria do ZIP (147 entradas, oito HTMLs,
+  19 imagens). SHA-256: `7b37ef7308349476426aca2934c0aefe187a13064315e9706815b26747a47861`.
+- O pipeline frontend desse commit encontrou apenas formatação não estabilizada
+  em um teste de importação. O teste foi simplificado para uma variável local,
+  sem alterar código executável. Biome check, TypeScript, 49 testes unitários e os
+  três testes de importação passaram novamente; o pipeline frontend será repetido.
 
 ## Limitações conhecidas, não escondidas
 
