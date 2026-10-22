@@ -166,8 +166,13 @@ export function serializeSettings(draft: Document): Document {
 		)
 			delete result[field.key]
 	}
-	if (result.port !== undefined && (Number(result.port) < 1029 || Number(result.port) > 65514))
-		throw new Error("A porta base deve ficar entre 1029 e 65514.")
+	if (
+		result.port !== undefined &&
+		(!Number.isInteger(Number(result.port)) ||
+			Number(result.port) < 1029 ||
+			Number(result.port) > 65514)
+	)
+		throw new Error("A porta base deve ser um número inteiro entre 1029 e 65514.")
 	if (result.fallback_mode && !/^\d+x\d+x\d+$/.test(String(result.fallback_mode)))
 		throw new Error(
 			"O modo fallback deve usar largura x altura x FPS, por exemplo 1920x1080x120."

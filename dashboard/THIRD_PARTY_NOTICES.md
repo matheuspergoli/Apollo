@@ -22,6 +22,9 @@ Tabs orientation variants use Base UI's `data-orientation` attributes and forwar
 the orientation prop; horizontal tab buttons have a bounded height to avoid stretch.
 Section-template ZIPs use fflate 0.8.3 (MIT), loaded on demand for export. Archives
 contain generated default configuration and documentation, not current host state.
+The separate global saved-configuration export also uses fflate and includes only
+known saved settings after explicit privacy confirmation; it is not an encrypted
+backup of accounts, pairing or certificate contents.
 
 Geist/Geist Mono variable font data are Fontsource 5.3.0 packages under OFL-1.1;
 their supported CSS entry points and local font files are used, not a CDN. The

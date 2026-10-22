@@ -102,7 +102,7 @@ describe("safe full-file save", () => {
 		)
 		expect(changedKeys({ port: 49989 }, { port: "49989" })).toEqual([])
 	})
-	it.each([1028, 65515, "not-a-number"])("rejects unsafe port %s", (port) => {
+	it.each([1028, 65515, 50989.5, "not-a-number"])("rejects unsafe port %s", (port) => {
 		const draft = draftFrom(base())
 		draft.port = port
 		expect(() => serializeSettings(draft)).toThrow()

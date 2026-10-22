@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { UnsavedChanges } from "@/components/unsaved-changes"
 import { SettingControl } from "@/features/settings/fields"
+import { GlobalConfigurationControls } from "@/features/settings/global-configuration-controls"
 import {
 	changedKeys,
 	draftFrom,
@@ -146,6 +147,17 @@ function Editor({ initial }: { initial: Snapshot }) {
 				</Alert>
 			)}
 			<RequestError error={error || (!review ? save.error : null)} />
+			<GlobalConfigurationControls
+				platform={initial.platform}
+				currentValues={draft}
+				disabled={save.isPending}
+				onApply={(values) => {
+					setDraft((previous) => ({ ...previous, ...values }))
+					setSaved(false)
+					setError(null)
+					save.reset()
+				}}
+			/>
 			<div className="relative">
 				<IconSearch className="pointer-events-none absolute top-3 left-3 size-4 text-muted-foreground" />
 				<Input

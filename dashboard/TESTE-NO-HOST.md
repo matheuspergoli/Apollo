@@ -54,6 +54,11 @@ reinício não confirma sucesso nem falha e não deve provocar repetição autom
 - [ ] Configuração pode ser revisada e salva, preservando outros valores. Salvar não
   reinicia o host. Recarregue e confira a persistência. Teste mudanças inofensivas
   primeiro, como nome do host; não altere caminhos de credenciais/chaves.
+- [ ] A exportação global de valores salvos exige confirmação e não inclui alterações
+  ainda no rascunho. O template completo usa padrões e é identificado separadamente.
+- [ ] A importação global permite revisar várias seções, cancelar sem mudar nada e
+  aplicar ao rascunho sem gravar. A gravação posterior preserva campos omitidos e
+  opções desconhecidas já existentes. JSON com uma seção inválida é rejeitado inteiro.
 - [ ] Stream no Artemis usa o display correto; áudio, teclado/controle, resolução,
   FPS e HDR desejados funcionam. Verifique as estatísticas no Artemis, não no painel.
 - [ ] Desconectar mantém o pareamento; desvincular exige confirmação e impede nova
@@ -74,3 +79,7 @@ captura da tela e trecho de log revisado ajudam. Nunca envie senhas, cookies,
 certificados privados ou a pasta `config` completa. Para qualidade de streaming,
 registre codec/resolução/FPS/HDR e estatísticas do Artemis; a validação automatizada
 não mede latência física, HDR ou estabilidade do driver no seu hardware.
+
+Para cortes de áudio, anote o horário, se a imagem também travou e se o áudio local
+do PC cortou. O roteiro de investigação está em `docs/audio-dropout-investigation.md`.
+Não é necessário mudar drivers, prioridade ou buffers para testar a nova interface.

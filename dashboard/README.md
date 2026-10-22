@@ -17,6 +17,29 @@ ausentes e outras seções permanecem intactos. Arquivos inválidos são rejeita
 integralmente. Só **Revisar e salvar** grava o arquivo; nada reinicia automaticamente.
 O limite de importação é 256 KiB, UTF-8. Não coloque senhas/chaves privadas no JSON.
 
+## Configuração global
+
+O bloco **Todas as configurações** mantém os controles por seção e acrescenta:
+
+- **Baixar template completo:** padrões dos 102 campos em 12 seções, sem dados do host.
+- **Exportar configurações salvas:** após confirmação de privacidade, lê novamente
+  o arquivo no host. Exporta campos conhecidos, normalizados para JSON, com os
+  padrões dos campos ausentes; não inclui o rascunho não salvo.
+- **Importar configuração completa:** valida o JSON inteiro (até 1 MiB), mostra
+  diferenças por seção e aplica os campos presentes somente após confirmação.
+  Um erro em qualquer seção rejeita tudo. Seções/campos omitidos permanecem intactos.
+
+Cada ZIP contém `configuracao.json`, `LEIA-ME.md` e a documentação das 12 seções.
+O formato global é `apollo-settings`, versão 1, separado do JSON por seção.
+Depois da importação, **Revisar e salvar** continua obrigatório para gravar.
+Não há reinício automático, nem conversão silenciosa de opções entre plataformas.
+
+Isto não é backup da instalação inteira: não inclui biblioteca, pareamentos,
+conta, conteúdo de certificados/chaves, logs ou opções desconhecidas. Caminhos
+e comandos podem conter dados privados. A exportação ocorre localmente, sem
+enviar arquivos a serviços externos; o ZIP não é criptografado. Não compartilhe
+o arquivo sem revisão.
+
 ## Stack e versões
 
 React/DOM 19.3.1, strict TypeScript 7.0.2, Vite 8.3.4/React plugin 6.1.2,

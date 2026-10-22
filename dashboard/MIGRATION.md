@@ -102,3 +102,21 @@ conta, chave, serviço ou pareamento ativo foi alterado automaticamente.
   anterior depende de manter pastas e dados originais separados.
 
 Falhas e correções anteriores estão em [VALIDATION-HISTORY.md](VALIDATION-HISTORY.md).
+
+## Configuração global e áudio
+
+- A camada por seção foi mantida; há agora template completo, exportação explícita
+  dos valores salvos (GET fresco, sem rascunho) e importação global com revisão.
+  São 102 campos conhecidos em 12 seções; não é backup de conta/pareamentos/apps.
+- Os ZIPs incluem JSON e documentação. Validação global é integral: formato/versão,
+  tamanho, profundidade, seções, tipos, limites e chaves inseguras/desconhecidas.
+  Nenhum campo é aplicado se outro for inválido. O salvamento continua separado.
+- O usuário relatou cortes breves de áudio já existentes antes da migração. Não
+  há correlação temporal suficiente com o encoder para atribuir causa. O roteiro
+  `docs/audio-dropout-investigation.md` usa mensagens já existentes e estatísticas
+  do cliente; drivers, buffers, bitrate e prioridades não foram alterados.
+- Rodada local aprovada: 72 testes unitários, 74 testes Chromium, Biome,
+  TypeScript, build e integração dev. A porta também rejeita valores fracionários.
+  O ensaio Windows foi estendido para importar várias seções, gravar explicitamente
+  e baixar/verificar o ZIP com os valores realmente salvos. Essa extensão aguarda
+  aprovação no runner; os pacotes anteriores não incluem os controles globais.

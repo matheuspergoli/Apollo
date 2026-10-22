@@ -206,6 +206,51 @@ try {
 	await page.getByRole("status").filter({ hasText: "Arquivo salvo" }).waitFor()
 	assert.match(await readFile(config, "utf8"), /nvenc_preset = 3/)
 	assert.match(await readFile(config, "utf8"), /sunshine_name = Teste nativo ç/)
+	await page.getByLabel("Arquivo JSON global", { exact: true }).setInputFiles({
+		name: "global-native.json",
+		mimeType: "application/json",
+		buffer: Buffer.from(
+			JSON.stringify({
+				format: "apollo-settings",
+				version: 1,
+				kind: "saved",
+				platform: "windows",
+				sections: { general: { sunshine_name: "Teste global ç" }, nv: { nvenc_preset: 4 } }
+			})
+		)
+	})
+	await page
+		.getByRole("dialog", { name: "Revisar importação global", exact: true })
+		.getByRole("button", { name: "Aplicar tudo ao rascunho", exact: true })
+		.click()
+	assert.match(await readFile(config, "utf8"), /sunshine_name = Teste nativo ç/)
+	await page.getByRole("button", { name: "Revisar e salvar", exact: true }).click()
+	await page.getByRole("button", { name: "Salvar arquivo", exact: true }).click()
+	await page.getByRole("status").filter({ hasText: "Arquivo salvo" }).waitFor()
+	assert.match(await readFile(config, "utf8"), /sunshine_name = Teste global ç/)
+	assert.match(await readFile(config, "utf8"), /nvenc_preset = 4/)
+	assert.match(await readFile(config, "utf8"), /port = 50989/)
+	await page
+		.getByRole("button", { name: "Exportar configurações salvas", exact: true })
+		.click()
+	const globalDownloadReady = page.waitForEvent("download")
+	await page
+		.getByRole("alertdialog")
+		.getByRole("button", { name: "Confirmar", exact: true })
+		.click()
+	const globalDownload = await globalDownloadReady
+	const globalDownloadPath = await globalDownload.path()
+	assert(globalDownloadPath, "Global configuration ZIP was not downloaded")
+	const { unzipSync, strFromU8 } = await import("fflate")
+	const globalFiles = unzipSync(await readFile(globalDownloadPath))
+	const globalConfiguration = JSON.parse(
+		strFromU8(globalFiles["apollo-configuracao/configuracao.json"])
+	)
+	assert.equal(globalConfiguration.kind, "saved")
+	assert.equal(globalConfiguration.sections.general.sunshine_name, "Teste global ç")
+	assert.equal(globalConfiguration.sections.nv.nvenc_preset, 4)
+	assert.equal(globalConfiguration.sections.network.port, 50989)
+	assert.equal(Object.keys(globalConfiguration.sections).length, 12)
 	await page.goto(`${base}/apps`)
 	await page.getByRole("button", { name: "Novo aplicativo", exact: true }).click()
 	await page.locator("#app-name").fill("Aplicativo CI ç")
