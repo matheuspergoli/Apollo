@@ -1,5 +1,21 @@
-import { expect, test } from "@playwright/test"
+import { expect, type Locator, test } from "@playwright/test"
 import { mockHost } from "../fixtures/mock-api"
+
+async function inputOffset(input: Locator) {
+	return input.evaluate(async (element) => {
+		await document.fonts.ready
+		const dialog = element.closest('[role="dialog"]')
+		if (!dialog) throw new Error("Missing pairing dialog")
+		await Promise.all(
+			dialog.getAnimations().map((animation) => animation.finished.catch(() => undefined))
+		)
+		const panel = element.closest('[role="tabpanel"]')
+		if (!panel) throw new Error("Missing pairing panel")
+		// Read both rectangles in the same browser task. The centered dialog can
+		// move while inactive panels are being removed during the tab transition.
+		return element.getBoundingClientRect().top - panel.getBoundingClientRect().top
+	})
+}
 
 for (const { width, theme } of [390, 1280].flatMap((width) =>
 	["light", "dark"].map((theme) => ({ width, theme }))
@@ -13,25 +29,17 @@ for (const { width, theme } of [390, 1280].flatMap((width) =>
 		await page.getByRole("button", { name: "Vincular dispositivo", exact: true }).click()
 		const dialog = page.getByRole("dialog")
 		const list = dialog.getByRole("tablist")
-		const pinBox = await dialog.getByLabel("PIN", { exact: true }).boundingBox()
+		const pinOffset = await inputOffset(dialog.getByLabel("PIN", { exact: true }))
 		expect((await list.boundingBox())?.height).toBeLessThanOrEqual(48)
 		await dialog.getByRole("tab", { name: "Código temporário / QR", exact: true }).click()
-		const phraseBox = await dialog
-			.getByLabel("Frase de pareamento", { exact: true })
-			.boundingBox()
-		if (!pinBox || !phraseBox) throw new Error("Missing pairing input geometry")
-		const panelBox = await dialog
-			.getByRole("tabpanel", { name: "Código temporário / QR", exact: true })
-			.boundingBox()
-		if (!panelBox) throw new Error("Missing pairing panel geometry")
-		const otpOffset = phraseBox.y - panelBox.y
+		const otpOffset = await inputOffset(
+			dialog.getByLabel("Frase de pareamento", { exact: true })
+		)
+		expect(Math.abs(pinOffset - otpOffset)).toBeLessThanOrEqual(1)
 		await dialog.getByRole("tab", { name: "PIN do cliente", exact: true }).click()
-		const pinPanel = await dialog
-			.getByRole("tabpanel", { name: "PIN do cliente", exact: true })
-			.boundingBox()
-		const currentPin = await dialog.getByLabel("PIN", { exact: true }).boundingBox()
-		if (!pinPanel || !currentPin) throw new Error("Missing PIN geometry")
-		expect(Math.abs(currentPin.y - pinPanel.y - otpOffset)).toBeLessThanOrEqual(1)
+		expect(
+			Math.abs((await inputOffset(dialog.getByLabel("PIN", { exact: true }))) - otpOffset)
+		).toBeLessThanOrEqual(1)
 		await dialog.getByRole("tab", { name: "Código temporário / QR", exact: true }).click()
 		await dialog.getByLabel("Frase de pareamento", { exact: true }).fill("teste de layout")
 		await dialog.getByRole("button", { name: "Gerar código temporário", exact: true }).click()
@@ -40,10 +48,12 @@ for (const { width, theme } of [390, 1280].flatMap((width) =>
 		expect((await list.boundingBox())?.height).toBeLessThanOrEqual(48)
 		expect((await qr.boundingBox())?.width).toBeLessThanOrEqual(192)
 		expect((await dialog.boundingBox())?.height).toBeLessThanOrEqual(844 * 0.9 + 2)
-		const qrBox = await qr.boundingBox()
-		const dialogBox = await dialog.boundingBox()
-		if (!qrBox || !dialogBox) throw new Error("Missing pairing geometry")
-		expect(qrBox.y + qrBox.height).toBeLessThanOrEqual(dialogBox.y + dialogBox.height)
+		const qrFits = await qr.evaluate((image) => {
+			const container = image.closest('[role="dialog"]')
+			if (!container) throw new Error("Missing pairing dialog")
+			return image.getBoundingClientRect().bottom <= container.getBoundingClientRect().bottom
+		})
+		expect(qrFits).toBe(true)
 		expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
 			true
 		)

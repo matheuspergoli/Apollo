@@ -118,5 +118,12 @@ Falhas e correções anteriores estão em [VALIDATION-HISTORY.md](VALIDATION-HIS
 - Rodada local aprovada: 72 testes unitários, 74 testes Chromium, Biome,
   TypeScript, build e integração dev. A porta também rejeita valores fracionários.
   O ensaio Windows foi estendido para importar várias seções, gravar explicitamente
-  e baixar/verificar o ZIP com os valores realmente salvos. Essa extensão aguarda
-  aprovação no runner; os pacotes anteriores não incluem os controles globais.
+  e baixar/verificar o ZIP com os valores realmente salvos. Passou no commit
+  `fea1dd3`, run 39842119992, com auditoria do pacote (148 entradas, oito HTMLs,
+  19 imagens). SHA-256: `cc59b0929794c5956741b343ad03a5238bb712d725e07ebd432ae6777ea397ac`.
+- O frontend desse commit passou em 73 de 74 testes; a falha restante mediu os
+  retângulos do campo e do painel em frames distintos durante a recentralização
+  do diálogo. O teste agora aguarda fontes/animação e mede ambos na mesma tarefa
+  do navegador, mantendo a tolerância de 1 px. Quarenta execuções repetidas passaram
+  sem retries. Essa correção altera somente teste/documentação, não os assets
+  executáveis do candidato; o CI frontend será repetido antes da entrega.
