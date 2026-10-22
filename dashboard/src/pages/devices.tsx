@@ -138,9 +138,9 @@ function Pairing({ refresh }: { refresh: () => Promise<unknown> }) {
 							<TabsTrigger value="pin">PIN do cliente</TabsTrigger>
 							<TabsTrigger value="otp">Código temporário / QR</TabsTrigger>
 						</TabsList>
-						<TabsContent value="pin">
+						<TabsContent value="pin" className="pt-3">
 							<form
-								className="space-y-4 pt-4"
+								className="space-y-3"
 								onSubmit={(event) => {
 									event.preventDefault()
 									if (!pair.isPending) pair.mutate()

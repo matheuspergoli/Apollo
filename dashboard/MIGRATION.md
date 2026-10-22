@@ -75,6 +75,18 @@ conta, chave, serviço ou pareamento ativo foi alterado automaticamente.
   em um teste de importação. O teste foi simplificado para uma variável local,
   sem alterar código executável. Biome check, TypeScript, 49 testes unitários e os
   três testes de importação passaram novamente; o pipeline frontend será repetido.
+- O teste manual seguinte mostrou retorno à porta padrão após importar opções de
+  rede. A leitura limitada do arquivo de teste confirmou opções gravadas e ausência
+  de `port`; o parser usa o padrão nesse caso. O restart Windows preserva a linha
+  de comando. Não foi identificada perda geral de persistência nesses dados.
+- As abas PIN/QR agora compartilham padding e espaçamento. Importação e revisão de
+  porta exibem aviso específico; após salvar, o painel informa o novo endereço.
+  Reinício em Configurações usa a mesma semântica de resultado desconhecido de
+  Diagnóstico quando a conexão cai, sem afirmar sucesso/falha ou repetir a ação.
+- Rodada local dessas correções: 53 testes unitários e 69 de navegador passaram,
+  com Biome sem diagnósticos, TypeScript e build aprovados. Os testes verificam
+  offsets iguais das abas, aviso da nova porta e retorno ao valor padrão após
+  recarga, além do resultado incerto de reinício sem retry automático.
 
 ## Limitações conhecidas, não escondidas
 

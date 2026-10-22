@@ -29,6 +29,19 @@ temporária. O certificado local pode exigir confirmação no navegador.
 No Artemis, adicione manualmente o IP do PC com a porta base `50989`.
 Não altere o cadastro do host estável para apontar para outro executável.
 
+### Atenção ao importar templates
+
+Os templates contêm **padrões**, não os valores atuais. No template de rede, a
+porta base padrão é 47989 e o painel correspondente é 47990. Para manter o teste
+em 50990, remova `port` do JSON ou use `50989`. Importar/aplicar só muda o rascunho;
+é preciso revisar e salvar. Valores iguais aos padrões podem ser omitidos do
+arquivo pelo host; isso não significa perda de gravação.
+
+Da mesma forma, importar os padrões gerais pode reativar bandeja ou descoberta.
+Remova do JSON os campos que deseja preservar. Se mudar a porta, após reiniciar
+use o novo endereço informado pelo painel. Uma conexão encerrada durante o
+reinício não confirma sucesso nem falha e não deve provocar repetição automática.
+
 ## Checklist de aceitação
 
 - [ ] Todas as telas abrem e recarregam: visão geral, dispositivos, aplicativos,

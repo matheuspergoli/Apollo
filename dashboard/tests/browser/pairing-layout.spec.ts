@@ -13,7 +13,25 @@ for (const { width, theme } of [390, 1280].flatMap((width) =>
 		await page.getByRole("button", { name: "Vincular dispositivo", exact: true }).click()
 		const dialog = page.getByRole("dialog")
 		const list = dialog.getByRole("tablist")
+		const pinBox = await dialog.getByLabel("PIN", { exact: true }).boundingBox()
 		expect((await list.boundingBox())?.height).toBeLessThanOrEqual(48)
+		await dialog.getByRole("tab", { name: "Código temporário / QR", exact: true }).click()
+		const phraseBox = await dialog
+			.getByLabel("Frase de pareamento", { exact: true })
+			.boundingBox()
+		if (!pinBox || !phraseBox) throw new Error("Missing pairing input geometry")
+		const panelBox = await dialog
+			.getByRole("tabpanel", { name: "Código temporário / QR", exact: true })
+			.boundingBox()
+		if (!panelBox) throw new Error("Missing pairing panel geometry")
+		const otpOffset = phraseBox.y - panelBox.y
+		await dialog.getByRole("tab", { name: "PIN do cliente", exact: true }).click()
+		const pinPanel = await dialog
+			.getByRole("tabpanel", { name: "PIN do cliente", exact: true })
+			.boundingBox()
+		const currentPin = await dialog.getByLabel("PIN", { exact: true }).boundingBox()
+		if (!pinPanel || !currentPin) throw new Error("Missing PIN geometry")
+		expect(Math.abs(currentPin.y - pinPanel.y - otpOffset)).toBeLessThanOrEqual(1)
 		await dialog.getByRole("tab", { name: "Código temporário / QR", exact: true }).click()
 		await dialog.getByLabel("Frase de pareamento", { exact: true }).fill("teste de layout")
 		await dialog.getByRole("button", { name: "Gerar código temporário", exact: true }).click()

@@ -39,6 +39,7 @@ import {
 import { SectionTemplates } from "@/features/settings/section-templates"
 import { configOptions, post } from "@/lib/api"
 import { accepted } from "@/lib/documents"
+import { configuredWebAddress, requestLifecycle } from "@/lib/lifecycle"
 
 function Editor({ initial }: { initial: Snapshot }) {
 	const client = useQueryClient()
@@ -58,6 +59,8 @@ function Editor({ initial }: { initial: Snapshot }) {
 	const [review, setReview] = useState(false)
 	const [error, setError] = useState<Error | null>(null)
 	const [saved, setSaved] = useState(false)
+	const [savedAddress, setSavedAddress] = useState<string | null>(null)
+	const [lifecycleFeedback, setLifecycleFeedback] = useState("")
 	const changes = changedKeys(draftFrom(baseline), draft)
 	const dirty = changes.length > 0
 	const save = useMutation({
@@ -73,6 +76,8 @@ function Editor({ initial }: { initial: Snapshot }) {
 		},
 		onSuccess: async (payload) => {
 			const next = { ...baseline, values: payload }
+			if (changes.includes("port"))
+				setSavedAddress(configuredWebAddress(draftFrom(next).port, location.origin))
 			setBaseline(next)
 			setDraft(draftFrom(next))
 			setSaved(true)
@@ -122,6 +127,24 @@ function Editor({ initial }: { initial: Snapshot }) {
 					</AlertDescription>
 				</Alert>
 			)}
+			{savedAddress && (
+				<Alert role="status">
+					<AlertTitle>Endereço após reiniciar</AlertTitle>
+					<AlertDescription>
+						A porta foi gravada. Após reiniciar, abra{" "}
+						<a href={savedAddress} className="underline">
+							{savedAddress}
+						</a>
+						. A aba atual pode perder a conexão; isso não significa que a gravação foi perdida.
+					</AlertDescription>
+				</Alert>
+			)}
+			{lifecycleFeedback && (
+				<Alert role="status">
+					<AlertTitle>Verifique o estado do host</AlertTitle>
+					<AlertDescription>{lifecycleFeedback}</AlertDescription>
+				</Alert>
+			)}
 			<RequestError error={error || (!review ? save.error : null)} />
 			<div className="relative">
 				<IconSearch className="pointer-events-none absolute top-3 left-3 size-4 text-muted-foreground" />
@@ -166,6 +189,7 @@ function Editor({ initial }: { initial: Snapshot }) {
 							<SectionTemplates
 								key={selected.id}
 								section={selected}
+								currentValues={draft}
 								disabled={save.isPending}
 								onApply={(values) => {
 									setDraft((previous) => ({ ...previous, ...values }))
@@ -234,7 +258,10 @@ function Editor({ initial }: { initial: Snapshot }) {
 						label="Reiniciar host"
 						description="Encerra o aplicativo e interrompe todos os streams. Uma execução manual pode não voltar automaticamente. Não salva rascunhos. A conexão pode cair sem confirmação: verifique o console e abra o host novamente se necessário."
 						disabled={dirty || save.isPending}
-						execute={() => post("restart", {}, false)}
+						execute={async () => {
+							setLifecycleFeedback("")
+							setLifecycleFeedback(await requestLifecycle("restart"))
+						}}
 						destructive
 					/>
 				</div>
@@ -253,6 +280,16 @@ function Editor({ initial }: { initial: Snapshot }) {
 							eventos correspondentes ocorrerem. O host não será reiniciado.
 						</DialogDescription>
 					</DialogHeader>
+					{changes.includes("port") && (
+						<Alert>
+							<AlertTitle>A porta do painel vai mudar após reiniciar</AlertTitle>
+							<AlertDescription>
+								O novo endereço será {configuredWebAddress(draft.port, location.origin)}.
+								Importar o padrão de rede também pode voltar à porta padrão 47990. Salvar não
+								reinicia o host.
+							</AlertDescription>
+						</Alert>
+					)}
 					<ul className="max-h-64 space-y-2 overflow-y-auto font-mono text-xs">
 						{changes.map((key) => (
 							<li key={key} className="border-b pb-2">

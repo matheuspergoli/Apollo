@@ -1,5 +1,6 @@
 import { useRef, useState } from "react"
 import { RequestError } from "@/components/request-error"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
 	Dialog,
@@ -12,15 +13,18 @@ import {
 import { Input } from "@/components/ui/input"
 import type { Document } from "@/lib/documents"
 import { downloadFile } from "@/lib/download"
+import { configuredWebAddress } from "@/lib/lifecycle"
 import type { SettingSection } from "./model"
 import { parseSectionTemplate, sectionArchive, templateLimit } from "./templates"
 
 export function SectionTemplates({
 	section,
+	currentValues,
 	disabled,
 	onApply
 }: {
 	section: SettingSection
+	currentValues: Document
 	disabled: boolean
 	onApply: (values: Document) => void
 }) {
@@ -117,6 +121,25 @@ export function SectionTemplates({
 							arquivo do host será gravado agora.
 						</DialogDescription>
 					</DialogHeader>
+					<Alert>
+						<AlertTitle>Valores presentes substituem o rascunho</AlertTitle>
+						<AlertDescription>
+							O template contém padrões, não uma cópia da configuração atual. Remova do JSON os
+							campos que você não quer alterar, inclusive porta e descoberta de rede.
+						</AlertDescription>
+					</Alert>
+					{pending &&
+						Object.hasOwn(pending, "port") &&
+						String(pending.port) !== String(currentValues.port) && (
+							<Alert>
+								<AlertTitle>Atenção à mudança de porta</AlertTitle>
+								<AlertDescription>
+									Porta base: {String(currentValues.port)} → {String(pending.port)}. Depois de
+									salvar e reiniciar, o painel estará em{" "}
+									{configuredWebAddress(pending.port, location.origin)}.
+								</AlertDescription>
+							</Alert>
+						)}
 					<pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all border bg-muted/30 p-3 text-xs">
 						{JSON.stringify(pending, null, 2)}
 					</pre>

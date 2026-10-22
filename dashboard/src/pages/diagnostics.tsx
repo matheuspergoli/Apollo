@@ -21,9 +21,10 @@ import {
 	SelectTrigger,
 	SelectValue
 } from "@/components/ui/select"
-import { ApiError, configOptions, post, request } from "@/lib/api"
+import { configOptions, request } from "@/lib/api"
 import { action } from "@/lib/documents"
 import { downloadFile } from "@/lib/download"
+import { requestLifecycle } from "@/lib/lifecycle"
 
 export function DiagnosticsPage() {
 	const logs = useQuery({
@@ -52,17 +53,7 @@ export function DiagnosticsPage() {
 	const visible = filtered.slice(-1000).join("\n")
 	async function lifecycle(command: "restart" | "quit") {
 		setFeedback("")
-		try {
-			await post(command, {}, false)
-			setFeedback(
-				"Solicitação enviada. Verifique o console e a disponibilidade do host antes de continuar."
-			)
-		} catch (failure) {
-			if (failure instanceof ApiError) throw failure
-			setFeedback(
-				"A conexão foi encerrada ou não respondeu. Isso não confirma o reinício/encerramento. Verifique o console; não repetiremos a ação automaticamente."
-			)
-		}
+		setFeedback(await requestLifecycle(command))
 	}
 	const levels = [
 		{ value: "all", label: "Todos os níveis" },

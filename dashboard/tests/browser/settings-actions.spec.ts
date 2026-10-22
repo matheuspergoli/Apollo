@@ -1,6 +1,54 @@
 import { expect, test } from "@playwright/test"
 import { mockHost } from "../fixtures/mock-api"
 
+test("network default import warns about port changes and survives reload as a default", async ({
+	page
+}) => {
+	const host = await mockHost(page)
+	await page.goto("/config?section=network")
+	await page.getByLabel("Arquivo JSON da seção", { exact: true }).setInputFiles({
+		name: "rede.json",
+		mimeType: "application/json",
+		buffer: Buffer.from(
+			JSON.stringify({
+				format: "apollo-settings-section",
+				version: 1,
+				section: "network",
+				settings: { port: 47989 }
+			})
+		)
+	})
+	const imported = page.getByRole("dialog")
+	await expect(imported).toContainText("Atenção à mudança de porta")
+	await expect(imported).toContainText(":47990")
+	await imported.getByRole("button", { name: "Aplicar ao rascunho", exact: true }).click()
+	await page.getByRole("button", { name: "Revisar e salvar", exact: true }).click()
+	await expect(page.getByRole("dialog")).toContainText("A porta do painel vai mudar")
+	await page.getByRole("button", { name: "Salvar arquivo", exact: true }).click()
+	await expect(
+		page.getByRole("status").filter({ hasText: "Endereço após reiniciar" })
+	).toContainText(":47990")
+	expect(host.config).not.toHaveProperty("port")
+	expect(host.config.future_option).toBe("keep-me")
+	await page.reload()
+	await expect(page.locator("#port")).toHaveValue("47989")
+})
+
+test("settings restart connection reset does not claim failure or repeat the request", async ({
+	page
+}) => {
+	const host = await mockHost(page)
+	await page.goto("/config")
+	await page.getByRole("button", { name: "Reiniciar host", exact: true }).click()
+	await page
+		.getByRole("alertdialog")
+		.getByRole("button", { name: "Confirmar", exact: true })
+		.click()
+	await expect(page.getByRole("alertdialog")).toBeHidden()
+	await expect(page.getByRole("status")).toContainText("Isso não confirma")
+	expect(host.calls.filter((call) => call.path === "restart")).toHaveLength(1)
+})
+
 test("rejected config saves keep the draft and expose the error inside the review dialog", async ({
 	page
 }) => {
