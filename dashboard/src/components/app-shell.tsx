@@ -78,14 +78,6 @@ function HostNavigation() {
 						))}
 					</SidebarMenu>
 				</SidebarGroup>
-				<SidebarGroup className="mt-auto group-data-[collapsible=icon]:hidden">
-					<SidebarGroupLabel>Referência do projeto</SidebarGroupLabel>
-					<div className="space-y-2 px-2 text-muted-foreground text-xs">
-						<p>RTX 4060 → Galaxy S25+</p>
-						<p>1080p120 · AV1 / HDR</p>
-						<p className="leading-5">Alvo de teste, não medição da sessão atual.</p>
-					</div>
-				</SidebarGroup>
 			</SidebarContent>
 			<SidebarFooter className="border-t p-4 text-muted-foreground text-xs group-data-[collapsible=icon]:hidden">
 				<p className="truncate font-medium text-foreground">

@@ -116,7 +116,7 @@ function Pairing({ refresh }: { refresh: () => Promise<unknown> }) {
 				Vincular dispositivo
 			</Button>
 			<Dialog open={open} onOpenChange={setOpen}>
-				<DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
+				<DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
 					<DialogHeader>
 						<DialogTitle>Vincular ao Apollo</DialogTitle>
 						<DialogDescription>
@@ -134,7 +134,7 @@ function Pairing({ refresh }: { refresh: () => Promise<unknown> }) {
 						/>
 					</Field>
 					<Tabs defaultValue="pin">
-						<TabsList>
+						<TabsList className="w-full shrink-0">
 							<TabsTrigger value="pin">PIN do cliente</TabsTrigger>
 							<TabsTrigger value="otp">Código temporário / QR</TabsTrigger>
 						</TabsList>
@@ -176,7 +176,7 @@ function Pairing({ refresh }: { refresh: () => Promise<unknown> }) {
 								)}
 							</form>
 						</TabsContent>
-						<TabsContent value="otp" className="space-y-4 pt-4">
+						<TabsContent value="otp" className="space-y-3 pt-3">
 							<Field>
 								<FieldLabel htmlFor="pair-phrase">Frase de pareamento</FieldLabel>
 								<Input
@@ -205,61 +205,65 @@ function Pairing({ refresh }: { refresh: () => Promise<unknown> }) {
 							</Button>
 							<RequestError error={otp.error || localError} />
 							{otp.data && (
-								<div className="space-y-4 border p-4">
-									<Badge variant={remaining ? "secondary" : "destructive"}>
-										{remaining ? `Expira em aproximadamente ${remaining}s` : "Código expirado"}
-									</Badge>
-									<p className="font-mono text-3xl tracking-widest">
-										{remaining ? text(otp.data.otp) : "—"}
-									</p>
-									<div className="grid gap-3 sm:grid-cols-[1fr_120px]">
-										<Field>
-											<FieldLabel htmlFor="pair-host">Endereço do host</FieldLabel>
-											<Input
-												id="pair-host"
-												value={host}
-												onChange={(event) => setHost(event.target.value)}
-											/>
-										</Field>
-										<Field>
-											<FieldLabel htmlFor="pair-port">Porta</FieldLabel>
-											<Input
-												id="pair-port"
-												value={port}
-												onChange={(event) => setPort(event.target.value)}
-												inputMode="numeric"
-											/>
-										</Field>
+								<div className="grid gap-4 border p-3 sm:grid-cols-[minmax(0,1fr)_192px]">
+									<div className="space-y-3">
+										<Badge variant={remaining ? "secondary" : "destructive"}>
+											{remaining
+												? `Expira em aproximadamente ${remaining}s`
+												: "Código expirado"}
+										</Badge>
+										<p className="font-mono text-3xl tracking-widest">
+											{remaining ? text(otp.data.otp) : "—"}
+										</p>
+										<div className="grid grid-cols-[minmax(0,1fr)_90px] gap-3">
+											<Field>
+												<FieldLabel htmlFor="pair-host">Endereço do host</FieldLabel>
+												<Input
+													id="pair-host"
+													value={host}
+													onChange={(event) => setHost(event.target.value)}
+												/>
+											</Field>
+											<Field>
+												<FieldLabel htmlFor="pair-port">Porta</FieldLabel>
+												<Input
+													id="pair-port"
+													value={port}
+													onChange={(event) => setPort(event.target.value)}
+													inputMode="numeric"
+												/>
+											</Field>
+										</div>
+										{link && (
+											<div className="flex flex-wrap gap-2">
+												<a href={link} className={buttonVariants({ variant: "default" })}>
+													Abrir no Artemis
+												</a>
+												<Button
+													variant="outline"
+													onClick={() => {
+														navigator.clipboard
+															.writeText(link)
+															.catch(() =>
+																setLocalError(
+																	new Error(
+																		"Não foi possível copiar. Abra pelo link ou use o código."
+																	)
+																)
+															)
+													}}
+												>
+													Copiar link
+												</Button>
+											</div>
+										)}
 									</div>
 									{qr && remaining > 0 && (
 										<img
 											src={qr}
 											alt="QR de pareamento do Artemis"
-											className="mx-auto size-64 bg-white"
+											className="mx-auto size-40 max-w-full self-center bg-white sm:size-48"
 										/>
-									)}
-									{link && (
-										<div className="flex flex-wrap gap-2">
-											<a href={link} className={buttonVariants({ variant: "default" })}>
-												Abrir no Artemis
-											</a>
-											<Button
-												variant="outline"
-												onClick={() => {
-													navigator.clipboard
-														.writeText(link)
-														.catch(() =>
-															setLocalError(
-																new Error(
-																	"Não foi possível copiar. Abra pelo link ou use o código."
-																)
-															)
-														)
-												}}
-											>
-												Copiar link
-											</Button>
-										</div>
 									)}
 								</div>
 							)}

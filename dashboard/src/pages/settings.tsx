@@ -36,6 +36,7 @@ import {
 	settingsOptions,
 	visibleSections
 } from "@/features/settings/model"
+import { SectionTemplates } from "@/features/settings/section-templates"
 import { configOptions, post } from "@/lib/api"
 import { accepted } from "@/lib/documents"
 
@@ -161,6 +162,19 @@ function Editor({ initial }: { initial: Snapshot }) {
 								? "A busca inclui todos os grupos disponíveis para esta plataforma."
 								: "Valores atuais e padrões explícitos. Nenhuma otimização é aplicada automaticamente."}
 						</CardDescription>
+						{!filter && (
+							<SectionTemplates
+								key={selected.id}
+								section={selected}
+								disabled={save.isPending}
+								onApply={(values) => {
+									setDraft((previous) => ({ ...previous, ...values }))
+									setSaved(false)
+									setError(null)
+									save.reset()
+								}}
+							/>
+						)}
 					</CardHeader>
 					<CardContent className="space-y-6">
 						{results.length ? (

@@ -21,7 +21,8 @@ Não é uma declaração de perfeição nem de validação no hardware do usuár
 ## Evidência automatizada
 
 - Biome sem diagnósticos; TypeScript estrito; build de produção e integração dev.
-- 34 testes unitários e 60 testes Chromium com APIs simuladas passaram localmente.
+- O candidato anterior passou em 34 testes unitários e 60 testes Chromium. A nova
+  rodada inclui testes adicionais de templates e layout, listados abaixo.
 - Quatro testes Python do auditor de pacote passaram, incluindo rejeição de
   caminhos inseguros, dados privados, assets alterados e páginas ausentes.
 - 19 verificações de relógio passaram com UBSan; também executadas no runner Windows.
@@ -45,10 +46,30 @@ aceitação no hardware, não existência de um segundo frontend incompleto.
 
 ## O que depende do usuário
 
+O usuário confirmou pareamento e um trecho de jogo no candidato anterior. Isso
+não equivale à aceitação de todos os ajustes ou à medição de latência/HDR.
+
 O roteiro completo está em [TESTE-NO-HOST.md](TESTE-NO-HOST.md): teste isolado no
 Windows/S25+, pareamento real, display/driver, áudio/entrada, stream/FPS/HDR,
 navegação no navegador do celular e retorno ao host original. Nenhuma instalação,
 conta, chave, serviço ou pareamento ativo foi alterado automaticamente.
+
+## Ajustes após o primeiro teste manual
+
+- Removido o bloco estático “Referência do projeto”.
+- Corrigidos os atributos de orientação das abas de pareamento; botões compactos,
+  QR ao lado dos dados no desktop, layout móvel e altura do diálogo limitados.
+- Templates JSON por seção em ZIP com documentação gerada das mesmas 102 opções.
+  Importação validada/atômica para o rascunho, com confirmação, sem gravação/reinício
+  automático. Formato, versão, seção, tipos, opções e limites são verificados.
+- `fflate` 0.8.3 foi adicionado com versão exata apenas para gerar o ZIP no navegador.
+  Nenhum serviço remoto é usado para exportar ou importar templates.
+- Rodada local aprovada: 49 testes unitários, 67 Chromium, TypeScript estrito,
+  Biome, build e integração dev. Templates das 12 seções, ZIP/documentação, erros
+  de validação, importação parcial e preservação de rascunhos foram exercitados.
+- O ensaio Windows foi ampliado para importar JSON no rascunho e verificar que
+  só a gravação explícita altera o arquivo nativo. Esse novo ensaio ainda depende
+  do CI do commit correspondente; o pacote anterior não contém estas alterações.
 
 ## Limitações conhecidas, não escondidas
 

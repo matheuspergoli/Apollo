@@ -6,7 +6,18 @@ hardware-accepted replacement release. Evidence and limitations are tracked in
 [MIGRATION.md](MIGRATION.md); the isolated hardware acceptance procedure is in
 [TESTE-NO-HOST.md](TESTE-NO-HOST.md).
 
-## Stack
+## Templates por seção
+
+Em Configurações, selecione uma seção e use **Baixar template da seção**. O ZIP
+contém `configuracao.json` com os padrões e `LEIA-ME.md` com tipos, valores aceitos,
+limites, efeitos e exemplos. Não é uma exportação dos dados atuais do host.
+
+Edite o JSON, importe na mesma seção e confirme **Aplicar ao rascunho**. Campos
+ausentes e outras seções permanecem intactos. Arquivos inválidos são rejeitados
+integralmente. Só **Revisar e salvar** grava o arquivo; nada reinicia automaticamente.
+O limite de importação é 256 KiB, UTF-8. Não coloque senhas/chaves privadas no JSON.
+
+## Stack e versões
 
 React/DOM 19.3.1, strict TypeScript 7.0.2, Vite 8.3.4/React plugin 6.1.2,
 Tailwind/Vite plugin 4.3.3, Query 5.104.5, Router 1.170.45, official Router Vite

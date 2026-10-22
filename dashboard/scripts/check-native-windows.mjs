@@ -183,6 +183,29 @@ try {
 	await page.getByRole("button", { name: "Salvar arquivo", exact: true }).click()
 	await page.getByRole("status").filter({ hasText: "Arquivo salvo" }).waitFor()
 	assert.match(await readFile(config, "utf8"), /sunshine_name = Teste nativo ç/)
+	await page.goto(`${base}/config?section=nv`)
+	await page.getByLabel("Arquivo JSON da seção", { exact: true }).setInputFiles({
+		name: "nv-native.json",
+		mimeType: "application/json",
+		buffer: Buffer.from(
+			JSON.stringify({
+				format: "apollo-settings-section",
+				version: 1,
+				section: "nv",
+				settings: { nvenc_preset: 3 }
+			})
+		)
+	})
+	await page
+		.getByRole("dialog")
+		.getByRole("button", { name: "Aplicar ao rascunho", exact: true })
+		.click()
+	assert.doesNotMatch(await readFile(config, "utf8"), /nvenc_preset = 3/)
+	await page.getByRole("button", { name: "Revisar e salvar", exact: true }).click()
+	await page.getByRole("button", { name: "Salvar arquivo", exact: true }).click()
+	await page.getByRole("status").filter({ hasText: "Arquivo salvo" }).waitFor()
+	assert.match(await readFile(config, "utf8"), /nvenc_preset = 3/)
+	assert.match(await readFile(config, "utf8"), /sunshine_name = Teste nativo ç/)
 	await page.goto(`${base}/apps`)
 	await page.getByRole("button", { name: "Novo aplicativo", exact: true }).click()
 	await page.locator("#app-name").fill("Aplicativo CI ç")
