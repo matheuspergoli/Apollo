@@ -337,7 +337,7 @@ try {
 		).json.status,
 		true
 	)
-	await page.getByRole("button", { name: "Atualizar aplicativos", exact: true }).click()
+	await page.reload()
 	await page
 		.locator('[data-slot="card"]')
 		.filter({
@@ -426,7 +426,7 @@ try {
 	assert.equal((await http("/api/config", { cookie })).status, 401)
 	assert.equal((await http("/api/restart", { method: "POST", cookie, data: {} })).status, 401)
 	assert.equal(child.exitCode, null, "An unauthorized restart must not stop the host")
-	await page.reload()
+	await page.getByRole("button", { name: "Atualizar aplicativos", exact: true }).click()
 	await page.getByRole("status").filter({ hasText: "Entre novamente" }).waitFor()
 	assert(await page.getByRole("button", { name: "Reiniciar host", exact: true }).isDisabled())
 	const reauthenticated = await http("/api/login", {
