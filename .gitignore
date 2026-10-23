@@ -50,7 +50,7 @@ package-lock.json
 *.mo
 *.pot
 
-# Dummy macOS files
+# Desktop metadata
 .DS_Store
 
 # Python

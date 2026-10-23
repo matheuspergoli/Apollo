@@ -112,9 +112,8 @@ export function visibleSections(platform: string) {
 		(section) =>
 			!(
 				{
-					windows: ["vt", "vaapi"],
-					linux: ["amd", "qsv", "vt"],
-					macos: ["amd", "nv", "qsv", "vaapi"]
+					windows: ["vaapi"],
+					linux: ["amd", "qsv"]
 				}[platform] ?? []
 			).includes(section.id)
 	)

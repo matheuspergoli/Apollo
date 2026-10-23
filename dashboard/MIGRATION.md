@@ -10,7 +10,7 @@ Não é uma declaração de perfeição nem de validação no hardware do usuár
 | Área | Implementado e verificado nesta etapa |
 |---|---|
 | Páginas | Oito entradas HTML reais, rotas por arquivos, reload e navegação |
-| Configuração | 102 opções nativas em 12 grupos; busca, revisão, validação, gravação, preservação de chaves desconhecidas, conflito e rascunhos |
+| Configuração | 99 opções nativas em 11 grupos Windows/Linux (10 visíveis no Windows); busca, revisão, validação, gravação, preservação de chaves desconhecidas, conflito e rascunhos |
 | Dispositivos | PIN, OTP/QR/expiração, permissões, display, comandos/elevação, desconectar e desvincular individual/todos |
 | Aplicativos | Criar/editar/ordenar/excluir, comandos, capas online/PNG, iniciar/encerrar e exportação `.art`/link Artemis |
 | Conta | Criação/login, troca de credenciais, feedback de erro e invalidação de sessão |

@@ -100,7 +100,6 @@ Here're some common causes and solutions for stutters: [WiKi](https://github.com
 |               | Intel: Core i3 or higher |
 | RAM           | 4GB or more |
 | OS            | Windows: 10+ (Windows Server requires [manual installation](https://github.com/nefarius/ViGEmBus/issues/153) for gamepad support) |
-|               | macOS: 12+ |
 |               | Linux/Debian: 11 (bullseye) |
 |               | Linux/Fedora: 39+ |
 |               | Linux/Ubuntu: 22.04+ (jammy) |

@@ -7,11 +7,7 @@ if(WIN32)
 elseif(UNIX)
     include(${CMAKE_MODULE_PATH}/macros/unix.cmake)
 
-    if(APPLE)
-        include(${CMAKE_MODULE_PATH}/macros/macos.cmake)
-    else()
-        include(${CMAKE_MODULE_PATH}/macros/linux.cmake)
-    endif()
+    include(${CMAKE_MODULE_PATH}/macros/linux.cmake)
 endif()
 
 # override find_package function

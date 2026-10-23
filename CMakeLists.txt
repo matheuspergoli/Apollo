@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
+
 # `CMAKE_CUDA_ARCHITECTURES` requires 3.18
 # `set_source_files_properties` requires 3.18
 # `cmake_path(CONVERT ... TO_NATIVE_PATH_LIST ...)` requires 3.20
@@ -7,6 +8,10 @@ cmake_minimum_required(VERSION 3.20)
 project(Apollo VERSION 0.0.0
         DESCRIPTION "Self-hosted game stream host for Artemis"
         HOMEPAGE_URL "https://github.com/ClassicOldSong/Apollo")
+
+if(NOT CMAKE_SYSTEM_NAME MATCHES "^(Windows|Linux)$")
+    message(FATAL_ERROR "Apollo supports Windows and Linux only.")
+endif()
 
 set(PROJECT_LICENSE "GPL-3.0-only")
 
@@ -39,7 +44,7 @@ include(${CMAKE_MODULE_PATH}/prep/options.cmake)
 # initial prep
 include(${CMAKE_MODULE_PATH}/prep/init.cmake)
 
-# configure special package files, such as sunshine.desktop, Flatpak manifest, Portfile , etc.
+# Configure desktop files and Linux package manifests.
 include(${CMAKE_MODULE_PATH}/prep/special_package_configuration.cmake)
 
 # Exit early if END_BUILD is ON, i.e. when only generating package manifests

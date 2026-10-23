@@ -218,9 +218,7 @@ namespace video {
   // encoders
   extern encoder_t software;
 
-#if !defined(__APPLE__)
   extern encoder_t nvenc;  // available for windows and linux
-#endif
 
 #ifdef _WIN32
   extern encoder_t amdvce;
@@ -231,9 +229,6 @@ namespace video {
   extern encoder_t vaapi;
 #endif
 
-#ifdef __APPLE__
-  extern encoder_t videotoolbox;
-#endif
 
   struct packet_raw_t {
     virtual ~packet_raw_t() = default;

@@ -115,7 +115,45 @@ export function parseGlobalConfiguration(raw: string): GlobalImport {
 }
 
 export function globalDocumentation(configuration: GlobalConfiguration) {
-	return `# Apollo — configuração global\n\nEste pacote contém ${configuration.kind === "saved" ? "os valores dos campos conhecidos do arquivo salvo, lidos do host no momento da exportação; não inclui o rascunho não salvo" : "os padrões das 12 seções, não uma cópia dos valores atuais"}. Plataforma de origem: ${configuration.platform}.\n\n## Conteúdo\n\n- configuracao.json: JSON editável e importável.\n- secoes/: referência de todos os campos, padrões, opções e limites.\n\nSão 102 campos do painel, inclusive opções específicas de outras plataformas. Não são incluídos biblioteca de aplicativos, pareamentos, conta/senhas do painel, conteúdo de certificados/chaves, logs ou chaves desconhecidas do host. Isto não é backup da instalação inteira. Caminhos e comandos nos campos conhecidos podem conter dados privados: guarde o ZIP com cuidado. A exportação é local e não envia arquivos a serviços externos.\n\n## Importação segura\n\n1. Extraia o ZIP e edite configuracao.json em UTF-8. Importe o JSON, não o ZIP. Limite: 1 MiB; cada seção também deve respeitar a validação dos campos.\n2. Mantenha format="${format}", version=1, kind e platform. Valores ficam em sections.<id>.<chave>.\n3. Use **Importar configuração completa**, confira as diferenças e confirme **Aplicar tudo ao rascunho**.\n4. Só **Revisar e salvar** grava o host. Importar não reinicia e não instala drivers.\n\nSe qualquer seção for inválida, o arquivo inteiro é rejeitado antes de alterar o rascunho. Seções e campos omitidos permanecem como estão; campos presentes substituem o valor inteiro, inclusive listas vazias. Chaves desconhecidas já existentes no host são preservadas pelo salvamento normal, mas não são exportadas ou aceitas neste formato. Não altere opções de outra plataforma sem entender os efeitos.\n\n## Rede e dados privados\n\nImportar padrões pode trocar a porta do painel ou reativar descoberta/bandeja. Para manter uma opção, remova sua chave do JSON. A porta do painel é a porta base + 1: base 50989 corresponde a 50990, base 47989 corresponde a 47990. Revise comandos/elevacão e caminhos antes de aplicar. Não coloque senhas do painel nem chaves privadas no JSON. Não compartilhe uma exportação de valores atuais sem revisá-la.\n\n## Exemplo parcial\n\nEste exemplo altera apenas a porta, preservando o restante:\n\n\`\`\`json\n${JSON.stringify({ format, version: 1, kind: "saved", platform: configuration.platform, sections: { network: { port: 50989 } } }, null, 2)}\n\`\`\`\n\n## Estruturas complexas\n\nComandos de preparação/estado: [{"do":"echo iniciar","undo":"echo desfazer","elevated":false}].\nComandos de servidor: [{"name":"Exemplo","cmd":"echo exemplo","elevated":false}].\nRegras de display: {"mixed":[],"resolution_only":[],"refresh_rate_only":[]}.\nConsulte os campos em secoes/ para tipos, opções e limites. Os exemplos não são executados automaticamente.\n`
+	return `# Apollo — configuração global
+
+Este pacote contém ${configuration.kind === "saved" ? "os valores dos campos conhecidos do arquivo salvo, lidos do host no momento da exportação; não inclui o rascunho não salvo" : `os padrões das ${sections.length} seções, não uma cópia dos valores atuais`}. Plataforma de origem: ${configuration.platform}.
+
+## Conteúdo
+
+- configuracao.json: JSON editável e importável.
+- secoes/: referência de todos os campos, padrões, opções e limites.
+
+São ${sections.reduce((total, section) => total + section.fields.length, 0)} campos de Windows e Linux. O painel mostra apenas as seções da plataforma do host; o arquivo completo inclui todas. Não inclui conta/senhas, pareamentos, aplicativos, conteúdo de certificados/chaves, logs ou chaves desconhecidas. Isto não é backup da instalação inteira. Caminhos e comandos podem conter dados privados: guarde o ZIP com cuidado. A exportação é local e não envia arquivos a serviços externos.
+
+## Importação segura
+
+1. Extraia o ZIP e edite configuracao.json em UTF-8. Importe o JSON, não o ZIP. Limite: 1 MiB.
+2. Mantenha format="${format}", version=1, kind e platform. Valores ficam em sections.<id>.<chave>.
+3. Use **Importar configuração completa**, revise e confirme **Aplicar tudo ao rascunho**.
+4. Só **Revisar e salvar** grava o host. Importar não reinicia e não instala drivers.
+
+Uma seção inválida rejeita o arquivo inteiro antes de alterar o rascunho. Seções e campos omitidos permanecem como estão; campos presentes substituem o valor inteiro, inclusive listas vazias. Chaves desconhecidas do host são preservadas pelo salvamento normal, mas não são exportadas ou aceitas neste formato.
+
+## Rede e dados privados
+
+Importar padrões pode trocar a porta ou reativar descoberta/bandeja. Remova do JSON as chaves que deseja manter. A porta do painel é a porta base + 1: base 50989 corresponde a 50990. Revise comandos, elevação e caminhos. Não coloque senhas nem chaves privadas no JSON e não compartilhe exportações sem revisá-las.
+
+## Exemplo parcial
+
+Altera apenas a porta, preservando o restante:
+
+\`\`\`json
+${JSON.stringify({ format, version: 1, kind: "saved", platform: configuration.platform, sections: { network: { port: 50989 } } }, null, 2)}
+\`\`\`
+
+## Estruturas complexas
+
+Comandos de preparação/estado: [{"do":"echo iniciar","undo":"echo desfazer","elevated":false}].
+Comandos de servidor: [{"name":"Exemplo","cmd":"echo exemplo","elevated":false}].
+Regras de display: {"mixed":[],"resolution_only":[],"refresh_rate_only":[]}.
+Consulte secoes/ para tipos, opções e limites. Os exemplos não são executados automaticamente.
+`
 }
 
 export async function globalArchive(configuration: GlobalConfiguration) {

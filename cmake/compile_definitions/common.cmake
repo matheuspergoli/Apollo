@@ -41,11 +41,7 @@ if(WIN32)
 elseif(UNIX)
     include(${CMAKE_MODULE_PATH}/compile_definitions/unix.cmake)
 
-    if(APPLE)
-        include(${CMAKE_MODULE_PATH}/compile_definitions/macos.cmake)
-    else()
-        include(${CMAKE_MODULE_PATH}/compile_definitions/linux.cmake)
-    endif()
+    include(${CMAKE_MODULE_PATH}/compile_definitions/linux.cmake)
 endif()
 
 include_directories(BEFORE SYSTEM "${CMAKE_SOURCE_DIR}/third-party/nv-codec-headers/include")
@@ -138,7 +134,7 @@ include_directories(
         "${CMAKE_SOURCE_DIR}/third-party/nanors"
         "${CMAKE_SOURCE_DIR}/third-party/nanors/deps/obl"
         ${FFMPEG_INCLUDE_DIRS}
-        ${Boost_INCLUDE_DIRS}  # has to be the last, or we get runtime error on macOS ffmpeg encoder
+        ${Boost_INCLUDE_DIRS}
 )
 
 list(APPEND SUNSHINE_EXTERNAL_LIBRARIES

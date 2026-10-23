@@ -27,6 +27,7 @@ class @PROJECT_NAME@ < Formula
   option "without-static-boost", "Disable static link of Boost libraries" # default option
 
   depends_on "cmake" => :build
+  depends_on :linux
   depends_on "doxygen" => :build
   depends_on "graphviz" => :build
   depends_on "node" => :build
@@ -126,9 +127,6 @@ class @PROJECT_NAME@ < Formula
     system "make", "-C", "build", "install"
     bin.install "build/tests/test_sunshine"
 
-    # codesign the binary on intel macs
-    system "codesign", "-s", "-", "--force", "--deep", bin/"sunshine" if OS.mac? && Hardware::CPU.intel?
-
     bin.install "src_assets/linux/misc/postinst" if OS.linux?
   end
 
@@ -144,14 +142,6 @@ class @PROJECT_NAME@ < Formula
       EOS
     end
 
-    if OS.mac?
-      opoo <<~EOS
-        Sunshine can only access microphones on macOS due to system limitations.
-        To stream system audio use "Soundflower" or "BlackHole".
-
-        Gamepads are not currently supported on macOS.
-      EOS
-    end
   end
 
   def caveats

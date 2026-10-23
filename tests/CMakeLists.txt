@@ -29,7 +29,7 @@ endif ()
 if (WIN32)
     list(APPEND
             SUNSHINE_DEFINITIONS SUNSHINE_SHADERS_DIR="${CMAKE_SOURCE_DIR}/src_assets/windows/assets/shaders/directx")
-elseif (NOT APPLE)
+else ()
     list(APPEND SUNSHINE_DEFINITIONS SUNSHINE_SHADERS_DIR="${CMAKE_SOURCE_DIR}/src_assets/linux/assets/shaders/opengl")
 endif ()
 

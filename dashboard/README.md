@@ -21,7 +21,7 @@ O limite de importação é 256 KiB, UTF-8. Não coloque senhas/chaves privadas 
 
 O bloco **Todas as configurações** mantém os controles por seção e acrescenta:
 
-- **Baixar template completo:** padrões dos 102 campos em 12 seções, sem dados do host.
+- **Baixar template completo:** padrões dos 99 campos em 11 seções de Windows/Linux, sem dados do host. O Windows mostra 10 seções; VA-API pertence ao Linux.
 - **Exportar configurações salvas:** após confirmação de privacidade, lê novamente
   o arquivo no host. Exporta campos conhecidos, normalizados para JSON, com os
   padrões dos campos ausentes; não inclui o rascunho não salvo.
@@ -29,7 +29,7 @@ O bloco **Todas as configurações** mantém os controles por seção e acrescen
   diferenças por seção e aplica os campos presentes somente após confirmação.
   Um erro em qualquer seção rejeita tudo. Seções/campos omitidos permanecem intactos.
 
-Cada ZIP contém `configuracao.json`, `LEIA-ME.md` e a documentação das 12 seções.
+Cada ZIP contém `configuracao.json`, `LEIA-ME.md` e a documentação das 11 seções.
 O formato global é `apollo-settings`, versão 1, separado do JSON por seção.
 Depois da importação, **Revisar e salvar** continua obrigatório para gravar.
 Não há reinício automático, nem conversão silenciosa de opções entre plataformas.
@@ -184,7 +184,7 @@ revisit it only for concrete deployment/SSR/server-function requirements.
 - main.tsx: mount/providers; router.tsx: router factory.
 - routes/: small typed file routes/search/boundaries.
 - pages/: screens and request/user-action orchestration.
-- features/settings/: 102 active backend fields, defaults, validators and structured
+- features/settings/: 99 active backend fields, defaults, validators and structured
   command/display editors; apps/devices: payload and protocol handling.
 - lib/: HTTP/cache/download boundaries; components/: Apollo composition.
 - components/ui/: official shadcn source, cva/cn variants and recorded adaptations.

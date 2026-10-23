@@ -233,7 +233,6 @@ namespace platf {
     vaapi,  ///< VAAPI
     dxgi,  ///< DXGI
     cuda,  ///< CUDA
-    videotoolbox,  ///< VideoToolbox
     unknown  ///< Unknown
   };
 
@@ -388,7 +387,7 @@ namespace platf {
     // Play on host PC
     std::string host;
 
-    // On macOS and Windows, it is not possible to create a virtual sink
+    // On Windows, it is not possible to create a virtual sink
     // Therefore, it is optional
     struct null_t {
       std::string stereo;

@@ -34,8 +34,6 @@ it("handles empty, punctuation-only and excessive input without showing hidden p
 	for (const query of ["", "  ", ".*[]", "x".repeat(257)])
 		expect(searchSettings(groups, query)).toEqual([])
 	expect(
-		searchSettings(groups, "videotoolbox", "windows").some(
-			(result) => result.group.id === "vt"
-		)
+		searchSettings(groups, "vaapi", "windows").some((result) => result.group.id === "vaapi")
 	).toBe(false)
 })

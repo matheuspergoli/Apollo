@@ -762,10 +762,6 @@
 						"label": "VA-API"
 					},
 					{
-						"value": "videotoolbox",
-						"label": "VideoToolbox"
-					},
-					{
 						"value": "software",
 						"label": "Software"
 					}
@@ -1070,62 +1066,6 @@
 						"label": "cavlc -- codificação de comprimento variável adaptável ao contexto - decodificação mais rápida"
 					}
 				]
-			}
-		]
-	},
-	{
-		"id": "vt",
-		"title": "VideoToolbox",
-		"fields": [
-			{
-				"key": "vt_coder",
-				"defaultValue": "auto",
-				"label": "Codificador do VideoToolbox",
-				"description": "",
-				"options": [
-					{
-						"value": "auto",
-						"label": "auto -- deixa o ffmpeg decidir (padrão)"
-					},
-					{
-						"value": "cabac",
-						"label": "cabac -- codificação aritmética binária adaptável ao contexto - qualidade superior"
-					},
-					{
-						"value": "cavlc",
-						"label": "cavlc -- codificação de comprimento variável adaptável ao contexto - decodificação mais rápida"
-					}
-				]
-			},
-			{
-				"key": "vt_software",
-				"defaultValue": "auto",
-				"label": "Codificação de software VideoToolbox",
-				"description": "",
-				"options": [
-					{
-						"value": "auto",
-						"label": "Automático"
-					},
-					{
-						"value": "disabled",
-						"label": "Desativado"
-					},
-					{
-						"value": "allowed",
-						"label": "Permitido"
-					},
-					{
-						"value": "forced",
-						"label": "Forçado"
-					}
-				]
-			},
-			{
-				"key": "vt_realtime",
-				"defaultValue": "enabled",
-				"label": "Codificação em tempo real do VideoToolbox",
-				"description": ""
 			}
 		]
 	},

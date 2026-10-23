@@ -9,8 +9,7 @@
   #undef _FORTIFY_SOURCE
 #endif
 
-// The assert() function is decorated with __cold on macOS which
-// is incompatible with Clang's target multiversioning feature
+// Keep ISA-specific wrappers free of assertion calls with incompatible target attributes.
 #ifndef NDEBUG
   #define NDEBUG
 #endif

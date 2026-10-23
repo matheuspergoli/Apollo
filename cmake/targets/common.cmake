@@ -12,11 +12,7 @@ if(WIN32)
 elseif(UNIX)
     include(${CMAKE_MODULE_PATH}/targets/unix.cmake)
 
-    if(APPLE)
-        include(${CMAKE_MODULE_PATH}/targets/macos.cmake)
-    else()
-        include(${CMAKE_MODULE_PATH}/targets/linux.cmake)
-    endif()
+    include(${CMAKE_MODULE_PATH}/targets/linux.cmake)
 endif()
 
 # todo - is this necessary? ... for anything except linux?

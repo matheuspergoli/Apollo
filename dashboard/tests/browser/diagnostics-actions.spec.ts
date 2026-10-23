@@ -1,6 +1,49 @@
 import { expect, test } from "@playwright/test"
 import { mockHost } from "../fixtures/mock-api"
 
+test("host information refresh displays fresh values, loading, errors and recovery without writes", async ({
+	page
+}) => {
+	const host = await mockHost(page)
+	await page.goto("/troubleshooting")
+	const card = page.locator('[data-slot="card"]').filter({ hasText: "Informações do host" })
+	await expect(card.getByRole("status")).toContainText("Informações atualizadas às")
+	let release: (() => void) | undefined
+	await page.route("**/api/config", async (route) => {
+		await new Promise<void>((resolve) => {
+			release = resolve
+		})
+		await route.fulfill({
+			json: { ...host.config, status: true, version: "1.0.0", vdisplayStatus: 0 }
+		})
+	})
+	host.config.version = "1.0.0"
+	host.config.capture = "wgc"
+	await card
+		.getByRole("button", { name: "Atualizar informações do host", exact: true })
+		.click()
+	await expect(card.getByRole("button", { name: "Atualizando…", exact: true })).toBeDisabled()
+	await expect(card.getByRole("status")).toContainText("Atualizando informações")
+	await expect.poll(() => Boolean(release)).toBe(true)
+	release?.()
+	await expect(card).toContainText("1.0.0")
+	await expect(card).toContainText("Captura configurada: wgc")
+	await page.unroute("**/api/config")
+	await page.route("**/api/config", (route) => route.fulfill({ status: 503 }))
+	await card
+		.getByRole("button", { name: "Atualizar informações do host", exact: true })
+		.click()
+	await expect(card.getByRole("alert")).toContainText("503")
+	await expect(card.getByRole("status")).toContainText("podem estar desatualizados")
+	await page.unroute("**/api/config")
+	await card
+		.getByRole("button", { name: "Atualizar informações do host", exact: true })
+		.click()
+	await expect(card.getByRole("alert")).toHaveCount(0)
+	await expect(card.getByRole("status")).toContainText("Informações atualizadas às")
+	expect(host.calls.some((call) => call.method === "POST")).toBe(false)
+})
+
 test("failed log reads can be explicitly refreshed without recovery writes", async ({
 	page
 }) => {
@@ -68,7 +111,9 @@ test("lost restart response is not reported as success or retried", async ({ pag
 		.getByRole("alertdialog")
 		.getByRole("button", { name: "Confirmar", exact: true })
 		.click()
-	await expect(page.getByRole("status")).toContainText("Isso não confirma")
+	await expect(
+		page.getByRole("status").filter({ hasText: "Verifique o estado do host" })
+	).toContainText("Isso não confirma")
 	expect(host.calls.filter((call) => call.path === "restart")).toHaveLength(1)
 })
 

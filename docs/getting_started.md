@@ -8,7 +8,7 @@ and release artifacts may be missing when merging changes on a faster cadence.
 
 ## Binaries
 
-Binaries of Sunshine are created for each release. They are available for Linux, macOS, and Windows.
+Binaries are provided for Windows and Linux.
 Binaries can be found in the [latest release][latest-release].
 
 > [!NOTE]
@@ -270,28 +270,6 @@ brew install sunshine
 brew uninstall sunshine
 ```
 
-### macOS
-
-> [!IMPORTANT]
-> Sunshine on macOS is experimental. Gamepads do not work.
-
-#### Homebrew
-This package requires that you have [Homebrew](https://docs.brew.sh/Installation) installed.
-
-##### Install
-```bash
-brew tap LizardByte/homebrew
-brew install sunshine
-```
-
-##### Uninstall
-```bash
-brew uninstall sunshine
-```
-
-> [!TIP]
-> For beta you can replace `sunshine` with `sunshine-beta` in the above commands.
-
 ### Windows
 
 #### Installer (recommended)
@@ -395,19 +373,6 @@ systemctl --user start sunshine
 ```bash
 systemctl --user enable sunshine
 ```
-
-### macOS
-The first time you start Sunshine, you will be asked to grant access to screen recording and your microphone.
-
-Sunshine can only access microphones on macOS due to system limitations. To stream system audio use
-[Soundflower](https://github.com/mattingalls/Soundflower) or
-[BlackHole](https://github.com/ExistentialAudio/BlackHole).
-
-> [!NOTE]
-> Command Keys are not forwarded by Moonlight. Right Option-Key is mapped to CMD-Key.
-
-> [!CAUTION]
-> Gamepads are not currently supported.
 
 ## Usage
 

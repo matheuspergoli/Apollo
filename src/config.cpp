@@ -34,7 +34,7 @@
   #include "platform/windows/utils.h"
 #endif
 
-#if !defined(__ANDROID__) && !defined(__APPLE__)
+#if !defined(__ANDROID__)
   // For NVENC legacy constants
   #include <ffnvcodec/nvEncodeAPI.h>
 #endif
@@ -70,7 +70,7 @@ namespace config {
 
   namespace amd {
 #if !defined(_WIN32) || defined(DOXYGEN)
-  // values accurate as of 27/12/2022, but aren't strictly necessary for MacOS build
+  // Values accurate as of 27/12/2022.
   #define AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_SPEED 100
   #define AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_QUALITY 30
   #define AMF_VIDEO_ENCODER_AV1_QUALITY_PRESET_BALANCED 70
@@ -289,54 +289,6 @@ namespace config {
 
   }  // namespace qsv
 
-  namespace vt {
-
-    enum coder_e : int {
-      _auto = 0,  ///< Auto
-      cabac,  ///< CABAC
-      cavlc  ///< CAVLC
-    };
-
-    int coder_from_view(const ::std::string_view &coder) {
-      if (coder == "auto"sv) {
-        return _auto;
-      }
-      if (coder == "cabac"sv || coder == "ac"sv) {
-        return cabac;
-      }
-      if (coder == "cavlc"sv || coder == "vlc"sv) {
-        return cavlc;
-      }
-
-      return -1;
-    }
-
-    int allow_software_from_view(const ::std::string_view &software) {
-      if (software == "allowed"sv || software == "forced") {
-        return 1;
-      }
-
-      return 0;
-    }
-
-    int force_software_from_view(const ::std::string_view &software) {
-      if (software == "forced") {
-        return 1;
-      }
-
-      return 0;
-    }
-
-    int rt_from_view(const ::std::string_view &rt) {
-      if (rt == "disabled" || rt == "off" || rt == "0") {
-        return 0;
-      }
-
-      return 1;
-    }
-
-  }  // namespace vt
-
   namespace sw {
     int svtav1_preset_from_view(const ::std::string_view &preset) {
 #define _CONVERT_(x, y) \
@@ -480,13 +432,6 @@ namespace config {
       1,  // vbaq
       (int) amd::coder_e::_auto,  // coder
     },  // amd
-
-    {
-      0,
-      0,
-      1,
-      -1,
-    },  // vt
 
     {
       false,  // strict_rc_buffer
@@ -1126,7 +1071,7 @@ namespace config {
     bool_f(vars, "nvenc_opengl_vulkan_on_dxgi", video.nv_opengl_vulkan_on_dxgi);
     bool_f(vars, "nvenc_latency_over_power", video.nv_sunshine_high_power_mode);
 
-#if !defined(__ANDROID__) && !defined(__APPLE__)
+#if !defined(__ANDROID__)
     video.nv_legacy.preset = video.nv.quality_preset + 11;
     video.nv_legacy.multipass = video.nv.two_pass == nvenc::nvenc_two_pass::quarter_resolution ? NV_ENC_TWO_PASS_QUARTER_RESOLUTION :
                                 video.nv.two_pass == nvenc::nvenc_two_pass::full_resolution    ? NV_ENC_TWO_PASS_FULL_RESOLUTION :
@@ -1169,10 +1114,6 @@ namespace config {
     bool_f(vars, "amd_vbaq", (bool &) video.amd.amd_vbaq);
     bool_f(vars, "amd_enforce_hrd", (bool &) video.amd.amd_enforce_hrd);
 
-    int_f(vars, "vt_coder", video.vt.vt_coder, vt::coder_from_view);
-    int_f(vars, "vt_software", video.vt.vt_allow_sw, vt::allow_software_from_view);
-    int_f(vars, "vt_software", video.vt.vt_require_sw, vt::force_software_from_view);
-    int_f(vars, "vt_realtime", video.vt.vt_realtime, vt::rt_from_view);
 
     bool_f(vars, "vaapi_strict_rc_buffer", video.vaapi.strict_rc_buffer);
 

@@ -21,11 +21,7 @@ option(SUNSHINE_ENABLE_TRAY "Enable system tray icon." ON)
 
 option(SUNSHINE_SYSTEM_WAYLAND_PROTOCOLS "Use system installation of wayland-protocols rather than the submodule." OFF)
 
-if(APPLE)
-    option(BOOST_USE_STATIC "Use static boost libraries." OFF)
-else()
-    option(BOOST_USE_STATIC "Use static boost libraries." ON)
-endif()
+option(BOOST_USE_STATIC "Use static boost libraries." ON)
 
 option(CUDA_FAIL_ON_MISSING "Fail the build if CUDA is not found." ON)
 option(CUDA_INHERIT_COMPILE_OPTIONS
@@ -39,12 +35,7 @@ if(UNIX)
             "Configure Homebrew formula. Recommended to use with SUNSHINE_CONFIGURE_ONLY" OFF)
 endif()
 
-if(APPLE)
-    option(SUNSHINE_CONFIGURE_PORTFILE
-            "Configure macOS Portfile. Recommended to use with SUNSHINE_CONFIGURE_ONLY" OFF)
-    option(SUNSHINE_PACKAGE_MACOS
-            "Should only be used when creating a macOS package/dmg." OFF)
-elseif(UNIX)  # Linux
+if(UNIX)  # Linux
     option(SUNSHINE_BUILD_APPIMAGE
             "Enable an AppImage build." OFF)
     option(SUNSHINE_BUILD_FLATPAK

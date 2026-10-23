@@ -1,5 +1,25 @@
 # Fechamento da versão 1.0
 
+## Plataformas e informações do host
+
+O produto oferece somente Windows e Linux. A configuração completa tem 99 campos
+em 11 seções; Windows exibe 10, pois VA-API é específica de Linux. As contagens
+da interface e do guia exportado são derivadas do schema, não de texto fixo.
+
+Removidos os arquivos nativos, assets, encoder, opções, regras de build e guias da
+plataforma descontinuada. Bibliotecas de terceiros e avisos legais permanecem
+intactos; seus próprios arquivos multiplataforma não representam suporte do Apollo.
+Arquivos de configuração existentes não são editados automaticamente.
+
+Validação deste lote: Biome, TypeScript, 117 unitários, 114 Chromium, build,
+integração dev e auditoria de dependências de produção. A geração de manifests
+Linux passou; isso não substitui compilação completa ou ensaio de streaming Linux.
+O novo executável Windows ainda precisa do CI deste commit.
+
+“Atualizar informações do host” faz uma leitura de configuração: atualiza versão,
+driver e captura, informa carregamento, horário e falhas. Não mede a transmissão,
+não valida todos os ajustes e não grava configurações.
+
 ## Autenticação
 
 A duração nativa da sessão é de 15 dias. Um HTTP 401 sozinho não comprova

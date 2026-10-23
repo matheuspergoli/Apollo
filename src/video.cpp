@@ -131,7 +131,6 @@ namespace video {
   util::Either<avcodec_buffer_t, int> dxgi_init_avcodec_hardware_input_buffer(platf::avcodec_encode_device_t *);
   util::Either<avcodec_buffer_t, int> vaapi_init_avcodec_hardware_input_buffer(platf::avcodec_encode_device_t *);
   util::Either<avcodec_buffer_t, int> cuda_init_avcodec_hardware_input_buffer(platf::avcodec_encode_device_t *);
-  util::Either<avcodec_buffer_t, int> vt_init_avcodec_hardware_input_buffer(platf::avcodec_encode_device_t *);
 
   class avcodec_software_encode_device_t: public platf::avcodec_encode_device_t {
   public:
@@ -522,7 +521,7 @@ namespace video {
     },
     PARALLEL_ENCODING | REF_FRAMES_INVALIDATION | YUV444_SUPPORT | ASYNC_TEARDOWN  // flags
   };
-#elif !defined(__APPLE__)
+#else
   encoder_t nvenc {
     "nvenc"sv,
     std::make_unique<encoder_platform_formats_avcodec>(
@@ -969,87 +968,14 @@ namespace video {
   };
 #endif
 
-#ifdef __APPLE__
-  encoder_t videotoolbox {
-    "videotoolbox"sv,
-    std::make_unique<encoder_platform_formats_avcodec>(
-      AV_HWDEVICE_TYPE_VIDEOTOOLBOX,
-      AV_HWDEVICE_TYPE_NONE,
-      AV_PIX_FMT_VIDEOTOOLBOX,
-      AV_PIX_FMT_NV12,
-      AV_PIX_FMT_P010,
-      AV_PIX_FMT_NONE,
-      AV_PIX_FMT_NONE,
-      vt_init_avcodec_hardware_input_buffer
-    ),
-    {
-      // Common options
-      {
-        {"allow_sw"s, &config::video.vt.vt_allow_sw},
-        {"require_sw"s, &config::video.vt.vt_require_sw},
-        {"realtime"s, &config::video.vt.vt_realtime},
-        {"prio_speed"s, 1},
-        {"max_ref_frames"s, 1},
-      },
-      {},  // SDR-specific options
-      {},  // HDR-specific options
-      {},  // YUV444 SDR-specific options
-      {},  // YUV444 HDR-specific options
-      {},  // Fallback options
-      "av1_videotoolbox"s,
-    },
-    {
-      // Common options
-      {
-        {"allow_sw"s, &config::video.vt.vt_allow_sw},
-        {"require_sw"s, &config::video.vt.vt_require_sw},
-        {"realtime"s, &config::video.vt.vt_realtime},
-        {"prio_speed"s, 1},
-        {"max_ref_frames"s, 1},
-      },
-      {},  // SDR-specific options
-      {},  // HDR-specific options
-      {},  // YUV444 SDR-specific options
-      {},  // YUV444 HDR-specific options
-      {},  // Fallback options
-      "hevc_videotoolbox"s,
-    },
-    {
-      // Common options
-      {
-        {"allow_sw"s, &config::video.vt.vt_allow_sw},
-        {"require_sw"s, &config::video.vt.vt_require_sw},
-        {"realtime"s, &config::video.vt.vt_realtime},
-        {"prio_speed"s, 1},
-        {"max_ref_frames"s, 1},
-      },
-      {},  // SDR-specific options
-      {},  // HDR-specific options
-      {},  // YUV444 SDR-specific options
-      {},  // YUV444 HDR-specific options
-      {
-        // Fallback options
-        {"flags"s, "-low_delay"},
-      },
-      "h264_videotoolbox"s,
-    },
-    DEFAULT
-  };
-#endif
-
   static const std::vector<encoder_t *> encoders {
-#ifndef __APPLE__
     &nvenc,
-#endif
 #ifdef _WIN32
     &quicksync,
     &amdvce,
 #endif
 #ifdef __linux__
     &vaapi,
-#endif
-#ifdef __APPLE__
-    &videotoolbox,
 #endif
     &software
   };
@@ -1774,11 +1700,9 @@ namespace video {
         } else {
           ctx->rc_buffer_size = bitrate / config.framerate;
 
-#ifndef __APPLE__
           if (encoder.name == "nvenc" && config::video.nv_legacy.vbv_percentage_increase > 0) {
             ctx->rc_buffer_size += ctx->rc_buffer_size * config::video.nv_legacy.vbv_percentage_increase / 100;
           }
-#endif
         }
       }
 
@@ -2940,19 +2864,6 @@ namespace video {
     return hw_device_buf;
   }
 
-  util::Either<avcodec_buffer_t, int> vt_init_avcodec_hardware_input_buffer(platf::avcodec_encode_device_t *encode_device) {
-    avcodec_buffer_t hw_device_buf;
-
-    auto status = av_hwdevice_ctx_create(&hw_device_buf, AV_HWDEVICE_TYPE_VIDEOTOOLBOX, nullptr, nullptr, 0);
-    if (status < 0) {
-      char string[AV_ERROR_MAX_STRING_SIZE];
-      BOOST_LOG(error) << "Failed to create a VideoToolbox device: "sv << av_make_error_string(string, AV_ERROR_MAX_STRING_SIZE, status);
-      return -1;
-    }
-
-    return hw_device_buf;
-  }
-
 #ifdef _WIN32
 }
 
@@ -3028,8 +2939,6 @@ namespace video {
         return platf::mem_type_e::cuda;
       case AV_HWDEVICE_TYPE_NONE:
         return platf::mem_type_e::system;
-      case AV_HWDEVICE_TYPE_VIDEOTOOLBOX:
-        return platf::mem_type_e::videotoolbox;
       default:
         return platf::mem_type_e::unknown;
     }

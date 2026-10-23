@@ -1,5 +1,5 @@
 # unix specific compile definitions
-# put anything here that applies to both linux and macos
+# Linux definitions shared by Unix build helpers.
 
 list(APPEND SUNSHINE_EXTERNAL_LIBRARIES
         ${CURL_LIBRARIES})

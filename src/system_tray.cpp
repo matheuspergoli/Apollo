@@ -19,12 +19,6 @@
     #define TRAY_ICON_PLAYING SUNSHINE_TRAY_PREFIX "-playing"
     #define TRAY_ICON_PAUSING SUNSHINE_TRAY_PREFIX "-pausing"
     #define TRAY_ICON_LOCKED SUNSHINE_TRAY_PREFIX "-locked"
-  #elif defined(__APPLE__) || defined(__MACH__)
-    #define TRAY_ICON WEB_DIR "images/logo-apollo-16.png"
-    #define TRAY_ICON_PLAYING WEB_DIR "images/apollo-playing-16.png"
-    #define TRAY_ICON_PAUSING WEB_DIR "images/apollo-pausing-16.png"
-    #define TRAY_ICON_LOCKED WEB_DIR "images/apollo-locked-16.png"
-    #include <dispatch/dispatch.h>
   #endif
 
   #define TRAY_MSG_NO_APP_RUNNING "Reload Apps"

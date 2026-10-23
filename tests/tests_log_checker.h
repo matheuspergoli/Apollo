@@ -109,14 +109,12 @@ namespace log_checker {
 
     std::string search_str(substr);
     if (case_insensitive) {
-      // sonarcloud complains about this, but the solution doesn't work for macOS-12
       std::transform(search_str.begin(), search_str.end(), search_str.begin(), ::tolower);
     }
 
     for (std::string line; std::getline(input, line);) {
       line = remove_timestamp_prefix(line);
       if (case_insensitive) {
-        // sonarcloud complains about this, but the solution doesn't work for macOS-12
         std::transform(line.begin(), line.end(), line.begin(), ::tolower);
       }
       if (line.find(search_str) != std::string::npos) {

@@ -2,6 +2,17 @@ import { expect, test } from "@playwright/test"
 import { strFromU8, unzipSync } from "fflate"
 import { mockHost } from "../fixtures/mock-api"
 
+test("complete export explains the ten Windows sections and the additional Linux section", async ({
+	page
+}) => {
+	await mockHost(page)
+	await page.goto("/config")
+	const card = page.locator('[data-slot="card"]').filter({ hasText: "Todas as configurações" })
+	await expect(card).toContainText("99 campos das 11 seções de todas as plataformas")
+	await expect(card).toContainText("Neste host, o painel mostra 10 seções")
+	await expect(card).toContainText("inclui também VA-API")
+})
+
 function configuration(sections: Record<string, unknown>, kind = "saved") {
 	return { format: "apollo-settings", version: 1, platform: "windows", kind, sections }
 }
@@ -31,11 +42,11 @@ test("saved global export requires consent and reads fresh saved values instead 
 	const chunks: Buffer[] = []
 	for await (const chunk of stream) chunks.push(Buffer.from(chunk))
 	const files = unzipSync(Buffer.concat(chunks))
-	expect(Object.keys(files)).toHaveLength(14)
+	expect(Object.keys(files)).toHaveLength(13)
 	const raw = strFromU8(files["apollo-configuracao/configuracao.json"])
 	const parsed = JSON.parse(raw)
 	expect(parsed.kind).toBe("saved")
-	expect(Object.keys(parsed.sections)).toHaveLength(12)
+	expect(Object.keys(parsed.sections)).toHaveLength(11)
 	expect(parsed.sections.general.sunshine_name).toBe("Valor atualizado no host")
 	expect(raw).not.toContain("Rascunho não salvo")
 	expect(raw).not.toContain("not-exported-private-data")

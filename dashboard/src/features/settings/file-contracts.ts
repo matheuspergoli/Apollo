@@ -11,6 +11,6 @@ export const globalFileSchema = z.strictObject({
 	format: z.literal("apollo-settings"),
 	version: z.literal(1),
 	kind: z.enum(["saved", "defaults"]),
-	platform: z.enum(["windows", "linux", "macos", "unknown"]),
+	platform: z.enum(["windows", "linux", "unknown"]),
 	sections: z.record(z.string(), values)
 })

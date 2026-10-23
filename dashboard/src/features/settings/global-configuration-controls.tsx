@@ -30,7 +30,7 @@ import {
 	parseGlobalConfiguration,
 	savedConfiguration
 } from "./global-configuration"
-import { changedKeys, fields, loadSnapshot, sections } from "./model"
+import { changedKeys, fields, loadSnapshot, sections, visibleSections } from "./model"
 
 export function GlobalConfigurationControls({
 	platform,
@@ -48,6 +48,8 @@ export function GlobalConfigurationControls({
 	const [error, setError] = useState<Error | null>(null)
 	const [pending, setPending] = useState<GlobalImport | null>(null)
 	const [filename, setFilename] = useState("")
+	const visible = visibleSections(platform)
+	const otherPlatforms = sections.filter((section) => !visible.includes(section))
 	const changes = pending
 		? changedKeys(currentValues, { ...currentValues, ...pending.values })
 		: []
@@ -90,9 +92,18 @@ export function GlobalConfigurationControls({
 			<CardHeader>
 				<CardTitle>Todas as configurações</CardTitle>
 				<CardDescription>
-					Exporte os 102 campos das 12 seções ou importe várias seções de uma vez. Padrões e
-					valores salvos são arquivos diferentes; não é backup de conta, pareamentos ou
-					aplicativos.
+					Exporte os {fields.length} campos das {sections.length} seções de todas as
+					plataformas ou importe várias seções de uma vez.
+					{otherPlatforms.length > 0 && (
+						<>
+							{" "}
+							Neste host, o painel mostra {visible.length} seções; o arquivo completo inclui
+							também {otherPlatforms.map((section) => section.title).join(" e ")}, de outras
+							plataformas.
+						</>
+					)}{" "}
+					Padrões e valores salvos são arquivos diferentes; não é backup de conta, pareamentos
+					ou aplicativos.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-3">

@@ -10,7 +10,6 @@ It is recommended to use one of the following compilers:
 |:------------|:--------|
 | GCC         | 13+     |
 | Clang       | 17+     |
-| Apple Clang | 15+     |
 
 ### Dependencies
 
@@ -31,55 +30,6 @@ Sunshine requires CUDA Toolkit for NVFBC capture. There are two caveats to CUDA:
 > [!NOTE]
 > To install older versions, select the appropriate run file based on your desired CUDA version and architecture
 > according to [CUDA Toolkit Archive](https://developer.nvidia.com/cuda-toolkit-archive)
-
-#### macOS
-You can either use [Homebrew](https://brew.sh) or [MacPorts](https://www.macports.org) to install dependencies.
-
-##### Homebrew
-```bash
-dependencies=(
-  "boost"  # Optional
-  "cmake"
-  "doxygen"  # Optional, for docs
-  "graphviz"  # Optional, for docs
-  "icu4c"  # Optional, if boost is not installed
-  "miniupnpc"
-  "ninja"
-  "node"
-  "openssl@3"
-  "opus"
-  "pkg-config"
-)
-brew install "${dependencies[@]}"
-```
-
-If there are issues with an SSL header that is not found:
-
-@tabs{
-  @tab{ Intel | ```bash
-    ln -s /usr/local/opt/openssl/include/openssl /usr/local/include/openssl
-    ```}
-  @tab{ Apple Silicon | ```bash
-    ln -s /opt/homebrew/opt/openssl/include/openssl /opt/homebrew/include/openssl
-    ```
-  }
-}
-
-##### MacPorts
-```bash
-dependencies=(
-  "cmake"
-  "curl"
-  "doxygen"  # Optional, for docs
-  "graphviz"  # Optional, for docs
-  "libopus"
-  "miniupnpc"
-  "ninja"
-  "npm9"
-  "pkgconfig"
-)
-sudo port install "${dependencies[@]}"
-```
 
 #### Windows
 First you need to install [MSYS2](https://www.msys2.org), then startup "MSYS2 UCRT64" and execute the following
@@ -153,11 +103,6 @@ ninja -C build
       ```}
     @tab{rpm | ```bash
       cpack -G RPM --config ./build/CPackConfig.cmake
-      ```}
-  }}
-  @tab{macOS | @tabs{
-    @tab{DragNDrop | ```bash
-      cpack -G DragNDrop --config ./build/CPackConfig.cmake
       ```}
   }}
   @tab{Windows | @tabs{

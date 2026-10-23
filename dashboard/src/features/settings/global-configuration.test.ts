@@ -17,15 +17,15 @@ const snapshot = (values: Snapshot["values"] = {}): Snapshot => ({
 })
 
 describe("global configuration files", () => {
-	it("roundtrips all 102 known defaults in 12 sections with complete ZIP documentation", async () => {
+	it("roundtrips all 99 known defaults in 11 sections with complete ZIP documentation", async () => {
 		const configuration = globalTemplate("windows")
 		const parsed = parseGlobalConfiguration(JSON.stringify(configuration))
-		expect(parsed.sectionIds).toHaveLength(12)
-		expect(Object.keys(parsed.values)).toHaveLength(102)
+		expect(parsed.sectionIds).toHaveLength(11)
+		expect(Object.keys(parsed.values)).toHaveLength(99)
 		const files = unzipSync(
 			new Uint8Array(await (await globalArchive(configuration)).arrayBuffer())
 		)
-		expect(Object.keys(files)).toHaveLength(14)
+		expect(Object.keys(files)).toHaveLength(13)
 		expect(JSON.parse(strFromU8(files["apollo-configuracao/configuracao.json"]))).toEqual(
 			configuration
 		)
@@ -33,7 +33,7 @@ describe("global configuration files", () => {
 			const docs = strFromU8(files[`apollo-configuracao/secoes/${section.id}.md`])
 			for (const field of section.fields) expect(docs).toContain(field.key)
 		}
-		expect(globalDocumentation(configuration)).toContain("os padrões das 12 seções")
+		expect(globalDocumentation(configuration)).toContain("os padrões das 11 seções")
 	})
 
 	it("exports saved known fields with canonical types, not unknown secrets or response metadata", () => {

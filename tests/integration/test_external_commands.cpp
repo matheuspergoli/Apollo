@@ -19,7 +19,7 @@
 // Test data structure for parameterized testing
 struct ExternalCommandTestData {
   std::string command;
-  std::string platform;  // "windows", "linux", "macos", or "all"
+  std::string platform;  // "windows", "linux", or "all"
   bool should_succeed;
   std::string description;
   std::string working_directory;  // Optional: if empty, uses SUNSHINE_SOURCE_DIR
@@ -42,8 +42,6 @@ protected:
   void SetUp() override {
     if constexpr (IS_WINDOWS) {
       current_platform = "windows";
-    } else if constexpr (IS_MACOS) {
-      current_platform = "macos";
     } else if constexpr (IS_LINUX) {
       current_platform = "linux";
     }

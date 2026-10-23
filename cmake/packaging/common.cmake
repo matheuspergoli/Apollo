@@ -39,11 +39,7 @@ if(WIN32)
 elseif(UNIX)
     include(${CMAKE_MODULE_PATH}/packaging/unix.cmake)
 
-    if(APPLE)
-        include(${CMAKE_MODULE_PATH}/packaging/macos.cmake)
-    else()
-        include(${CMAKE_MODULE_PATH}/packaging/linux.cmake)
-    endif()
+    include(${CMAKE_MODULE_PATH}/packaging/linux.cmake)
 endif()
 
 include(CPack)

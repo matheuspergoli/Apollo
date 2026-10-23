@@ -42,7 +42,7 @@ TEST(ConfigConsistencyTest, AllActiveNativeOptionsHaveExactlyOneUiField) {
       EXPECT_FALSE(field.at("label").get<std::string>().empty()) << key;
     }
   }
-  EXPECT_EQ(ui_options.size(), 102);
+  EXPECT_EQ(ui_options.size(), 99);
   EXPECT_EQ(ui_options, native_options());
   EXPECT_FALSE(ui_options.contains("locale"));
   EXPECT_FALSE(ui_options.contains("dd_wa_hdr_toggle"));

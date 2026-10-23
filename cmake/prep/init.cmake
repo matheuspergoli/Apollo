@@ -4,7 +4,6 @@ if (WIN32)
             add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-template-body>) # Workaround for WinRT headers
         endif()
     endif()
-elseif (APPLE)
 elseif (UNIX)
     include(GNUInstallDirs)
 

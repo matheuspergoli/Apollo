@@ -27,7 +27,6 @@ location by modifying the configuration file.
 |---------|-------------------------------------------------|
 | Docker  | @code{}/config@endcode                          |
 | Linux   | @code{}~/.config/sunshine@endcode               |
-| macOS   | @code{}~/.config/sunshine@endcode               |
 | Windows | @code{}%ProgramFiles%\\Sunshine\\config@endcode |
 
 Although it is recommended to use the configuration UI, it is possible manually configure Sunshine by
@@ -650,14 +649,6 @@ There is no language selector or locale configuration option.
             @endcode
             <br>
             <br>
-            **macOS:**
-            <br>
-            Sunshine can only access microphones on macOS due to system limitations.
-            To stream system audio use
-            [Soundflower](https://github.com/mattingalls/Soundflower) or
-            [BlackHole](https://github.com/ExistentialAudio/BlackHole).
-            <br>
-            <br>
             **Windows:**
             <br>
             Enter the following command in command prompt or PowerShell.
@@ -681,12 +672,6 @@ There is no language selector or locale configuration option.
             @endcode</td>
     </tr>
     <tr>
-        <td>Example (macOS)</td>
-        <td colspan="2">@code{}
-            audio_sink = BlackHole 2ch
-            @endcode</td>
-    </tr>
-    <tr>
         <td>Example (Windows)</td>
         <td colspan="2">@code{}
             audio_sink = Speakers (High Definition Audio Device)
@@ -704,11 +689,11 @@ There is no language selector or locale configuration option.
             while muting the speakers.
             @tip{See [audio_sink](#audio_sink)!}
             @tip{These are some options for virtual sound devices.
-            * Stream Streaming Speakers (Linux, macOS, Windows)
+            * Stream Streaming Speakers (Linux, Windows)
               * Steam must be installed.
               * Enable [install_steam_audio_drivers](#install_steam_audio_drivers)
                 or use Steam Remote Play at least once to install the drivers.
-            * [Virtual Audio Cable](https://vb-audio.com/Cable) (macOS, Windows)
+            * [Virtual Audio Cable](https://vb-audio.com/Cable) (Windows)
             }
         </td>
     </tr>
@@ -849,17 +834,6 @@ There is no language selector or locale configuration option.
             You need to use the id value inside the parenthesis, e.g. `1`.
             <br>
             <br>
-            **macOS:**
-            <br>
-            During Sunshine startup, you should see the list of detected displays:
-            @code{}
-            Info: Detecting displays
-            Info: Detected display: Monitor-0 (id: 3) connected: true
-            Info: Detected display: Monitor-1 (id: 2) connected: true
-            @endcode
-            You need to use the id value inside the parenthesis, e.g. `3`.
-            <br>
-            <br>
             **Windows:**
             <br>
             During Sunshine startup, you should see the list of detected displays:
@@ -923,12 +897,6 @@ There is no language selector or locale configuration option.
         <td>Example (Linux)</td>
         <td colspan="2">@code{}
             output_name = 0
-            @endcode</td>
-    </tr>
-    <tr>
-        <td>Example (macOS)</td>
-        <td colspan="2">@code{}
-            output_name = 3
             @endcode</td>
     </tr>
     <tr>
@@ -2635,111 +2603,6 @@ There is no language selector or locale configuration option.
     <tr>
         <td>cavlc</td>
         <td>context adaptive variable-length coding - higher quality</td>
-    </tr>
-</table>
-
-## VideoToolbox Encoder
-
-### vt_coder
-
-<table>
-    <tr>
-        <td>Description</td>
-        <td colspan="2">
-            The entropy encoding to use.
-            @note{This option only applies when using macOS.}
-        </td>
-    </tr>
-    <tr>
-        <td>Default</td>
-        <td colspan="2">@code{}
-            auto
-            @endcode</td>
-    </tr>
-    <tr>
-        <td>Example</td>
-        <td colspan="2">@code{}
-            vt_coder = auto
-            @endcode</td>
-    </tr>
-    <tr>
-        <td rowspan="3">Choices</td>
-        <td>auto</td>
-        <td>let ffmpeg decide</td>
-    </tr>
-    <tr>
-        <td>cabac</td>
-        <td>context adaptive binary arithmetic coding - faster decode</td>
-    </tr>
-    <tr>
-        <td>cavlc</td>
-        <td>context adaptive variable-length coding - higher quality</td>
-    </tr>
-</table>
-
-### vt_software
-
-<table>
-    <tr>
-        <td>Description</td>
-        <td colspan="2">
-            Force Video Toolbox to use software encoding.
-            @note{This option only applies when using macOS.}
-        </td>
-    </tr>
-    <tr>
-        <td>Default</td>
-        <td colspan="2">@code{}
-            auto
-            @endcode</td>
-    </tr>
-    <tr>
-        <td>Example</td>
-        <td colspan="2">@code{}
-            vt_software = auto
-            @endcode</td>
-    </tr>
-    <tr>
-        <td rowspan="4">Choices</td>
-        <td>auto</td>
-        <td>let ffmpeg decide</td>
-    </tr>
-    <tr>
-        <td>disabled</td>
-        <td>disable software encoding</td>
-    </tr>
-    <tr>
-        <td>allowed</td>
-        <td>allow software encoding</td>
-    </tr>
-    <tr>
-        <td>forced</td>
-        <td>force software encoding</td>
-    </tr>
-</table>
-
-### vt_realtime
-
-<table>
-    <tr>
-        <td>Description</td>
-        <td colspan="2">
-            Realtime encoding.
-            @note{This option only applies when using macOS.}
-            @warning{Disabling realtime encoding might result in a delayed frame encoding or frame drop.}
-        </td>
-    </tr>
-    <tr>
-        <td>Default</td>
-        <td colspan="2">@code{}
-            enabled
-            @endcode</td>
-    </tr>
-    <tr>
-        <td>Example</td>
-        <td colspan="2">@code{}
-            vt_realtime = enabled
-            @endcode</td>
     </tr>
 </table>
 

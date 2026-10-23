@@ -120,12 +120,6 @@ namespace test_utils {
   #define IS_LINUX false
 #endif
 
-#ifdef __APPLE__
-  #define IS_MACOS true
-#else
-  #define IS_MACOS false
-#endif
-
 struct PlatformTestSuite: testing::Test {
   static void SetUpTestSuite() {
     ASSERT_FALSE(platf_deinit);

@@ -21,19 +21,20 @@ const base = (values: Record<string, unknown> = {}) =>
 	})
 
 describe("configuration migration inventory", () => {
-	it("covers all 102 active backend settings without duplicates across 12 groups", () => {
-		expect(fields).toHaveLength(102)
-		expect(new Set(fields.map((field) => field.key)).size).toBe(102)
-		expect(sections).toHaveLength(12)
+	it("covers all 99 active backend settings without duplicates across 11 groups", () => {
+		expect(fields).toHaveLength(99)
+		expect(new Set(fields.map((field) => field.key)).size).toBe(99)
+		expect(sections).toHaveLength(11)
 		expect(fields.every((field) => field.label && field.key)).toBe(true)
 	})
 	it("filters only platform-inapplicable encoder sections without deleting their stored keys", () => {
-		expect(visibleSections("windows").map((section) => section.id)).not.toContain("vt")
+		expect(visibleSections("windows")).toHaveLength(10)
+		expect(visibleSections("linux")).toHaveLength(9)
 		expect(visibleSections("windows").map((section) => section.id)).not.toContain("vaapi")
 		const serialized = serializeSettings(
-			draftFrom(base({ vt_coder: "cabac", custom_encoder_flag: "keep" }))
+			draftFrom(base({ vaapi_strict_rc_buffer: "enabled", custom_encoder_flag: "keep" }))
 		)
-		expect(serialized.vt_coder).toBe("cabac")
+		expect(serialized.vaapi_strict_rc_buffer).toBe("enabled")
 		expect(serialized.custom_encoder_flag).toBe("keep")
 	})
 	it("does not write defaults, response metadata or mutate the loaded document", () => {

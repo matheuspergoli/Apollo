@@ -208,6 +208,7 @@ export function DiagnosticsPage() {
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-3 text-sm">
+						<RequestError error={config.error} />
 						<p>
 							Versão:{" "}
 							<span className="font-mono">{config.data?.version || "Não informada"}</span>
@@ -225,8 +226,22 @@ export function DiagnosticsPage() {
 							Confira codec, FPS, rede e decodificação nas estatísticas do Artemis. A latência
 							de ponta a ponta não é medida por este painel.
 						</p>
-						<Button variant="outline" onClick={() => void config.refetch()}>
-							Verificar resposta do host
+						<p role="status" className="text-muted-foreground text-xs">
+							{config.isFetching
+								? "Atualizando informações do host…"
+								: config.isError
+									? "Não foi possível atualizar. Os dados anteriores podem estar desatualizados."
+									: config.dataUpdatedAt
+										? `Informações atualizadas às ${new Date(config.dataUpdatedAt).toLocaleTimeString("pt-BR")}.`
+										: "Aguardando leitura do host."}
+						</p>
+						<Button
+							variant="outline"
+							disabled={config.isFetching}
+							onClick={() => void config.refetch()}
+						>
+							<IconRefresh />
+							{config.isFetching ? "Atualizando…" : "Atualizar informações do host"}
 						</Button>
 					</CardContent>
 				</Card>

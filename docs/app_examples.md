@@ -34,14 +34,6 @@ and applications to Sunshine.
     \| Detached Commands            \| @code{}setsid steam steam://open/bigpicture@endcode  \|
     \| Image                        \| @code{}steam.png@endcode                             \|
   }
-  @tab{macOS | <!-- -->
-    \| Field                        \| Value                                          \|
-    \|------------------------------\|------------------------------------------------\|
-    \| Application Name             \| @code{}Steam Big Picture@endcode               \|
-    \| Command Preporations -> Undo \| @code{}open steam://close/bigpicture@endcode   \|
-    \| Detached Commands            \| @code{}open steam://open/bigpicture@endcode    \|
-    \| Image                        \| @code{}steam.png@endcode                       \|
-  }
   @tab{Windows | <!-- -->
     \| Field                        \| Value                                     \|
     \|------------------------------\|-------------------------------------------\|
@@ -103,12 +95,6 @@ and applications to Sunshine.
     \| Application Name  \| @code{}Surviving Mars@endcode                        \|
     \| Detached Commands \| @code{}setsid steam steam://rungameid/464920@endcode \|
   }
-  @tab{macOS | <!-- -->
-    \| Field             \| Value                                        \|
-    \|-------------------\|----------------------------------------------\|
-    \| Application Name  \| @code{}Surviving Mars@endcode                \|
-    \| Detached Commands \| @code{}open steam://rungameid/464920@endcode \|
-  }
   @tab{Windows | <!-- -->
     \| Field             \| Value                                   \|
     \|-------------------\|-----------------------------------------\|
@@ -120,13 +106,6 @@ and applications to Sunshine.
 #### Binary (w/ working directory
 @tabs{
   @tab{Linux | <!-- -->
-    \| Field             \| Value                                                        \|
-    \|-------------------\|--------------------------------------------------------------\|
-    \| Application Name  \| @code{}Surviving Mars@endcode                                \|
-    \| Command           \| @code{}MarsSteam@endcode                                     \|
-    \| Working Directory \| @code{}~/.steam/steam/SteamApps/common/Survivng Mars@endcode \|
-  }
-  @tab{macOS | <!-- -->
     \| Field             \| Value                                                        \|
     \|-------------------\|--------------------------------------------------------------\|
     \| Application Name  \| @code{}Surviving Mars@endcode                                \|
@@ -145,12 +124,6 @@ and applications to Sunshine.
 #### Binary (w/o working directory)
 @tabs{
   @tab{Linux | <!-- -->
-    \| Field             \| Value                                                                  \|
-    \|-------------------\|------------------------------------------------------------------------\|
-    \| Application Name  \| @code{}Surviving Mars@endcode                                          \|
-    \| Command           \| @code{}~/.steam/steam/SteamApps/common/Survivng Mars/MarsSteam@endcode \|
-  }
-  @tab{macOS | <!-- -->
     \| Field             \| Value                                                                  \|
     \|-------------------\|------------------------------------------------------------------------\|
     \| Application Name  \| @code{}Surviving Mars@endcode                                          \|
@@ -178,8 +151,8 @@ and applications to Sunshine.
 | Undo      | @code{}xrandr --output HDMI-1 --mode 3840x2160 --rate 120@endcode                                                                     |
 
 > [!TIP]
-> The above only works if the xrandr mode already exists. You will need to create new modes to stream to macOS
-> and iOS devices, since they use non-standard resolutions.
+> The above only works if the xrandr mode already exists. Create a new mode if
+> the client requests a resolution not already available on the host.
 >
 > You can update the ``Do`` command to this:
 > ```bash
@@ -286,20 +259,6 @@ unmaintained and do not support newer Mutter features such as HDR and VRR.
 |-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Do        | @code{}sh -c "nvidia-settings -a CurrentMetaMode=\"HDMI-1: nvidia-auto-select { ViewPortIn=${SUNSHINE_CLIENT_WIDTH}x${SUNSHINE_CLIENT_HEIGHT}, ViewPortOut=${SUNSHINE_CLIENT_WIDTH}x${SUNSHINE_CLIENT_HEIGHT}+0+0 }\""@endcode |
 | Undo      | @code{}nvidia-settings -a CurrentMetaMode=\"HDMI-1: nvidia-auto-select { ViewPortIn=3840x2160, ViewPortOut=3840x2160+0+0 }"@endcode                                                                                            |
-
-##### macOS
-
-###### displayplacer
-
-> [!NOTE]
-> This example uses the `displayplacer` tool to change the resolution.
-> This tool can be installed following instructions in their
-> [GitHub repository](https://github.com/jakehilborn/displayplacer).
-
-| Prep Step | Command                                                                                                                                                                  |
-|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Do        | @code{}sh -c "displayplacer \"id:<screenId> res:${SUNSHINE_CLIENT_WIDTH}x${SUNSHINE_CLIENT_HEIGHT} hz:${SUNSHINE_CLIENT_FPS} scaling:on origin:(0,0) degree:0\""@endcode |
-| Undo      | @code{}displayplacer "id:<screenId> res:3840x2160 hz:120 scaling:on origin:(0,0) degree:0"@endcode                                                                       |
 
 ##### Windows
 Sunshine has built-in support for changing the resolution and refresh rate on Windows. If you prefer to use a

@@ -72,12 +72,6 @@ namespace config {
       int amd_coder;
     } amd;
 
-    struct {
-      int vt_allow_sw;
-      int vt_require_sw;
-      int vt_realtime;
-      int vt_coder;
-    } vt;
 
     struct {
       bool strict_rc_buffer;

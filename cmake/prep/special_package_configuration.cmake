@@ -4,11 +4,7 @@ if(UNIX)
     endif()
 endif()
 
-if(APPLE)
-    if(${SUNSHINE_CONFIGURE_PORTFILE})
-        configure_file(packaging/macos/Portfile Portfile @ONLY)
-    endif()
-elseif(UNIX)
+if(UNIX)
     # configure the .desktop file
     set(SUNSHINE_DESKTOP_ICON "apollo.svg")
     if(${SUNSHINE_BUILD_APPIMAGE})
