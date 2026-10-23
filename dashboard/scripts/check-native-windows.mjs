@@ -471,7 +471,10 @@ try {
 		.getByRole("alertdialog")
 		.getByRole("button", { name: "Confirmar", exact: true })
 		.click()
-	for (let attempt = 0; attempt < 300 && child.exitCode === null; attempt++) {
+	// The driverless runner repeatedly waits for virtual-display cleanup during
+	// termination. Keep a bounded shutdown budget, independent of the HTTP timeout;
+	// still require the original process to exit normally (not merely accept POST).
+	for (let attempt = 0; attempt < 1200 && child.exitCode === null; attempt++) {
 		await new Promise((resolve) => setTimeout(resolve, 100))
 	}
 	assert.equal(
