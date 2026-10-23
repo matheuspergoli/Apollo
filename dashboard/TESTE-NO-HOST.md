@@ -47,6 +47,9 @@ reinício não confirma sucesso nem falha e não deve provocar repetição autom
 - [ ] Todas as telas abrem e recarregam: visão geral, dispositivos, aplicativos,
   configurações, acesso/senha e diagnóstico; sem painel antigo ou seletor de idioma.
 - [ ] No S25+, menus, campos, diálogos e temas claro/escuro permanecem utilizáveis.
+- [ ] Nos editores de dispositivo/aplicativo, a barra de salvar acompanha as bordas
+  dos cartões durante a rolagem. No desktop, confira também a navegação recolhida.
+  O antigo rodapé de instalação de teste/código/licença não aparece mais.
 - [ ] Pareamento por PIN funciona; confira nome e permissões antes de transmitir.
 - [ ] Código temporário/QR funciona; após expirar, não permite reutilizar o link.
 - [ ] Aplicativo de teste pode ser criado, editado, ordenado, iniciado e encerrado.

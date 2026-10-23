@@ -113,25 +113,6 @@ export function AppShell() {
 				<div className="mx-auto w-full max-w-7xl flex-1 space-y-6 p-4 md:p-8">
 					<Outlet />
 				</div>
-				<footer className="flex flex-wrap gap-4 border-t px-8 py-4 text-muted-foreground text-xs">
-					<span>Apollo · instalação de teste</span>
-					<a
-						href="https://github.com/matheuspergoli/Apollo"
-						target="_blank"
-						rel="noreferrer"
-						className="underline underline-offset-4"
-					>
-						Código e proveniência
-					</a>
-					<a
-						href="https://github.com/ClassicOldSong/Apollo/blob/master/LICENSE"
-						target="_blank"
-						rel="noreferrer"
-						className="underline underline-offset-4"
-					>
-						Licença
-					</a>
-				</footer>
 			</SidebarInset>
 		</SidebarProvider>
 	)

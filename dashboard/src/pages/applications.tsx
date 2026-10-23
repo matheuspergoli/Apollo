@@ -101,7 +101,7 @@ function AppEditor({
 	return (
 		<>
 			<UnsavedChanges dirty={changed} pending={mutation.isPending} />
-			<div className="flex flex-wrap items-start justify-between gap-3">
+			<div className="flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<p className="text-muted-foreground text-xs uppercase tracking-widest">
 						Biblioteca / editor
@@ -125,7 +125,7 @@ function AppEditor({
 			</div>
 			<RequestError error={mutation.error} />
 			<form
-				className="space-y-6"
+				className="min-w-0 space-y-6"
 				onSubmit={(event) => {
 					event.preventDefault()
 					if (!mutation.isPending) mutation.mutate()
@@ -282,7 +282,10 @@ function AppEditor({
 						))}
 					</CardContent>
 				</Card>
-				<div className="sticky bottom-0 z-20 flex flex-wrap justify-end gap-2 border bg-background/95 p-4 backdrop-blur-sm">
+				<Card
+					data-slot="editor-actions"
+					className="sticky bottom-0 z-20 w-full min-w-0 flex-row flex-wrap items-center justify-end gap-2 bg-card/95 px-(--card-spacing) shadow-sm backdrop-blur-sm"
+				>
 					{text(draft.uuid) && (
 						<Button
 							type="button"
@@ -301,7 +304,7 @@ function AppEditor({
 						<IconDeviceFloppy />
 						{mutation.isPending ? "Salvando…" : "Salvar aplicativo"}
 					</Button>
-				</div>
+				</Card>
 			</form>
 		</>
 	)

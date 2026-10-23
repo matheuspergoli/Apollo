@@ -55,6 +55,11 @@ visual classes; .dark is the standard theme selector. No Vue/Bootstrap runtime
 exists in this package. The interface is fixed to pt-BR: no i18n dependencies,
 providers, catalogs, language selector, language endpoint or opaque locale adapter.
 
+Editor action bars reuse Card's outline and spacing rather than mixing an inset
+border with the cards' outer ring. Keep 16px inner padding and 8px action gaps;
+validate full-content alignment, including sidebar transitions and capped desktop
+widths. Do not compensate for mismatched box models with negative margins.
+
 The user's ~/monorepo was read for Biome, shadcn, theme, TS and Router/Query
 conventions. No private auth, tRPC, infrastructure, DB or environment was copied.
 See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for source/license changes.

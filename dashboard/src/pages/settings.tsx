@@ -231,13 +231,16 @@ function Editor({ initial }: { initial: Snapshot }) {
 					</CardContent>
 				</Card>
 			</div>
-			<div className="sticky bottom-0 z-20 flex flex-wrap items-center justify-between gap-3 border bg-background/95 p-4 shadow-sm backdrop-blur-sm">
+			<Card
+				data-slot="editor-actions"
+				className="sticky bottom-0 z-20 w-full min-w-0 flex-row flex-wrap items-center justify-between gap-3 bg-card/95 px-(--card-spacing) shadow-sm backdrop-blur-sm"
+			>
 				<p className="text-muted-foreground text-sm">
 					{dirty
 						? "Seu rascunho ainda não foi gravado."
 						: "As configurações estão sincronizadas com sua última gravação."}
 				</p>
-				<div className="flex flex-wrap gap-2">
+				<div className="ml-auto flex flex-wrap justify-end gap-2">
 					<Button
 						variant="outline"
 						disabled={!dirty || save.isPending}
@@ -277,7 +280,7 @@ function Editor({ initial }: { initial: Snapshot }) {
 						destructive
 					/>
 				</div>
-			</div>
+			</Card>
 			<Dialog
 				open={review}
 				onOpenChange={(open) => {

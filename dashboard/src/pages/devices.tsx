@@ -299,7 +299,7 @@ function DeviceEditor({
 	return (
 		<>
 			<UnsavedChanges dirty={changed} pending={mutation.isPending} />
-			<div className="flex flex-wrap justify-between gap-3">
+			<div className="flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<p className="text-muted-foreground text-xs uppercase tracking-widest">
 						Dispositivos / permissões
@@ -323,7 +323,7 @@ function DeviceEditor({
 			</div>
 			<RequestError error={mutation.error} />
 			<form
-				className="space-y-6"
+				className="min-w-0 space-y-6"
 				onSubmit={(event) => {
 					event.preventDefault()
 					if (!mutation.isPending) mutation.mutate()
@@ -469,11 +469,14 @@ function DeviceEditor({
 						</CardContent>
 					</Card>
 				)}
-				<div className="sticky bottom-0 flex justify-end border bg-background/95 p-4">
+				<Card
+					data-slot="editor-actions"
+					className="sticky bottom-0 z-20 w-full min-w-0 flex-row flex-wrap items-center justify-end gap-2 bg-card/95 px-(--card-spacing) shadow-sm backdrop-blur-sm"
+				>
 					<Button type="submit" disabled={mutation.isPending}>
 						{mutation.isPending ? "Salvando…" : "Salvar dispositivo"}
 					</Button>
-				</div>
+				</Card>
 			</form>
 		</>
 	)

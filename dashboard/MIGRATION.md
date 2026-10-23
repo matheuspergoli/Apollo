@@ -127,3 +127,20 @@ Falhas e correções anteriores estão em [VALIDATION-HISTORY.md](VALIDATION-HIS
   do navegador, mantendo a tolerância de 1 px. Quarenta execuções repetidas passaram
   sem retries. Essa correção altera somente teste/documentação, não os assets
   executáveis do candidato; o CI frontend será repetido antes da entrega.
+
+## Refino de alinhamento e espaçamentos
+
+- Removido o rodapé visual “Apollo · instalação de teste / Código e proveniência /
+  Licença”. Os arquivos de licença e os avisos do projeto não foram removidos.
+- O estreitamento aparente das barras veio do uso de borda interna, enquanto os
+  cartões usam contorno externo. As três barras de editor agora reutilizam Card,
+  com o mesmo contorno, padding de 16 px e espaçamento de 8 px entre botões.
+  Cabeçalhos de aplicativos e dispositivos usam o mesmo alinhamento superior/gap.
+- Regressões verificam bordas horizontais, contorno, recuo do último botão,
+  padding simétrico, foco e camada sticky em dispositivos, aplicativos e
+  configurações. Cobrem 390/768/1440/1920 px, claro/escuro, rolagem e sidebar
+  expandida/recolhida; capturas também foram revisadas.
+- Rodada local aprovada: 72 testes unitários, 82 testes de navegador, TypeScript,
+  Biome e build. Essa validação é de alinhamentos concretos, não uma certificação
+  universal de renderização idêntica em todo navegador/DPI. O novo pacote ainda
+  deve passar no CI do mesmo commit antes da entrega para teste manual.
