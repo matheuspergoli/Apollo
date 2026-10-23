@@ -301,7 +301,15 @@ try {
 	assert.equal(globalConfiguration.sections.general.sunshine_name, "Teste global ç")
 	assert.equal(globalConfiguration.sections.nv.nvenc_preset, 4)
 	assert.equal(globalConfiguration.sections.network.port, 50989)
-	assert.equal(Object.keys(globalConfiguration.sections).length, 12)
+	assert.equal(Object.keys(globalConfiguration.sections).length, 11)
+	assert(
+		!Object.hasOwn(globalConfiguration.sections, "vt"),
+		"Removed encoder section must not be exported"
+	)
+	assert(
+		globalConfiguration.sections.vaapi,
+		"Linux encoder configuration must remain exportable"
+	)
 	await page.goto(`${base}/apps`)
 	await page.getByRole("button", { name: "Novo aplicativo", exact: true }).click()
 	const createFile = page.getByLabel("Arquivo JSON do aplicativo", { exact: true })
