@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { bool, type Document, object } from "@/lib/documents"
-import type { SettingField } from "./model"
+import { type SettingField, settingOptions } from "./model"
 
 function validMappings(value: unknown): value is Document {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return false
@@ -206,15 +206,7 @@ export function SettingControl({
 	platform: string
 }) {
 	const help = `${field.key}-help`
-	let options = field.options
-	if (platform === "windows" && options) {
-		const allowed = {
-			gamepad: ["auto", "ds4", "x360"],
-			capture: ["", "ddx", "wgc"],
-			encoder: ["", "nvenc", "quicksync", "amdvce", "software"]
-		}[field.key]
-		if (allowed) options = options.filter((option) => allowed.includes(option.value))
-	}
+	let options = settingOptions(field, platform)
 	const isSwitch =
 		!options?.length && (field.defaultValue === "enabled" || field.defaultValue === "disabled")
 	const choice = String(value ?? "") || "__auto__"

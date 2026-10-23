@@ -1,7 +1,7 @@
-import { IconCheck, IconDeviceFloppy, IconSearch } from "@tabler/icons-react"
+import { IconCheck, IconDeviceFloppy, IconSearch, IconX } from "@tabler/icons-react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { ConfirmedAction } from "@/components/confirmed-action"
 import { RequestError } from "@/components/request-error"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -37,6 +37,7 @@ import {
 	settingsOptions,
 	visibleSections
 } from "@/features/settings/model"
+import { searchSettings } from "@/features/settings/search"
 import { SectionTemplates } from "@/features/settings/section-templates"
 import { configOptions, post } from "@/lib/api"
 import { accepted } from "@/lib/documents"
@@ -48,6 +49,8 @@ function Editor({ initial }: { initial: Snapshot }) {
 	const [baseline, setBaseline] = useState(initial)
 	const [draft, setDraft] = useState(() => draftFrom(initial))
 	const [filter, setFilter] = useState("")
+	const searchInput = useRef<HTMLInputElement>(null)
+	const searching = filter.trim().length > 0
 	const groups = visibleSections(initial.platform)
 	const [section, setSection] = useState(() => {
 		const requested =
@@ -88,14 +91,8 @@ function Editor({ initial }: { initial: Snapshot }) {
 		}
 	})
 	const selected = groups.find((group) => group.id === section) || groups[0]
-	const results = filter.trim()
-		? groups
-				.flatMap((group) => group.fields.map((field) => ({ group, field })))
-				.filter(({ field }) =>
-					`${field.label} ${field.key} ${field.description}`
-						.toLocaleLowerCase()
-						.includes(filter.toLocaleLowerCase())
-				)
+	const results = searching
+		? searchSettings(groups, filter, initial.platform)
 		: selected.fields.map((field) => ({ group: selected, field }))
 	function change(key: string, value: unknown) {
 		setDraft((previous) => ({ ...previous, [key]: value }))
@@ -159,15 +156,36 @@ function Editor({ initial }: { initial: Snapshot }) {
 				}}
 			/>
 			<div className="relative">
-				<IconSearch className="pointer-events-none absolute top-3 left-3 size-4 text-muted-foreground" />
+				<IconSearch className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
 				<Input
+					ref={searchInput}
 					id="settings-search"
 					aria-label="Buscar configurações"
-					placeholder="Buscar por opção, chave ou descrição…"
+					placeholder="Buscar opções sem precisar de acentos…"
+					maxLength={256}
+					spellCheck={false}
 					value={filter}
 					onChange={(event) => setFilter(event.target.value)}
-					className="h-11 pl-10"
+					onKeyDown={(event) => {
+						if (event.key === "Escape") setFilter("")
+					}}
+					className="h-11 pr-12 pl-10"
 				/>
+				{filter && (
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon"
+						aria-label="Limpar busca"
+						className="absolute top-1/2 right-1.5 size-8 -translate-y-1/2"
+						onClick={() => {
+							setFilter("")
+							searchInput.current?.focus()
+						}}
+					>
+						<IconX />
+					</Button>
+				)}
 			</div>
 			<div className="grid items-start gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
 				<nav
@@ -177,7 +195,7 @@ function Editor({ initial }: { initial: Snapshot }) {
 					{groups.map((group) => (
 						<Button
 							key={group.id}
-							variant={group.id === section && !filter ? "secondary" : "ghost"}
+							variant={group.id === section && !searching ? "secondary" : "ghost"}
 							className="min-h-10 shrink-0 justify-start"
 							onClick={() => {
 								setSection(group.id)
@@ -191,13 +209,15 @@ function Editor({ initial }: { initial: Snapshot }) {
 				</nav>
 				<Card className="min-w-0">
 					<CardHeader>
-						<CardTitle>{filter ? `Resultados (${results.length})` : selected.title}</CardTitle>
+						<CardTitle>
+							{searching ? `Resultados (${results.length})` : selected.title}
+						</CardTitle>
 						<CardDescription>
-							{filter
+							{searching
 								? "A busca inclui todos os grupos disponíveis para esta plataforma."
 								: "Valores atuais e padrões explícitos. Nenhuma otimização é aplicada automaticamente."}
 						</CardDescription>
-						{!filter && (
+						{!searching && (
 							<SectionTemplates
 								key={selected.id}
 								section={selected}

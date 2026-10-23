@@ -34,6 +34,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { UnsavedChanges } from "@/components/unsaved-changes"
+import { ApplicationConfigurationControls } from "@/features/apps/configuration-controls"
 import { CoverPicker } from "@/features/apps/covers"
 import { appDraft, launcherFile, launchLink, validateApp } from "@/features/apps/model"
 import { comparable } from "@/features/settings/model"
@@ -124,6 +125,14 @@ function AppEditor({
 				)}
 			</div>
 			<RequestError error={mutation.error} />
+			<ApplicationConfigurationControls
+				current={draft}
+				disabled={mutation.isPending}
+				onApply={(values) => {
+					setDraft((previous) => ({ ...previous, ...values }))
+					mutation.reset()
+				}}
+			/>
 			<form
 				className="min-w-0 space-y-6"
 				onSubmit={(event) => {

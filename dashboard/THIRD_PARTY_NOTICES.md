@@ -18,6 +18,7 @@ dependencies were removed. Components use the registry's Tabler icon selection.
 Dialog and Sheet close-button text is fixed to pt-BR ("Fechar"), including
 screen-reader-only labels; no translation provider or catalog is used.
 Sidebar mobile title/description and toggle labels also use fixed pt-BR text.
+The Switch root has a pointer cursor when enabled, retaining the disabled cursor.
 Tabs orientation variants use Base UI's `data-orientation` attributes and forward
 the orientation prop; horizontal tab buttons have a bounded height to avoid stretch.
 Section-template ZIPs use fflate 0.8.3 (MIT), loaded on demand for export. Archives
@@ -25,6 +26,9 @@ contain generated default configuration and documentation, not current host stat
 The separate global saved-configuration export also uses fflate and includes only
 known saved settings after explicit privacy confirmation; it is not an encrypted
 backup of accounts, pairing or certificate contents.
+Zod 4.6.7 (MIT) validates the versioned configuration-file envelopes and individual
+application options. Application JSON Schema documentation is generated from that
+same contract. UI error summaries are fixed pt-BR; no locale catalog/provider was added.
 
 Geist/Geist Mono variable font data are Fontsource 5.3.0 packages under OFL-1.1;
 their supported CSS entry points and local font files are used, not a CDN. The

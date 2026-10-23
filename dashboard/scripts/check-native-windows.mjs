@@ -253,7 +253,23 @@ try {
 	assert.equal(Object.keys(globalConfiguration.sections).length, 12)
 	await page.goto(`${base}/apps`)
 	await page.getByRole("button", { name: "Novo aplicativo", exact: true }).click()
-	await page.locator("#app-name").fill("Aplicativo CI ç")
+	const createFile = page.getByLabel("Arquivo JSON do aplicativo", { exact: true })
+	await createFile.setInputFiles({
+		name: "application-native.json",
+		mimeType: "application/json",
+		buffer: Buffer.from(
+			JSON.stringify({
+				format: "apollo-application",
+				version: 1,
+				kind: "application",
+				application: { name: "Aplicativo CI ç", cmd: "" }
+			})
+		)
+	})
+	await page
+		.getByRole("dialog", { name: "Revisar importação de aplicativo", exact: true })
+		.getByRole("button", { name: "Aplicar ao rascunho", exact: true })
+		.click()
 	await page.getByRole("button", { name: "Salvar aplicativo", exact: true }).click()
 	await page.getByRole("button", { name: "Excluir Aplicativo CI ç", exact: true }).waitFor()
 	const library = await http("/api/apps", { cookie })
@@ -278,7 +294,50 @@ try {
 		})
 		.getByRole("button", { name: "Editar", exact: true })
 		.click()
-	await page.locator("#app-name").fill("Aplicativo CI editado ç")
+	const editFile = page.getByLabel("Arquivo JSON do aplicativo", { exact: true })
+	await editFile.setInputFiles({
+		name: "application-native-edit.json",
+		mimeType: "application/json",
+		buffer: Buffer.from(
+			JSON.stringify({
+				format: "apollo-application",
+				version: 1,
+				kind: "application",
+				application: { name: "Aplicativo CI editado ç" }
+			})
+		)
+	})
+	await page
+		.getByRole("dialog", { name: "Revisar importação de aplicativo", exact: true })
+		.getByRole("button", { name: "Aplicar ao rascunho", exact: true })
+		.click()
+	assert(
+		(await http("/api/apps", { cookie })).json.apps.some(
+			(app) => app.uuid === entry.uuid && app.name === "Aplicativo CI ç"
+		),
+		"Import must not save or replace identity before explicit save"
+	)
+	await page
+		.getByRole("button", { name: "Exportar aplicativo do editor", exact: true })
+		.click()
+	const applicationDownloadReady = page.waitForEvent("download")
+	await page
+		.getByRole("alertdialog")
+		.getByRole("button", { name: "Confirmar", exact: true })
+		.click()
+	const applicationDownloadPath = await (await applicationDownloadReady).path()
+	assert(applicationDownloadPath, "Application configuration ZIP was not downloaded")
+	const applicationFiles = unzipSync(await readFile(applicationDownloadPath))
+	const applicationConfiguration = JSON.parse(
+		strFromU8(applicationFiles["apollo-aplicativo/aplicativo.json"])
+	)
+	assert.equal(applicationConfiguration.application.name, "Aplicativo CI editado ç")
+	assert(!Object.hasOwn(applicationConfiguration.application, "uuid"))
+	assert(!Object.hasOwn(applicationConfiguration.application, "ci_unknown_field"))
+	assert(
+		applicationFiles["apollo-aplicativo/schema.json"],
+		"Application schema was not exported"
+	)
 	await page.getByRole("button", { name: "Salvar aplicativo", exact: true }).click()
 	await page
 		.getByRole("button", { name: "Excluir Aplicativo CI editado ç", exact: true })

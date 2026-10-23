@@ -44,13 +44,13 @@ function HostNavigation() {
 	const config = useQuery(configOptions)
 	return (
 		<Sidebar collapsible="icon">
-			<SidebarHeader className="border-b p-4">
+			<SidebarHeader className="h-16 shrink-0 justify-center border-b px-2 py-0">
 				<SidebarMenu>
 					<SidebarMenuItem>
 						<SidebarMenuButton
 							render={<Link to="/" />}
 							onClick={() => setOpenMobile(false)}
-							className="h-10 font-semibold text-base"
+							className="h-8 font-semibold text-base"
 						>
 							<IconAdjustments />
 							<span>Apollo</span>
@@ -79,7 +79,7 @@ function HostNavigation() {
 					</SidebarMenu>
 				</SidebarGroup>
 			</SidebarContent>
-			<SidebarFooter className="border-t p-4 text-muted-foreground text-xs group-data-[collapsible=icon]:hidden">
+			<SidebarFooter className="h-16 shrink-0 justify-center gap-1 border-t px-4 py-0 text-muted-foreground text-xs group-data-[collapsible=icon]:hidden">
 				<p className="truncate font-medium text-foreground">
 					{config.data?.sunshine_name || "Host Apollo"}
 				</p>
@@ -99,7 +99,10 @@ export function AppShell() {
 		<SidebarProvider>
 			<HostNavigation />
 			<SidebarInset>
-				<header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-3 border-b bg-background/95 px-4 backdrop-blur-sm md:px-8">
+				<header
+					data-slot="host-header"
+					className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-3 border-b bg-background/95 px-4 backdrop-blur-sm md:px-8"
+				>
 					<div className="flex min-w-0 items-center gap-3">
 						<SidebarTrigger />
 						<Separator orientation="vertical" className="h-4" />

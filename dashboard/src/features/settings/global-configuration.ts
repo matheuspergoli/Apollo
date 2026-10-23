@@ -1,4 +1,10 @@
+import {
+	configurationArchive,
+	parseContract,
+	readConfigurationJson
+} from "@/lib/configuration-files"
 import { type Document, object } from "@/lib/documents"
+import { globalFileSchema } from "./file-contracts"
 import {
 	draftFrom,
 	type SettingField,
@@ -6,16 +12,10 @@ import {
 	sections,
 	serializeSettings
 } from "./model"
-import {
-	readTemplateJson,
-	sectionDocumentation,
-	sectionTemplate,
-	validateSectionSettings
-} from "./templates"
+import { sectionDocumentation, sectionTemplate, validateSectionSettings } from "./templates"
 
 export const globalConfigurationLimit = 1024 * 1024
 const format = "apollo-settings"
-const platforms = ["windows", "linux", "macos", "unknown"]
 export type GlobalConfiguration = {
 	format: typeof format
 	version: 1
@@ -85,21 +85,11 @@ export function savedConfiguration(snapshot: Snapshot): GlobalConfiguration {
 }
 
 export function parseGlobalConfiguration(raw: string): GlobalImport {
-	const root = readTemplateJson(raw, globalConfigurationLimit)
-	if (
-		Object.keys(root).some(
-			(key) => !["format", "version", "kind", "platform", "sections"].includes(key)
-		)
+	const root = parseContract(
+		globalFileSchema,
+		readConfigurationJson(raw, globalConfigurationLimit),
+		"Arquivo global inválido"
 	)
-		throw new Error("O arquivo contém propriedades fora do formato global.")
-	if (root.format !== format || root.version !== 1)
-		throw new Error(
-			"Formato ou versão global não suportado. Use um JSON exportado pelos controles globais."
-		)
-	if (root.kind !== "saved" && root.kind !== "defaults")
-		throw new Error("Informe se o arquivo contém valores salvos ou padrões.")
-	if (typeof root.platform !== "string" || !platforms.includes(root.platform))
-		throw new Error("Plataforma de origem inválida.")
 	const groups = object(root.sections)
 	if (Object.keys(groups).length === 0)
 		throw new Error("O arquivo global não contém seções para importar.")
@@ -119,19 +109,15 @@ export function globalDocumentation(configuration: GlobalConfiguration) {
 
 export async function globalArchive(configuration: GlobalConfiguration) {
 	parseGlobalConfiguration(JSON.stringify(configuration))
-	const { strToU8, zipSync } = await import("fflate")
 	const files = Object.fromEntries(
 		sections.map((section) => [
-			`apollo-configuracao/secoes/${section.id}.md`,
-			strToU8(sectionDocumentation(section, "reference"))
+			`secoes/${section.id}.md`,
+			sectionDocumentation(section, "reference")
 		])
 	)
-	const bytes = zipSync({
+	return configurationArchive("apollo-configuracao", {
 		...files,
-		"apollo-configuracao/configuracao.json": strToU8(
-			`${JSON.stringify(configuration, null, 2)}\n`
-		),
-		"apollo-configuracao/LEIA-ME.md": strToU8(globalDocumentation(configuration))
+		"configuracao.json": `${JSON.stringify(configuration, null, 2)}\n`,
+		"LEIA-ME.md": globalDocumentation(configuration)
 	})
-	return new Blob([new Uint8Array(bytes)], { type: "application/zip" })
 }

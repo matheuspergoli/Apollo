@@ -54,6 +54,11 @@ reinício não confirma sucesso nem falha e não deve provocar repetição autom
 - [ ] Código temporário/QR funciona; após expirar, não permite reutilizar o link.
 - [ ] Aplicativo de teste pode ser criado, editado, ordenado, iniciado e encerrado.
   Use apenas comandos conhecidos. Excluir a entrada não deve desinstalar o jogo.
+- [ ] No editor, o ZIP de aplicativo contém JSON/guia/schema. Importar e cancelar
+  não modifica nada; aplicar mantém o UUID ao editar e só grava com Salvar aplicativo.
+  Criar por importação gera outra identidade. Exportar inclui o rascunho e pede confirmação.
+- [ ] Buscar `saida` e `saída` retorna as mesmas opções; múltiplos termos e limpar/
+  Escape funcionam. Switches habilitados indicam clique; os desabilitados continuam bloqueados.
 - [ ] Configuração pode ser revisada e salva, preservando outros valores. Salvar não
   reinicia o host. Recarregue e confira a persistência. Teste mudanças inofensivas
   primeiro, como nome do host; não altere caminhos de credenciais/chaves.

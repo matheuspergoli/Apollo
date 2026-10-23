@@ -40,6 +40,46 @@ e comandos podem conter dados privados. A exportação ocorre localmente, sem
 enviar arquivos a serviços externos; o ZIP não é criptografado. Não compartilhe
 o arquivo sem revisão.
 
+## Configuração de um aplicativo
+
+No editor de aplicativo novo ou existente há **Baixar template de aplicativo**,
+**Exportar aplicativo do editor** e **Importar JSON de aplicativo**. O ZIP contém
+`aplicativo.json`, `LEIA-ME.md` e `schema.json` gerado do contrato Zod. A referência
+`$schema` é local e fixa; o importador não consulta schemas externos.
+
+O formato é `apollo-application`, versão 1, com campos em `application`. Aceita
+importação parcial: campos omitidos mantêm o rascunho. O aplicativo resultante
+inteiro precisa ser válido, inclusive nome ao criar. Só **Salvar aplicativo**
+grava a biblioteca; importar não executa comandos ou inicia o stream.
+
+UUID/identidade do host, estado de execução e campos desconhecidos não são
+exportados nem aceitos no arquivo. Ao editar, a identidade e os campos extras
+locais são preservados; ao criar, a identidade é gerada pelo host ao salvar.
+Exportar inclui o rascunho, não necessariamente o último arquivo salvo, e exige
+confirmação de privacidade. O ZIP não é criptografado nem transfere capas/binários.
+Não há importação global da biblioteca nesta funcionalidade; `.art` continua
+sendo apenas um atalho Artemis, não um arquivo de configuração de aplicativo.
+
+### Arquitetura dos arquivos
+
+`src/lib/configuration-files.ts` concentra leitura UTF-8/BOM, limites em bytes,
+profundidade, bloqueio de chaves perigosas/NUL, resumo de erros pt-BR e geração de
+ZIPs com caminhos seguros. Cada área declara seu contrato estrito Zod e mantém
+as regras nativas/de merge próprias. Não há coerção genérica de tipos ou fallback
+para formatos antigos. Novos campos de aplicativo exigem default + schema; testes
+verificam que a documentação/importação/exportação cobrem a mesma lista.
+Validação de estrutura não torna comandos confiáveis: importe apenas arquivos
+de origem conhecida e revise os efeitos antes de salvar. O build inclui os
+arquivos de licença/avisos em `dist/licenses`, sem recolocar um rodapé na interface.
+
+### Busca e navegação
+
+A busca de configurações normaliza acentos/caixa/pontuação, exige todos os termos
+e prioriza rótulos/chaves antes de descrições. Inclui títulos e opções disponíveis,
+não dados privados atuais, e oferece limpar/Escape. Não usa fuzzy matching nem
+serviços externos. A sidebar e a barra superior usam a mesma faixa de 64px, com
+metadados inferiores compactos; testes verificam alinhamento em temas e larguras.
+
 ## Stack e versões
 
 React/DOM 19.3.1, strict TypeScript 7.0.2, Vite 8.3.4/React plugin 6.1.2,

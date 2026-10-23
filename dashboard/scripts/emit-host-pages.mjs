@@ -5,6 +5,17 @@ import { fileURLToPath } from "node:url"
 const packageRoot = fileURLToPath(new URL("../", import.meta.url))
 const dist = resolve(packageRoot, "dist")
 const html = await readFile(resolve(dist, "index.html"), "utf8")
+const licenses = resolve(dist, "licenses")
+await mkdir(licenses, { recursive: true })
+for (const [source, filename] of [
+	["../LICENSE", "Apollo-LICENSE.txt"],
+	["../NOTICE", "Apollo-NOTICE.txt"],
+	["SHADCN_LICENSE.txt", "SHADCN-LICENSE.txt"],
+	["THIRD_PARTY_NOTICES.md", "THIRD-PARTY-NOTICES.md"],
+	["node_modules/zod/LICENSE", "ZOD-LICENSE.txt"],
+	["node_modules/fflate/LICENSE", "FFLATE-LICENSE.txt"]
+])
+	await cp(resolve(packageRoot, source), resolve(licenses, filename))
 for (const page of [
 	"apps",
 	"config",

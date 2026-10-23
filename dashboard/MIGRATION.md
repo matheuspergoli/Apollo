@@ -144,3 +144,26 @@ Falhas e correções anteriores estão em [VALIDATION-HISTORY.md](VALIDATION-HIS
   Biome e build. Essa validação é de alinhamentos concretos, não uma certificação
   universal de renderização idêntica em todo navegador/DPI. O novo pacote ainda
   deve passar no CI do mesmo commit antes da entrega para teste manual.
+
+## Busca, navegação e arquivos de aplicativo
+
+- Busca sem acentos, caixa ou dependência de ordem dos termos, com ranking por
+  rótulos/chaves e suporte a opções/grupos. Limpeza por botão/Escape; sem fuzzy ou
+  novas consultas ao servidor. Switches habilitados usam cursor pointer.
+- Header da sidebar e barra superior alinhados em 64px; footer de metadados usa
+  a mesma faixa, com padding/ritmo menores que a versão anterior. O alinhamento
+  é verificado geometricamente, não uma promessa de renderização universal.
+- Importação/exportação individual de aplicativo na criação/edição, sem importação
+  global da biblioteca. ZIP com JSON, guia e schema gerado pelo Zod 4.6.7.
+- Leitura/segurança/ZIP compartilhados entre os formatos; contratos fechados Zod
+  para envelopes e opções de aplicativo. UUIDs não transitam; importação é atômica,
+  contextual ao rascunho, sem salvar/executar automaticamente ou apagar dados locais.
+- Rodada local aprovada: 99 testes unitários e 94 testes de navegador, Biome,
+  TypeScript, build e integração dev. Os testes medem headers/footer em 64px,
+  centros alinhados em celular/tablet/desktop, cursor habilitado/desabilitado,
+  busca sem acentos/múltiplos termos e os fluxos individuais de aplicativo.
+- O ensaio Windows agora importa um aplicativo novo e uma edição parcial, verifica
+  que o UUID e campos locais permanecem intactos e exporta o ZIP real do editor.
+  Essa extensão depende do CI do novo commit antes da entrega. O bloco principal
+  não teve aumento no bundle de entrada; a validação Zod é carregada nos módulos
+  de configuração/aplicativos, compartilhada entre eles.

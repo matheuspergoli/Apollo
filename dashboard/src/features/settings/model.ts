@@ -14,6 +14,19 @@ export type SettingField = {
 	step?: number
 }
 export type SettingSection = { id: string; title: string; fields: SettingField[] }
+export function settingOptions(field: SettingField, platform: string) {
+	const allowed =
+		platform === "windows"
+			? {
+					gamepad: ["auto", "ds4", "x360"],
+					capture: ["", "ddx", "wgc"],
+					encoder: ["", "nvenc", "quicksync", "amdvce", "software"]
+				}[field.key]
+			: undefined
+	return allowed
+		? field.options?.filter((option) => allowed.includes(option.value))
+		: field.options
+}
 export const sections = extracted as SettingSection[]
 export const fields = sections.flatMap((section) => section.fields)
 const excludedKeys = new Set(["status", "platform", "version", "vdisplayStatus", "locale"])
