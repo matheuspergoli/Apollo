@@ -39,9 +39,9 @@ import { ApplicationConfigurationControls } from "@/features/apps/configuration-
 import { CoverPicker } from "@/features/apps/covers"
 import { appDraft, launcherFile, validateApp } from "@/features/apps/model"
 import { comparable } from "@/features/settings/model"
+import { ApiError } from "@/lib/api"
 import { action, applicationsOptions, bool, type Document, text } from "@/lib/documents"
 import { downloadFile } from "@/lib/download"
-import { ApiError } from "@/lib/api"
 
 const appText = [
 	["name", "Nome", "Nome exibido na biblioteca do Artemis."],
@@ -346,7 +346,11 @@ export function ApplicationsPage() {
 		}
 	})
 	if (query.isPending) return <Skeleton className="h-96 w-full" />
-	if (query.error && (!query.data || query.error instanceof ApiError && [401, 403].includes(query.error.status)))
+	if (
+		query.error &&
+		(!query.data ||
+			(query.error instanceof ApiError && [401, 403].includes(query.error.status)))
+	)
 		return <RequestError error={query.error} retry={() => void query.refetch()} />
 	const data = query.data
 	if (!data) return null

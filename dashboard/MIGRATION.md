@@ -192,3 +192,9 @@ Falhas e correções anteriores estão em [VALIDATION-HISTORY.md](VALIDATION-HIS
   integração dev aprovados. O ensaio Windows ganhou comparação byte a byte do PNG
   e rejeição de upload inválido sem sobrescrever a cópia válida; essa mudança nativa
   ainda requer aprovação do novo CI antes de preparar o pacote correspondente.
+- O Windows de `7d5253e` passou (run 39947451628), incluindo bytes do PNG iguais
+  ao upload e rejeição de imagem inválida sem sobrescrever a válida. O frontend
+  parou antes dos testes por ordenação de imports/formatação em três arquivos.
+  A correção é apenas de estilo; Biome e os 105 testes de navegador passaram de
+  novo localmente, além dos 117 unitários e TypeScript. O novo commit será validado
+  pelos dois pipelines antes da entrega.

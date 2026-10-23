@@ -342,7 +342,8 @@ function DeviceEditor({
 					<CardHeader>
 						<CardTitle>Identificação e display</CardTitle>
 						<CardDescription>
-							Os ajustes são exclusivos deste cliente. Salvar aplica permissões e pode desconectá-lo se a visualização for revogada; não remove o pareamento dos demais.
+							Os ajustes são exclusivos deste cliente. Salvar aplica permissões e pode
+							desconectá-lo se a visualização for revogada; não remove o pareamento dos demais.
 						</CardDescription>
 					</CardHeader>
 					<CardContent>

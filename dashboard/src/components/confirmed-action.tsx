@@ -21,8 +21,8 @@ export function ConfirmedAction({
 	disabled = false,
 	icon,
 	compact = false,
-	triggerTitle
-	, triggerVariant
+	triggerTitle,
+	triggerVariant
 }: {
 	label: string
 	description: string
