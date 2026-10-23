@@ -20,7 +20,7 @@ test("rejected restart closes its confirmation and requires reauthentication wit
 		.getByRole("button", { name: "Confirmar", exact: true })
 		.click()
 	await expect(page.getByRole("alertdialog")).toBeHidden()
-	const notice = page.getByRole("status").filter({ hasText: "Sessão expirada" })
+	const notice = page.getByRole("status").filter({ hasText: "Entre novamente" })
 	await expect(notice).toBeVisible()
 	await expect(restart).toBeDisabled()
 	await notice.getByRole("button", { name: "Verificar sessão", exact: true }).click()
@@ -44,7 +44,7 @@ test("session renewal preserves a draft and never repeats the rejected save", as
 	await page.getByRole("button", { name: "Salvar arquivo", exact: true }).click()
 	// The review remains editable after a failed save; dismiss it, not the draft.
 	await page.getByRole("dialog").getByRole("button", { name: "Voltar", exact: true }).click()
-	const notice = page.getByRole("status").filter({ hasText: "Sessão expirada" })
+	const notice = page.getByRole("status").filter({ hasText: "Entre novamente" })
 	await expect(notice).toBeVisible()
 	host.authorized = true
 	await notice.getByRole("button", { name: "Verificar sessão", exact: true }).click()

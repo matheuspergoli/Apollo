@@ -2,7 +2,7 @@ name: Apollo Windows
 on:
   workflow_dispatch:
   push:
-    branches: [ui/react-migration]
+    branches: [main]
     paths:
       - .github/workflows/apollo-windows.yml
       - cmake/**

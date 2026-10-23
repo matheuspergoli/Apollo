@@ -83,7 +83,7 @@ test("expired host session blocks actions and opens login without replacing the 
 }) => {
 	await page.route("**/api/config", (route) => route.fulfill({ status: 401 }))
 	await page.goto("/")
-	await expect(page.getByRole("status").filter({ hasText: "Sessão expirada" })).toBeVisible()
+	await expect(page.getByRole("status").filter({ hasText: "Entre novamente" })).toBeVisible()
 	await expect(
 		page.getByRole("button", { name: "Reiniciar host", exact: true })
 	).toBeDisabled()

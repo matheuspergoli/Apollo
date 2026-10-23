@@ -100,14 +100,15 @@ namespace confighttp {
    * @param response The HTTP response object.
    * @param request The HTTP request object.
    */
-  void send_unauthorized(resp_https_t response, req_https_t request) {
+  void send_unauthorized(resp_https_t response, req_https_t request, const std::string &reason = "unauthorized") {
     auto address = net::addr_to_normalized_string(request->remote_endpoint().address());
-    BOOST_LOG(info) << "Web UI: ["sv << address << "] -- not authorized"sv;
+    BOOST_LOG(info) << "Web UI: ["sv << address << "] " << request->method << " " << request->path << " -- not authorized (" << reason << ")";
     constexpr SimpleWeb::StatusCode code = SimpleWeb::StatusCode::client_error_unauthorized;
     nlohmann::json tree;
     tree["status_code"] = code;
     tree["status"] = false;
     tree["error"] = "Unauthorized";
+    tree["reason"] = reason;
     const SimpleWeb::CaseInsensitiveMultimap headers {
       {"Content-Type", "application/json"},
       {"X-Frame-Options", "DENY"},
@@ -140,15 +141,24 @@ namespace confighttp {
    * @return The value if found, empty string otherwise.
    */
   std::string getCookieValue(const std::string& cookieString, const std::string& key) {
-    std::string keyWithEqual = key + "=";
-    std::size_t startPos = cookieString.find(keyWithEqual);
-    if (startPos == std::string::npos)
-      return "";
-    startPos += keyWithEqual.length();
-    std::size_t endPos = cookieString.find(";", startPos);
-    if (endPos == std::string::npos)
-      return cookieString.substr(startPos);
-    return cookieString.substr(startPos, endPos - startPos);
+    std::size_t start = 0;
+    while (start < cookieString.size()) {
+      auto end = cookieString.find(';', start);
+      if (end == std::string::npos) end = cookieString.size();
+      auto part = cookieString.substr(start, end - start);
+      boost::trim(part);
+      const auto equal = part.find('=');
+      if (equal != std::string::npos && part.substr(0, equal) == key)
+        return part.substr(equal + 1);
+      start = end + 1;
+    }
+    return "";
+  }
+
+  // Cookies are shared between ports on a hostname. Do not let another local
+  // Apollo installation replace this host's authentication cookie.
+  std::string session_cookie_name() {
+    return "apollo_auth_" + std::to_string(net::map_port(PORT_HTTPS));
   }
 
   /**
@@ -186,28 +196,33 @@ namespace confighttp {
       return false;
     }
     // Guard: on failure, redirect if requested.
+    std::string auth_failure = "session_missing";
     auto fg = util::fail_guard([&]() {
       if (needsRedirect) {
         std::string redir_path = "/login?redir=.";
         redir_path += request->path;
         send_redirect(response, request, redir_path.c_str());
       } else {
-        send_unauthorized(response, request);
+        send_unauthorized(response, request, auth_failure);
       }
     });
     if (sessionCookie.empty())
       return false;
     // Check for expiry
     if (std::chrono::steady_clock::now() - cookie_creation_time > SESSION_EXPIRE_DURATION) {
+      auth_failure = "session_expired";
       sessionCookie.clear();
       return false;
     }
     auto cookies = request->header.find("cookie");
+    auth_failure = "cookie_missing";
     if (cookies == request->header.end())
       return false;
-    auto authCookie = getCookieValue(cookies->second, "auth");
-    if (authCookie.empty() ||
-        util::hex(crypto::hash(authCookie + config::sunshine.salt)).to_string() != sessionCookie)
+    auto authCookie = getCookieValue(cookies->second, session_cookie_name());
+    if (authCookie.empty())
+      return false;
+    auth_failure = "session_mismatch";
+    if (util::hex(crypto::hash(authCookie + config::sunshine.salt)).to_string() != sessionCookie)
       return false;
     fg.disable();
     return true;
@@ -1491,7 +1506,7 @@ namespace confighttp {
       sessionCookie = util::hex(crypto::hash(sessionCookieRaw + config::sunshine.salt)).to_string();
       cookie_creation_time = std::chrono::steady_clock::now();
       const SimpleWeb::CaseInsensitiveMultimap headers {
-        { "Set-Cookie", "auth=" + sessionCookieRaw + "; Secure; SameSite=Strict; Max-Age=2592000; Path=/" }
+        { "Set-Cookie", session_cookie_name() + "=" + sessionCookieRaw + "; Secure; HttpOnly; SameSite=Strict; Max-Age=1296000; Path=/" }
       };
       response->write(headers);
       fg.disable();

@@ -3,7 +3,8 @@ import { queryOptions } from "@tanstack/react-query"
 export class ApiError extends Error {
 	constructor(
 		public readonly status: number,
-		message: string
+		message: string,
+		public readonly reason?: string
 	) {
 		super(message)
 	}
@@ -27,13 +28,24 @@ export async function request(
 			credentials: "same-origin",
 			cache: "no-store"
 		})
-		if (!response.ok)
+		if (!response.ok) {
+			let reason: string | undefined
+			if (response.status === 401) {
+				const body = await response.json().catch(() => null)
+				if (body && typeof body.reason === "string") reason = body.reason
+			}
 			throw new ApiError(
 				response.status,
 				response.status === 401
-					? "Sessão expirada ou credenciais incorretas."
-					: `O host recusou a solicitação (${response.status}).`
+					? path === "login"
+						? "Não foi possível entrar. Confira suas credenciais."
+						: reason === "session_expired"
+							? "A sessão expirou. Entre novamente."
+							: "Acesso não autorizado. Entre novamente para continuar."
+					: `O host recusou a solicitação (${response.status}).`,
+				reason
 			)
+		}
 		return json === "text" ? await response.text() : json ? await response.json() : undefined
 	} catch (error) {
 		if (error instanceof DOMException && error.name === "TimeoutError")
@@ -46,7 +58,7 @@ export async function request(
 			throw new Error("Não foi possível conectar ao Apollo. Verifique se o host está aberto.")
 		if (error instanceof SyntaxError)
 			throw new Error(
-				"Resposta inválida. Esta interface precisa ser servida pelo host Apollo ou por uma API de teste."
+				"Resposta inválida do host Apollo. Verifique o endereço e a disponibilidade do host."
 			)
 		throw error
 	}

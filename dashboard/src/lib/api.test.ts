@@ -7,6 +7,27 @@ afterEach(() => {
 })
 
 describe("host API boundary", () => {
+	it("only calls a session expired when the backend confirms expiry", async () => {
+		for (const reason of [
+			"session_missing",
+			"cookie_missing",
+			"session_mismatch",
+			"session_expired"
+		]) {
+			vi.stubGlobal(
+				"fetch",
+				vi.fn().mockResolvedValue(new Response(JSON.stringify({ reason }), { status: 401 }))
+			)
+			await expect(post("restart", {}, false)).rejects.toMatchObject({
+				status: 401,
+				reason,
+				message:
+					reason === "session_expired"
+						? "A sessão expirou. Entre novamente."
+						: "Acesso não autorizado. Entre novamente para continuar."
+			})
+		}
+	})
 	it("allows bounded native library refresh time without extending unrelated requests", async () => {
 		const timeout = vi.spyOn(AbortSignal, "timeout")
 		vi.stubGlobal(

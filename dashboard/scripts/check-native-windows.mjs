@@ -45,6 +45,7 @@ child.stdout.pipe(log, { end: false })
 child.stderr.pipe(log, { end: false })
 let browser
 let page
+let restartRequested = false
 const browserFailures = []
 
 function http(path, { method = "GET", data, cookie } = {}) {
@@ -125,6 +126,25 @@ try {
 	assert.equal(login.status, 200)
 	const cookie = login.headers["set-cookie"]?.[0]?.split(";")[0]
 	assert(cookie, "Native login did not issue a session cookie")
+	assert(
+		cookie.startsWith("apollo_auth_50990="),
+		"Authentication must be scoped to the host port"
+	)
+	assert(login.headers["set-cookie"][0].includes("HttpOnly"))
+	assert.equal(
+		(
+			await http("/api/config", {
+				cookie: `auth=another-installation; ${cookie}; apollo_auth_47990=unrelated`
+			})
+		).status,
+		200
+	)
+	const missingCookie = await http("/api/config", { cookie: `prefix_${cookie}` })
+	assert.equal(missingCookie.status, 401)
+	assert.equal(missingCookie.json.reason, "cookie_missing")
+	const wrongCookie = await http("/api/config", { cookie: "apollo_auth_50990=incorrect" })
+	assert.equal(wrongCookie.status, 401)
+	assert.equal(wrongCookie.json.reason, "session_mismatch")
 	const png = Buffer.from(
 		"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aY1kAAAAASUVORK5CYII=",
 		"base64"
@@ -407,7 +427,7 @@ try {
 	assert.equal((await http("/api/restart", { method: "POST", cookie, data: {} })).status, 401)
 	assert.equal(child.exitCode, null, "An unauthorized restart must not stop the host")
 	await page.reload()
-	await page.getByRole("status").filter({ hasText: "Sessão expirada" }).waitFor()
+	await page.getByRole("status").filter({ hasText: "Entre novamente" }).waitFor()
 	assert(await page.getByRole("button", { name: "Reiniciar host", exact: true }).isDisabled())
 	const reauthenticated = await http("/api/login", {
 		method: "POST",
@@ -429,11 +449,27 @@ try {
 	await page.getByRole("button", { name: "Verificar sessão", exact: true }).click()
 	await page
 		.getByRole("status")
-		.filter({ hasText: "Sessão expirada" })
+		.filter({ hasText: "Entre novamente" })
 		.waitFor({ state: "hidden" })
 	assert(await page.getByRole("button", { name: "Reiniciar host", exact: true }).isEnabled())
 	assert.equal(child.exitCode, null, "Renewing a session must not replay the restart")
 	assert.deepEqual(errors, [])
+	// Exercise the actual authenticated browser action, not a mocked restart.
+	// This is permitted only in the isolated fork runner guarded above.
+	await page.getByRole("button", { name: "Reiniciar host", exact: true }).click()
+	restartRequested = true
+	await page
+		.getByRole("alertdialog")
+		.getByRole("button", { name: "Confirmar", exact: true })
+		.click()
+	for (let attempt = 0; attempt < 300 && child.exitCode === null; attempt++) {
+		await new Promise((resolve) => setTimeout(resolve, 100))
+	}
+	assert.equal(
+		child.exitCode,
+		0,
+		"A newly authenticated browser restart must exit the original host successfully"
+	)
 	console.log(
 		"Native Windows integration passed: authenticated React pages/assets, config/application roundtrips, PNG bytes, session invalidation/recovery and rejection of unauthorized restart without replay."
 	)
@@ -455,6 +491,18 @@ try {
 	throw error
 } finally {
 	await browser?.close()
+	if (restartRequested) {
+		execFileSync(
+			"powershell.exe",
+			[
+				"-NoProfile",
+				"-NonInteractive",
+				"-Command",
+				"Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -eq $env:APOLLO_TEST_EXECUTABLE } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
+			],
+			{ env: { ...process.env, APOLLO_TEST_EXECUTABLE: resolve(home, "sunshine.exe") } }
+		)
+	}
 	if (child.exitCode === null) child.kill()
 	log.end()
 }

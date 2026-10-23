@@ -194,7 +194,7 @@ export function HostActionNotice() {
 	if (context?.sessionExpired)
 		return (
 			<Alert variant="destructive" role="status">
-				<AlertTitle>Sessão expirada</AlertTitle>
+				<AlertTitle>Entre novamente</AlertTitle>
 				<AlertDescription>
 					Entre novamente para autorizar ações no host. Rascunhos desta aba serão preservados;
 					abrir o login não envia comandos de reinício.
