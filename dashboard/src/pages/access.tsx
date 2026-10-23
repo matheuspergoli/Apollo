@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Link, useNavigate } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router"
 import { type FormEvent, useState } from "react"
 import { ThemeSelect } from "@/components/theme-provider"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
 	Card,
@@ -15,7 +15,13 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field
 import { Input } from "@/components/ui/input"
 import { post } from "@/lib/api"
 
-export function AccessPage({ setup = false }: { setup?: boolean }) {
+export function AccessPage({
+	setup = false,
+	created = false
+}: {
+	setup?: boolean
+	created?: boolean
+}) {
 	const [username, setUsername] = useState(setup ? "apollo" : "")
 	const [password, setPassword] = useState("")
 	const [confirmation, setConfirmation] = useState("")
@@ -50,7 +56,8 @@ export function AccessPage({ setup = false }: { setup?: boolean }) {
 			setPassword("")
 			setConfirmation("")
 			client.removeQueries()
-			if (!setup) await navigate({ to: "/" })
+			if (setup) await navigate({ to: "/login", search: { created: true }, replace: true })
+			else await navigate({ to: "/", replace: true })
 		}
 	})
 
@@ -105,6 +112,15 @@ export function AccessPage({ setup = false }: { setup?: boolean }) {
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
+						{created && (
+							<Alert role="status" className="mb-5">
+								<AlertTitle>Acesso criado com sucesso</AlertTitle>
+								<AlertDescription>
+									Entre com as credenciais que você acabou de criar para continuar no painel.
+									Nenhuma senha foi salva no navegador pelo Apollo.
+								</AlertDescription>
+							</Alert>
+						)}
 						<form onSubmit={submit}>
 							<FieldGroup>
 								<Field data-disabled={busy}>
@@ -183,16 +199,6 @@ export function AccessPage({ setup = false }: { setup?: boolean }) {
 								{mutation.error && (
 									<Alert variant="destructive">
 										<AlertDescription>{mutation.error.message}</AlertDescription>
-									</Alert>
-								)}
-								{setup && mutation.isSuccess && (
-									<Alert role="status">
-										<AlertDescription>
-											Acesso criado.{" "}
-											<Link to="/login" className="font-medium underline">
-												Entrar no painel →
-											</Link>
-										</AlertDescription>
 									</Alert>
 								)}
 							</FieldGroup>

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react"
+import { ConfirmedAction } from "@/components/confirmed-action"
 import { RequestError } from "@/components/request-error"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -14,7 +15,8 @@ import { Input } from "@/components/ui/input"
 import type { Document } from "@/lib/documents"
 import { downloadFile } from "@/lib/download"
 import { configuredWebAddress } from "@/lib/lifecycle"
-import type { SettingSection } from "./model"
+import { sectionSavedValues } from "./global-configuration"
+import { loadSnapshot, type SettingSection } from "./model"
 import { parseSectionTemplate, sectionArchive, templateLimit } from "./templates"
 
 export function SectionTemplates({
@@ -46,6 +48,18 @@ export function SectionTemplates({
 			setBusy(false)
 		}
 	}
+	async function exportSaved() {
+		setError(null)
+		setBusy(true)
+		try {
+			downloadFile(
+				`apollo-${section.id}-configuracoes-salvas.zip`,
+				await sectionArchive(section, sectionSavedValues(section, await loadSnapshot()))
+			)
+		} finally {
+			setBusy(false)
+		}
+	}
 	return (
 		<div className="space-y-3">
 			<div className="flex flex-wrap gap-2">
@@ -57,6 +71,12 @@ export function SectionTemplates({
 				>
 					Baixar template da seção
 				</Button>
+				<ConfirmedAction
+					label="Exportar configurações salvas da seção"
+					disabled={disabled || busy}
+					description="Lê novamente os valores salvos desta seção, não o rascunho. O ZIP não é criptografado e pode conter nomes, comandos e caminhos privados. Revise antes de compartilhar. Não inclui outras seções, conta, pareamentos ou conteúdo de certificados."
+					execute={exportSaved}
+				/>
 				<Button
 					type="button"
 					variant="outline"
@@ -97,8 +117,8 @@ export function SectionTemplates({
 				/>
 			</div>
 			<p className="text-muted-foreground text-xs">
-				{section.title}: o ZIP contém padrões e documentação, não seus dados atuais. Importar
-				altera só o rascunho desta seção; revise e salve depois.
+				{section.title}: template usa padrões; exportar valores salvos consulta o host sem
+				incluir o rascunho. Importar altera só esta seção no rascunho; revise e salve depois.
 			</p>
 			{busy && (
 				<p role="status" className="text-xs">
@@ -124,8 +144,8 @@ export function SectionTemplates({
 					<Alert>
 						<AlertTitle>Valores presentes substituem o rascunho</AlertTitle>
 						<AlertDescription>
-							O template contém padrões, não uma cópia da configuração atual. Remova do JSON os
-							campos que você não quer alterar, inclusive porta e descoberta de rede.
+							Templates usam padrões; exportações usam os valores salvos. Em ambos, remova do
+							JSON os campos que não quer alterar, inclusive porta e descoberta de rede.
 						</AlertDescription>
 					</Alert>
 					{pending &&

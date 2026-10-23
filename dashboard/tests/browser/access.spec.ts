@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test"
 
-test("setup validates before POST, masks/reveals password and links to login", async ({
+test("setup validates, accepts Enter and automatically continues to login with feedback", async ({
 	page
 }) => {
 	let posts = 0
@@ -28,11 +28,11 @@ test("setup validates before POST, masks/reveals password and links to login", a
 	await page.getByRole("button", { name: "Mostrar senha" }).click()
 	await expect(page.getByLabel("Senha", { exact: true })).toHaveAttribute("type", "text")
 	await page.getByLabel("Confirmar senha").fill("Test-only-123")
-	await page.getByRole("button", { name: "Criar acesso e continuar" }).click()
+	await page.getByLabel("Confirmar senha").press("Enter")
 	await expect(page.getByRole("status")).toContainText("Acesso criado")
 	expect(posts).toBe(1)
-	await page.getByRole("link", { name: "Entrar no painel →" }).click()
-	await expect(page).toHaveURL(/\/login$/)
+	await expect(page).toHaveURL(/\/login\?created=true$/)
+	await expect(page.getByLabel("Usuário", { exact: true })).toBeFocused()
 	await expect(page.getByLabel("Senha", { exact: true })).toHaveValue("")
 })
 

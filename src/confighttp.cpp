@@ -12,6 +12,7 @@
 #include <fstream>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <thread>
 #include <numeric>
 #include <algorithm>
@@ -1096,9 +1097,9 @@ namespace confighttp {
         return;
       }
       std::string url = input_tree.value("url", "");
-      const std::string coverdir = platf::appdata().string() + "/covers/";
-      file_handler::make_directory(coverdir);
-      std::string path = coverdir + http::url_escape(key) + ".png";
+      const auto coverdir = platf::appdata() / "covers";
+      file_handler::make_directory(coverdir.string());
+      std::string path = (coverdir / (http::url_escape(key) + ".png")).string();
       if (!url.empty()) {
         if (http::url_get_host(url) != "images.igdb.com") {
           bad_request(response, request, "Only images.igdb.com is allowed");
@@ -1110,8 +1111,16 @@ namespace confighttp {
         }
       } else {
         auto data = SimpleWeb::Crypto::Base64::decode(input_tree.value("data", ""));
-        std::ofstream imgfile(path);
-        imgfile.write(data.data(), static_cast<int>(data.size()));
+        const std::string png_signature {"\x89PNG\r\n\x1a\n", 8};
+        if (data.size() > 10 * 1024 * 1024 || data.size() < png_signature.size() || data.compare(0, png_signature.size(), png_signature) != 0) {
+          bad_request(response, request, "Use uma imagem PNG de ate 10 MiB.");
+          return;
+        }
+        std::ofstream imgfile(path, std::ios::binary | std::ios::trunc);
+        if (!imgfile) throw std::runtime_error("Nao foi possivel abrir o arquivo de capa.");
+        imgfile.write(data.data(), static_cast<std::streamsize>(data.size()));
+        imgfile.close();
+        if (!imgfile) throw std::runtime_error("Nao foi possivel gravar a capa completa.");
       }
       output_tree["status"] = true;
       output_tree["path"] = path;

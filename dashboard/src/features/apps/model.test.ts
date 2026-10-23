@@ -51,6 +51,7 @@ it("validates names, hook lists and timeout/scale limits", () => {
 	for (const patch of [
 		{ name: "" },
 		{ name: "bad\nname" },
+		{ "image-path": '"C:\\Jogos\\capa.png"' },
 		{ "prep-cmd": "broken" },
 		{ "exit-timeout": -1 },
 		{ "scale-factor": 201 }

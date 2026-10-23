@@ -2,7 +2,6 @@ import { IconCheck, IconDeviceFloppy, IconSearch, IconX } from "@tabler/icons-re
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { useRef, useState } from "react"
-import { ConfirmedAction } from "@/components/confirmed-action"
 import { RequestError } from "@/components/request-error"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -41,7 +40,7 @@ import { searchSettings } from "@/features/settings/search"
 import { SectionTemplates } from "@/features/settings/section-templates"
 import { configOptions, post } from "@/lib/api"
 import { accepted } from "@/lib/documents"
-import { configuredWebAddress, requestLifecycle } from "@/lib/lifecycle"
+import { configuredWebAddress } from "@/lib/lifecycle"
 
 function Editor({ initial }: { initial: Snapshot }) {
 	const client = useQueryClient()
@@ -64,7 +63,6 @@ function Editor({ initial }: { initial: Snapshot }) {
 	const [error, setError] = useState<Error | null>(null)
 	const [saved, setSaved] = useState(false)
 	const [savedAddress, setSavedAddress] = useState<string | null>(null)
-	const [lifecycleFeedback, setLifecycleFeedback] = useState("")
 	const changes = changedKeys(draftFrom(baseline), draft)
 	const dirty = changes.length > 0
 	const save = useMutation({
@@ -98,8 +96,24 @@ function Editor({ initial }: { initial: Snapshot }) {
 		setDraft((previous) => ({ ...previous, [key]: value }))
 		setSaved(false)
 	}
+	function reviewChanges() {
+		if (!dirty || save.isPending) return
+		try {
+			serializeSettings(draft)
+			setError(null)
+			setReview(true)
+		} catch (failure) {
+			setError(failure instanceof Error ? failure : new Error("Configuração inválida"))
+		}
+	}
 	return (
-		<>
+		<form
+			className="min-w-0 space-y-6"
+			onSubmit={(event) => {
+				event.preventDefault()
+				reviewChanges()
+			}}
+		>
 			<UnsavedChanges dirty={dirty} pending={save.isPending} />
 			<div className="flex flex-wrap items-start justify-between gap-4">
 				<div>
@@ -137,12 +151,6 @@ function Editor({ initial }: { initial: Snapshot }) {
 					</AlertDescription>
 				</Alert>
 			)}
-			{lifecycleFeedback && (
-				<Alert role="status">
-					<AlertTitle>Verifique o estado do host</AlertTitle>
-					<AlertDescription>{lifecycleFeedback}</AlertDescription>
-				</Alert>
-			)}
 			<RequestError error={error || (!review ? save.error : null)} />
 			<GlobalConfigurationControls
 				platform={initial.platform}
@@ -161,12 +169,13 @@ function Editor({ initial }: { initial: Snapshot }) {
 					ref={searchInput}
 					id="settings-search"
 					aria-label="Buscar configurações"
-					placeholder="Buscar opções sem precisar de acentos…"
+					placeholder="Buscar opções"
 					maxLength={256}
 					spellCheck={false}
 					value={filter}
 					onChange={(event) => setFilter(event.target.value)}
 					onKeyDown={(event) => {
+						if (event.key === "Enter") event.preventDefault()
 						if (event.key === "Escape") setFilter("")
 					}}
 					className="h-11 pr-12 pl-10"
@@ -272,33 +281,10 @@ function Editor({ initial }: { initial: Snapshot }) {
 					>
 						Descartar rascunho
 					</Button>
-					<Button
-						disabled={!dirty || save.isPending}
-						onClick={() => {
-							try {
-								serializeSettings(draft)
-								setError(null)
-								setReview(true)
-							} catch (failure) {
-								setError(
-									failure instanceof Error ? failure : new Error("Configuração inválida")
-								)
-							}
-						}}
-					>
+					<Button type="submit" disabled={!dirty || save.isPending}>
 						<IconDeviceFloppy />
 						Revisar e salvar
 					</Button>
-					<ConfirmedAction
-						label="Reiniciar host"
-						description="Encerra o aplicativo e interrompe todos os streams. Uma execução manual pode não voltar automaticamente. Não salva rascunhos. A conexão pode cair sem confirmação: verifique o console e abra o host novamente se necessário."
-						disabled={dirty || save.isPending}
-						execute={async () => {
-							setLifecycleFeedback("")
-							setLifecycleFeedback(await requestLifecycle("restart"))
-						}}
-						destructive
-					/>
 				</div>
 			</Card>
 			<Dialog
@@ -352,7 +338,7 @@ function Editor({ initial }: { initial: Snapshot }) {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
-		</>
+		</form>
 	)
 }
 

@@ -8,6 +8,7 @@ import {
 	AlertDialogTitle
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { useTrackHostEdits } from "./host-actions"
 
 export function UnsavedChanges({
 	dirty,
@@ -16,6 +17,7 @@ export function UnsavedChanges({
 	dirty: boolean
 	pending?: boolean
 }) {
+	useTrackHostEdits(dirty, pending)
 	const blocker = useBlocker({
 		shouldBlockFn: ({ current, next }) =>
 			(dirty || pending) && current.routeId !== next.routeId,

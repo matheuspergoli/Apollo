@@ -3,8 +3,8 @@ import {
 	IconArrowUp,
 	IconDeviceFloppy,
 	IconEdit,
-	IconPlayerPlay,
-	IconPlus
+	IconPlus,
+	IconRefresh
 } from "@tabler/icons-react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
@@ -13,7 +13,7 @@ import { ConfirmedAction } from "@/components/confirmed-action"
 import { RequestError } from "@/components/request-error"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import {
 	Card,
 	CardContent,
@@ -34,12 +34,14 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { UnsavedChanges } from "@/components/unsaved-changes"
+import { ArtemisLaunch } from "@/features/apps/artemis-launch"
 import { ApplicationConfigurationControls } from "@/features/apps/configuration-controls"
 import { CoverPicker } from "@/features/apps/covers"
-import { appDraft, launcherFile, launchLink, validateApp } from "@/features/apps/model"
+import { appDraft, launcherFile, validateApp } from "@/features/apps/model"
 import { comparable } from "@/features/settings/model"
 import { action, applicationsOptions, bool, type Document, text } from "@/lib/documents"
 import { downloadFile } from "@/lib/download"
+import { ApiError } from "@/lib/api"
 
 const appText = [
 	["name", "Nome", "Nome exibido na biblioteca do Artemis."],
@@ -50,7 +52,7 @@ const appText = [
 	],
 	["working-dir", "Diretório de trabalho", "Pasta usada como diretório atual do aplicativo."],
 	["output", "Arquivo de saída", "Caminho no host para registrar a saída do processo."],
-	["image-path", "Caminho da capa", "Caminho de uma imagem PNG no host, não no celular."]
+	["image-path", "Caminho da capa", "Caminho completo de uma imagem PNG no host, sem aspas."]
 ] as const
 const toggles = [
 	["elevated", "Executar com privilégios elevados"],
@@ -70,13 +72,15 @@ function AppEditor({
 	onClose,
 	onSaved,
 	hostUuid,
-	hostName
+	hostName,
+	hasPendingOrder = false
 }: {
 	original: Document
 	onClose: () => void
 	onSaved: () => Promise<unknown>
 	hostUuid: string
 	hostName: string
+	hasPendingOrder?: boolean
 }) {
 	const [draft, setDraft] = useState(() => appDraft(original))
 	const mutation = useMutation({
@@ -101,7 +105,7 @@ function AppEditor({
 	]
 	return (
 		<>
-			<UnsavedChanges dirty={changed} pending={mutation.isPending} />
+			<UnsavedChanges dirty={changed || hasPendingOrder} pending={mutation.isPending} />
 			<div className="flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<p className="text-muted-foreground text-xs uppercase tracking-widest">
@@ -162,7 +166,11 @@ function AppEditor({
 									/>
 									<FieldDescription>{help}</FieldDescription>
 									{key === "image-path" && (
-										<CoverPicker name={text(draft.name)} onChange={(path) => set(key, path)} />
+										<CoverPicker
+											name={text(draft.name)}
+											path={text(draft[key])}
+											onChange={(path) => set(key, path)}
+										/>
 									)}
 								</Field>
 							))}
@@ -320,9 +328,13 @@ function AppEditor({
 }
 
 export function ApplicationsPage() {
-	const query = useQuery(applicationsOptions)
-	const client = useQueryClient()
 	const [editor, setEditor] = useState<Document | null>(null)
+	const query = useQuery({
+		...applicationsOptions,
+		refetchInterval: editor ? false : applicationsOptions.refetchInterval,
+		refetchOnWindowFocus: editor ? false : "always"
+	})
+	const client = useQueryClient()
 	const [filter, setFilter] = useState("")
 	const [order, setOrder] = useState<string[] | null>(null)
 	const refresh = () => client.invalidateQueries({ queryKey: applicationsOptions.queryKey })
@@ -334,9 +346,10 @@ export function ApplicationsPage() {
 		}
 	})
 	if (query.isPending) return <Skeleton className="h-96 w-full" />
-	if (query.error)
+	if (query.error && (!query.data || query.error instanceof ApiError && [401, 403].includes(query.error.status)))
 		return <RequestError error={query.error} retry={() => void query.refetch()} />
 	const data = query.data
+	if (!data) return null
 	if (editor)
 		return (
 			<AppEditor
@@ -346,6 +359,7 @@ export function ApplicationsPage() {
 				onSaved={refresh}
 				hostUuid={data.hostUuid}
 				hostName={data.hostName}
+				hasPendingOrder={Boolean(order)}
 			/>
 		)
 	const ordered = order
@@ -382,8 +396,25 @@ export function ApplicationsPage() {
 					Novo aplicativo
 				</Button>
 			</div>
-			<RequestError error={saveOrder.error} />
+			<RequestError
+				error={query.error || saveOrder.error}
+				retry={query.error ? () => void query.refetch() : undefined}
+			/>
+			<p className="text-muted-foreground text-xs">
+				Leitura às {new Date(query.dataUpdatedAt).toLocaleTimeString("pt-BR")}.{" "}
+				{query.isError
+					? "Estado não confirmado. Atualize a leitura para tentar novamente."
+					: "Atualização a cada 3 segundos com esta página visível."}
+			</p>
 			<div className="flex flex-wrap gap-3">
+				<Button
+					variant="outline"
+					disabled={query.isFetching}
+					onClick={() => void query.refetch()}
+				>
+					<IconRefresh />
+					Atualizar aplicativos
+				</Button>
 				<Input
 					aria-label="Buscar aplicativos"
 					placeholder="Buscar aplicativos…"
@@ -428,8 +459,14 @@ export function ApplicationsPage() {
 						<CardHeader>
 							<div className="flex items-start justify-between gap-3">
 								<CardTitle>{text(app.name)}</CardTitle>
-								<Badge variant={data.current === app.uuid ? "default" : "outline"}>
-									{data.current === app.uuid ? "Em execução" : "Disponível"}
+								<Badge
+									variant={!query.isError && data.current === app.uuid ? "default" : "outline"}
+								>
+									{query.isError
+										? "Estado não confirmado"
+										: data.current === app.uuid
+											? "Em execução"
+											: "Disponível"}
 								</Badge>
 							</div>
 							<CardDescription className="truncate font-mono">
@@ -443,7 +480,9 @@ export function ApplicationsPage() {
 							</Button>
 							{data.current === app.uuid ? (
 								<ConfirmedAction
+									key={`close-${text(app.uuid)}`}
 									label="Encerrar"
+									disabled={query.isError}
 									destructive
 									description="Encerra o aplicativo atual e pode interromper sua sessão. Salve o progresso antes de continuar."
 									execute={async () => {
@@ -453,21 +492,17 @@ export function ApplicationsPage() {
 								/>
 							) : (
 								<ConfirmedAction
+									key={`launch-${text(app.uuid)}`}
 									label="Iniciar no host"
-									description={`Inicia ${text(app.name)} no computador. Pode ativar display, comandos e encoder. Não inicia automaticamente o stream no celular.`}
+									disabled={query.isError}
+									description={`Inicia ${text(app.name)} no computador. Pode encerrar o aplicativo atual e ativar display, comandos e encoder. Não inicia automaticamente o stream no celular.`}
 									execute={async () => {
 										await action("apps/launch", { uuid: app.uuid })
 										await refresh()
 									}}
 								/>
 							)}
-							<a
-								className={buttonVariants({ variant: "outline" })}
-								href={launchLink(app, data.hostUuid, data.hostName)}
-							>
-								<IconPlayerPlay />
-								Abrir no Artemis
-							</a>
+							<ArtemisLaunch app={app} hostUuid={data.hostUuid} hostName={data.hostName} />
 							<Button
 								variant="ghost"
 								onClick={() =>

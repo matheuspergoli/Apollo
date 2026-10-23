@@ -125,6 +125,37 @@ try {
 	assert.equal(login.status, 200)
 	const cookie = login.headers["set-cookie"]?.[0]?.split(";")[0]
 	assert(cookie, "Native login did not issue a session cookie")
+	const png = Buffer.from(
+		"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aY1kAAAAASUVORK5CYII=",
+		"base64"
+	)
+	const uploadedCover = await http("/api/covers/upload", {
+		method: "POST",
+		cookie,
+		data: { key: "ci_binary_cover", data: png.toString("base64") }
+	})
+	assert.equal(uploadedCover.status, 200)
+	assert.equal(uploadedCover.json.status, true)
+	assert.deepEqual(
+		await readFile(uploadedCover.json.path),
+		png,
+		"Uploaded PNG must remain byte-identical on Windows"
+	)
+	assert.equal(
+		(
+			await http("/api/covers/upload", {
+				method: "POST",
+				cookie,
+				data: { key: "ci_binary_cover", data: Buffer.from("not-png").toString("base64") }
+			})
+		).status,
+		400
+	)
+	assert.deepEqual(
+		await readFile(uploadedCover.json.path),
+		png,
+		"Rejected upload must not overwrite a valid PNG"
+	)
 	const snapshot = await http("/api/config", { cookie })
 	assert.equal(snapshot.status, 200)
 	assert.equal(snapshot.json.status, true)

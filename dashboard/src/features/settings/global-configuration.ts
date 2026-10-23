@@ -8,6 +8,7 @@ import { globalFileSchema } from "./file-contracts"
 import {
 	draftFrom,
 	type SettingField,
+	type SettingSection,
 	type Snapshot,
 	sections,
 	serializeSettings
@@ -49,6 +50,16 @@ function canonicalValue(field: SettingField, value: unknown): unknown {
 			return row
 		})
 	return value
+}
+
+export function sectionSavedValues(section: SettingSection, snapshot: Snapshot): Document {
+	const draft = draftFrom(snapshot)
+	return validateSectionSettings(
+		Object.fromEntries(
+			section.fields.map((field) => [field.key, canonicalValue(field, draft[field.key])])
+		),
+		section
+	)
 }
 
 export function globalTemplate(platform: string): GlobalConfiguration {

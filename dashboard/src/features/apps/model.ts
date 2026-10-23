@@ -27,6 +27,8 @@ export function appDraft(value: Document = {}) {
 	return structuredClone({ ...appDefaults, ...value })
 }
 export function validateApp(draft: Document): Document {
+	if (/^['"]|['"]$/.test(text(draft["image-path"]).trim()))
+		throw new Error("Informe o caminho da capa sem aspas no início ou no final.")
 	if (!text(draft.name).trim() || /[\r\n]/.test(text(draft.name)))
 		throw new Error("Informe um nome de aplicativo válido, em uma única linha.")
 	for (const key of ["prep-cmd", "state-cmd", "detached"])

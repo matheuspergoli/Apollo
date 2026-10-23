@@ -1,6 +1,29 @@
 import { expect, test } from "@playwright/test"
 import { mockHost } from "../fixtures/mock-api"
 
+test("malformed cover success without a stored path retains the current image path", async ({
+	page
+}) => {
+	await mockHost(page)
+	await page.route("**/api/covers/upload", (route) =>
+		route.fulfill({ json: { status: true } })
+	)
+	await page.goto("/apps")
+	await page.getByRole("button", { name: "Editar", exact: true }).click()
+	await page.locator("#app-image-path").fill("C:\\keep.png")
+	const upload = page.getByLabel("Enviar capa PNG", { exact: true })
+	await upload.setInputFiles({
+		name: "cover.png",
+		mimeType: "image/png",
+		buffer: Buffer.from(
+			"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aY1kAAAAASUVORK5CYII=",
+			"base64"
+		)
+	})
+	await expect(page.getByRole("alert")).toContainText("não informou o caminho")
+	await expect(page.locator("#app-image-path")).toHaveValue("C:\\keep.png")
+})
+
 test("online cover search runs on demand and selection updates only the draft", async ({
 	page
 }) => {
@@ -92,13 +115,16 @@ test("launcher export and deep link carry the selected host/application IDs", as
 }) => {
 	await mockHost(page)
 	await page.goto("/apps")
+	await page.getByRole("button", { name: "Abrir no Artemis", exact: true }).click()
 	const href = await page
-		.getByRole("link", { name: "Abrir no Artemis", exact: true })
+		.getByRole("link", { name: "Abrir Artemis neste dispositivo", exact: true })
 		.getAttribute("href")
 	const link = new URL(href || "")
 	expect(link.protocol).toBe("art:")
 	expect(link.searchParams.get("host_uuid")).toBe("test-host")
 	expect(link.searchParams.get("app_uuid")).toBe("app-1")
+	await expect(page.getByRole("dialog")).toContainText("Não envia um comando do PC")
+	await page.getByRole("dialog").getByRole("button", { name: "Fechar", exact: true }).click()
 	const downloadReady = page.waitForEvent("download")
 	await page.getByRole("button", { name: "Exportar .art", exact: true }).click()
 	const download = await downloadReady

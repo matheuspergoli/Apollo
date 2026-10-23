@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query"
 import { useRef, useState } from "react"
 import { RequestError } from "@/components/request-error"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
 	Dialog,
@@ -13,6 +14,12 @@ import { Input } from "@/components/ui/input"
 import { action, object, text } from "@/lib/documents"
 
 type Cover = { name: string; key: string; url: string }
+async function storeCover(data: unknown) {
+	const response = await action("covers/upload", data)
+	const path = text(response.path)
+	if (!path) throw new Error("O host não informou o caminho da capa gravada.")
+	return path
+}
 export async function findCovers(name: string): Promise<Cover[]> {
 	const search = name.trim().replace(/\s+/g, ".").toLowerCase()
 	if (!search) throw new Error("Informe primeiro o nome do aplicativo.")
@@ -66,20 +73,23 @@ export async function findCovers(name: string): Promise<Cover[]> {
 
 export function CoverPicker({
 	name,
+	path,
 	onChange
 }: {
 	name: string
+	path: string
 	onChange: (path: string) => void
 }) {
 	const [open, setOpen] = useState(false)
 	const fileInput = useRef<HTMLInputElement>(null)
 	const [fileName, setFileName] = useState("")
+	const [storedPath, setStoredPath] = useState("")
 	const search = useMutation({ mutationFn: () => findCovers(name) })
 	const upload = useMutation({
-		mutationFn: async (cover: Cover) =>
-			action("covers/upload", { key: cover.key, url: cover.url }),
-		onSuccess: (response) => {
-			onChange(text(response.path))
+		mutationFn: async (cover: Cover) => storeCover({ key: cover.key, url: cover.url }),
+		onSuccess: (path) => {
+			onChange(path)
+			setStoredPath(path)
 			setOpen(false)
 		}
 	})
@@ -95,9 +105,12 @@ export function CoverPicker({
 				reader.onerror = () => reject(new Error("Não foi possível ler a imagem."))
 				reader.readAsDataURL(file)
 			})
-			return action("covers/upload", { key: `local_${crypto.randomUUID()}`, data })
+			return storeCover({ key: `local_${crypto.randomUUID()}`, data })
 		},
-		onSuccess: (response) => onChange(text(response.path))
+		onSuccess: (path) => {
+			onChange(path)
+			setStoredPath(path)
+		}
 	})
 	return (
 		<div className="space-y-3">
@@ -119,7 +132,7 @@ export function CoverPicker({
 					disabled={fileUpload.isPending}
 					onClick={() => fileInput.current?.click()}
 				>
-					{fileUpload.isPending ? "Enviando capa…" : "Selecionar capa PNG"}
+					{fileUpload.isPending ? "Enviando capa…" : "Selecionar e enviar PNG"}
 				</Button>
 				<span className="self-center text-muted-foreground text-xs">
 					{fileName || "Nenhum arquivo selecionado"}
@@ -133,6 +146,7 @@ export function CoverPicker({
 					onChange={(event) => {
 						const file = event.target.files?.[0]
 						if (file) {
+							setStoredPath("")
 							setFileName(file.name)
 							fileUpload.mutate(file)
 						}
@@ -142,10 +156,20 @@ export function CoverPicker({
 				/>
 			</div>
 			<p className="text-muted-foreground text-xs">
-				A busca consulta GameDB/IGDB somente quando solicitada. O arquivo local é enviado ao
-				host.
+				Selecionar PNG envia uma cópia para config/covers no host; não mantém o caminho
+				original do dispositivo. Para usar uma imagem já existente no host, preencha Caminho da
+				capa com o caminho completo, sem aspas. A busca online só ocorre quando solicitada.
 			</p>
 			<RequestError error={fileUpload.error} />
+			{storedPath && path === storedPath && (
+				<Alert role="status">
+					<AlertTitle>Cópia de capa recebida pelo host</AlertTitle>
+					<AlertDescription>
+						<span className="break-all font-mono">{storedPath}</span> Salve o aplicativo para
+						usar essa capa na biblioteca.
+					</AlertDescription>
+				</Alert>
+			)}
 			<Dialog open={open} onOpenChange={setOpen}>
 				<DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-3xl">
 					<DialogHeader>
@@ -164,7 +188,10 @@ export function CoverPicker({
 								variant="outline"
 								className="h-auto flex-col gap-2 p-2"
 								disabled={upload.isPending}
-								onClick={() => upload.mutate(cover)}
+								onClick={() => {
+									setStoredPath("")
+									upload.mutate(cover)
+								}}
 							>
 								<img
 									src={cover.url}

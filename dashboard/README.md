@@ -60,6 +60,43 @@ confirmação de privacidade. O ZIP não é criptografado nem transfere capas/bi
 Não há importação global da biblioteca nesta funcionalidade; `.art` continua
 sendo apenas um atalho Artemis, não um arquivo de configuração de aplicativo.
 
+## Permissões de dispositivos e valores por seção
+
+Só o editor de um dispositivo **já pareado** possui os três controles de arquivo:
+template conservador, exportação do rascunho e importação com revisão. O formato é
+`apollo-device-permissions`, versão 1, com `settings`; o ZIP inclui dispositivo.json,
+guia e schema. Nome, UUID, certificados e estado de conexão não transitam. Bits
+desconhecidos são rejeitados; salvar permissões pode desconectar um cliente se
+a visualização for revogada. Pareamento/criação continuam com o fluxo anterior.
+
+Cada seção de configurações agora também exporta **valores salvos da seção**,
+lidos novamente do host, sem o rascunho e sem depender de seções inválidas não
+relacionadas. Template continua sendo padrões; ambos usam o mesmo formato fechado
+por seção. Exportações de valores atuais pedem confirmação de privacidade.
+
+## Estado dos aplicativos, capas e ações do host
+
+A biblioteca consulta o estado declarado pelo host a cada 3 segundos quando
+visível, ao recuperar foco e manualmente. Pausa durante a edição e após erro;
+em erro, não afirma que o estado antigo continua válido. Mudança de estado fecha
+confirmações de operações antigas, em vez de transformar Encerrar em Iniciar.
+
+Selecionar PNG envia uma cópia ao host; o navegador não revela o caminho original
+completo. O backend grava os bytes em modo binário, verifica assinatura/tamanho e
+falhas de escrita. Para usar um PNG já no host, informe o caminho completo sem
+aspas no campo da capa. Comandos, por outro lado, podem precisar de aspas.
+Arquivos corrompidos por versões anteriores precisam ser enviados novamente;
+o original não é substituído e não há reparo automático de arquivos privados.
+
+Abrir no Artemis oferece link e QR: o protocolo `art://launch` é tratado pelo
+cliente instalado no dispositivo que abre o link, com o host já pareado. Não é
+um comando de abertura remota do PC para o celular e não confirma que o cliente abriu.
+
+O atalho global de reinício exige confirmação, bloqueia rascunhos/operações pendentes
+e usa feedback conservador quando a conexão cai. Primeiro acesso redireciona ao login
+com mensagem de sucesso. Formulários aceitam Enter onde há submit nativo; na busca
+ele não salva e em campos multilinha continua inserindo uma linha.
+
 ### Arquitetura dos arquivos
 
 `src/lib/configuration-files.ts` concentra leitura UTF-8/BOM, limites em bytes,

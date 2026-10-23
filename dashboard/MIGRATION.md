@@ -167,3 +167,28 @@ Falhas e correções anteriores estão em [VALIDATION-HISTORY.md](VALIDATION-HIS
   Essa extensão depende do CI do novo commit antes da entrega. O bloco principal
   não teve aumento no bundle de entrada; a validação Zod é carregada nos módulos
   de configuração/aplicativos, compartilhada entre eles.
+
+## Capas, estado externo e usabilidade
+
+- Investigação somente leitura confirmou corrupção da cópia PNG no Windows por
+  gravação em modo texto. Corrigido para modo binário, com assinatura/tamanho e
+  verificação de falha na escrita; o caminho de upload é uma cópia em config/covers,
+  não o caminho original do seletor do navegador. Caminhos com aspas externas são
+  rejeitados no editor. Nenhum arquivo ativo do usuário foi reparado/alterado.
+- Estado dos cards: GET periódico de 3s visível/foco/manual, pausado na edição e
+  em erro, sem POST automático. Estado antigo não é afirmado após erro. Confirmação
+  obsoleta é desmontada se a operação mudar, evitando trocar Encerrar por Iniciar.
+- O contrato art://launch foi conferido no cliente Artemis: abertura local ao
+  dispositivo do navegador, não RPC PC→celular. A UI agora explica isso e oferece
+  QR/link/atalho, sem alegar abertura bem-sucedida de um aplicativo externo.
+- Placeholder simplificado; ícone de logs alinhado aos atalhos; reinício global
+  confirmado e protegido por rascunhos/mutações pendentes. Cadastro continua ao
+  login automaticamente com feedback. Enter revisa configurações sem gravar,
+  submete formulários apropriados e não envia ao digitar em campos multilinha.
+- Perfil JSON individual de permissões no editor, sem alterar pareamento, nomes,
+  UUIDs ou certificados. Templates conservadores e revisão legível de permissões.
+  Terceiro botão de exportação salva adicionado às seções de configuração.
+- Rodada local: 117 testes unitários e 105 Chromium, Biome, TypeScript, build e
+  integração dev aprovados. O ensaio Windows ganhou comparação byte a byte do PNG
+  e rejeição de upload inválido sem sobrescrever a cópia válida; essa mudança nativa
+  ainda requer aprovação do novo CI antes de preparar o pacote correspondente.

@@ -2,6 +2,7 @@ import {
 	IconApps,
 	IconDeviceDesktop,
 	IconDeviceGamepad,
+	IconLifebuoy,
 	IconRefresh
 } from "@tabler/icons-react"
 import { useQuery } from "@tanstack/react-query"
@@ -184,6 +185,7 @@ export function OverviewPage() {
 										className: "justify-start"
 									})}
 								>
+									<IconLifebuoy />
 									Logs e recuperação
 								</Link>
 							</div>

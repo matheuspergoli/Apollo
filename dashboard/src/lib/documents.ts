@@ -54,5 +54,8 @@ export const applicationsOptions = queryOptions({
 			hostUuid: text(response.host_uuid)
 		}
 	},
-	staleTime: 5_000
+	staleTime: 3_000,
+	refetchInterval: (query) => (query.state.status === "error" ? false : 3_000),
+	refetchIntervalInBackground: false,
+	refetchOnWindowFocus: "always"
 })

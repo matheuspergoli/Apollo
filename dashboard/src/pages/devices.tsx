@@ -28,6 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UnsavedChanges } from "@/components/unsaved-changes"
+import { DeviceConfigurationControls } from "@/features/devices/configuration-controls"
 import {
 	deviceDraft,
 	pairingLink,
@@ -322,6 +323,14 @@ function DeviceEditor({
 				)}
 			</div>
 			<RequestError error={mutation.error} />
+			<DeviceConfigurationControls
+				current={draft}
+				disabled={mutation.isPending}
+				onApply={(values) => {
+					setDraft((previous) => ({ ...previous, ...values }))
+					mutation.reset()
+				}}
+			/>
 			<form
 				className="min-w-0 space-y-6"
 				onSubmit={(event) => {
@@ -333,7 +342,7 @@ function DeviceEditor({
 					<CardHeader>
 						<CardTitle>Identificação e display</CardTitle>
 						<CardDescription>
-							Os ajustes são exclusivos deste cliente. Não alteram o pareamento dos demais.
+							Os ajustes são exclusivos deste cliente. Salvar aplica permissões e pode desconectá-lo se a visualização for revogada; não remove o pareamento dos demais.
 						</CardDescription>
 					</CardHeader>
 					<CardContent>

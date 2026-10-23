@@ -73,6 +73,17 @@ reinício não confirma sucesso nem falha e não deve provocar repetição autom
   conexão até parear novamente.
 - [ ] Logs podem ser filtrados e baixados. Revise dados pessoais antes de compartilhar.
 - [ ] Troca de senha exige o acesso atual, invalida a sessão e permite novo login.
+- [ ] Reenvie uma capa PNG no candidato corrigido e salve o aplicativo. O caminho
+  em config/covers é uma cópia no host; para usar o original, informe seu caminho
+  sem aspas. Não reutilize a cópia corrompida gerada pelo candidato anterior.
+- [ ] Inicie um aplicativo no host e encerre pelo Artemis: ao retornar ao painel,
+  confira a atualização automática, sem precisar enviar outro Encerrar.
+- [ ] Abra o link/QR do aplicativo no dispositivo com Artemis instalado e o host
+  já pareado. No navegador do PC sem cliente associado, não espere abertura no celular.
+- [ ] Exporte/importe um perfil de permissões em um dispositivo já pareado, cancele
+  antes de aplicar e confira que nome/identidade não foram trocados. Salve só após revisar.
+- [ ] Confira a exportação dos valores salvos de uma seção e o atalho global de
+  reinício; ele deve ficar bloqueado enquanto houver rascunhos ou operações pendentes.
 - [ ] Ao terminar, encerre o candidato e retorne ao host estável; confirme que conta,
   biblioteca e pareamentos originais continuam funcionando.
 

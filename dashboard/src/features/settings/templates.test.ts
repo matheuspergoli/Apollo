@@ -1,5 +1,6 @@
 import { strFromU8, unzipSync } from "fflate"
 import { describe, expect, it } from "vitest"
+import { sectionSavedValues } from "./global-configuration"
 import { sections } from "./model"
 import {
 	parseSectionTemplate,
@@ -9,6 +10,28 @@ import {
 } from "./templates"
 
 describe("documented section templates", () => {
+	it("exports only a chosen saved section without depending on invalid data elsewhere", async () => {
+		const section = sections.find((section) => section.id === "nv")
+		if (!section) throw new Error("Missing section fixture")
+		const values = sectionSavedValues(section, {
+			platform: "windows",
+			version: "test",
+			values: {
+				nvenc_preset: "4",
+				global_prep_cmd: "broken elsewhere",
+				private_key: "not-exported"
+			}
+		})
+		expect(values.nvenc_preset).toBe(4)
+		expect(values).not.toHaveProperty("global_prep_cmd")
+		const files = unzipSync(
+			new Uint8Array(await (await sectionArchive(section, values)).arrayBuffer())
+		)
+		expect(
+			JSON.parse(strFromU8(files["apollo-nv/configuracao.json"])).settings.nvenc_preset
+		).toBe(4)
+		expect(strFromU8(files["apollo-nv/LEIA-ME.md"])).toContain("valores salvos")
+	})
 	for (const section of sections) {
 		it(`roundtrips all defaults and documents every ${section.id} field`, async () => {
 			const template = sectionTemplate(section)

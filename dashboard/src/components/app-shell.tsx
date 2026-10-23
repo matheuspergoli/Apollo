@@ -27,6 +27,7 @@ import {
 	useSidebar
 } from "@/components/ui/sidebar"
 import { configOptions } from "@/lib/api"
+import { HostActionNotice, HostActionsProvider, QuickHostRestart } from "./host-actions"
 import { ThemeSelect } from "./theme-provider"
 
 const navigation = [
@@ -96,27 +97,33 @@ export function AppShell() {
 			(item) => item.to === path.replace(/\/$/, "") || (item.to === "/" && path === "/")
 		)?.label || "Apollo"
 	return (
-		<SidebarProvider>
-			<HostNavigation />
-			<SidebarInset>
-				<header
-					data-slot="host-header"
-					className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-3 border-b bg-background/95 px-4 backdrop-blur-sm md:px-8"
-				>
-					<div className="flex min-w-0 items-center gap-3">
-						<SidebarTrigger />
-						<Separator orientation="vertical" className="h-4" />
-						<span className="truncate text-sm">{title}</span>
-						<Badge variant="outline" className="hidden sm:inline-flex">
-							Host local
-						</Badge>
+		<HostActionsProvider>
+			<SidebarProvider>
+				<HostNavigation />
+				<SidebarInset>
+					<header
+						data-slot="host-header"
+						className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-3 border-b bg-background/95 px-4 backdrop-blur-sm md:px-8"
+					>
+						<div className="flex min-w-0 items-center gap-3">
+							<SidebarTrigger />
+							<Separator orientation="vertical" className="h-4" />
+							<span className="truncate text-sm">{title}</span>
+							<Badge variant="outline" className="hidden sm:inline-flex">
+								Host local
+							</Badge>
+						</div>
+						<div className="flex shrink-0 items-center gap-2">
+							<QuickHostRestart />
+							<ThemeSelect />
+						</div>
+					</header>
+					<div className="mx-auto w-full max-w-7xl flex-1 space-y-6 p-4 md:p-8">
+						<HostActionNotice />
+						<Outlet />
 					</div>
-					<ThemeSelect />
-				</header>
-				<div className="mx-auto w-full max-w-7xl flex-1 space-y-6 p-4 md:p-8">
-					<Outlet />
-				</div>
-			</SidebarInset>
-		</SidebarProvider>
+				</SidebarInset>
+			</SidebarProvider>
+		</HostActionsProvider>
 	)
 }

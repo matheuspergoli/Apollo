@@ -1,4 +1,5 @@
 import { useMutation } from "@tanstack/react-query"
+import type { ReactNode } from "react"
 import { useState } from "react"
 import {
 	AlertDialog,
@@ -17,13 +18,21 @@ export function ConfirmedAction({
 	description,
 	execute,
 	destructive = false,
-	disabled = false
+	disabled = false,
+	icon,
+	compact = false,
+	triggerTitle
+	, triggerVariant
 }: {
 	label: string
 	description: string
 	execute: () => Promise<unknown>
 	destructive?: boolean
 	disabled?: boolean
+	icon?: ReactNode
+	compact?: boolean
+	triggerTitle?: string
+	triggerVariant?: "outline" | "destructive"
 }) {
 	const [open, setOpen] = useState(false)
 	const mutation = useMutation({
@@ -44,10 +53,17 @@ export function ConfirmedAction({
 		>
 			<AlertDialogTrigger
 				render={
-					<Button variant={destructive ? "destructive" : "outline"} disabled={disabled} />
+					<Button
+						variant={triggerVariant || (destructive ? "destructive" : "outline")}
+						disabled={disabled}
+						size={compact ? "icon" : "default"}
+						aria-label={compact ? label : undefined}
+						title={triggerTitle || label}
+					/>
 				}
 			>
-				{label}
+				{icon}
+				{compact ? <span className="sr-only">{label}</span> : label}
 			</AlertDialogTrigger>
 			<AlertDialogContent>
 				<AlertDialogHeader>
