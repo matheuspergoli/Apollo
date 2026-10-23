@@ -73,7 +73,8 @@ namespace confighttp {
     BOOST_LOG(debug) << "METHOD :: "sv << request->method;
     BOOST_LOG(debug) << "DESTINATION :: "sv << request->path;
     for (auto &[name, val] : request->header) {
-      BOOST_LOG(debug) << name << " -- " << (name == "Authorization" ? "CREDENTIALS REDACTED" : val);
+      const bool secret = boost::iequals(name, "Authorization") || boost::iequals(name, "Cookie") || boost::iequals(name, "Proxy-Authorization");
+      BOOST_LOG(debug) << name << " -- " << (secret ? "CREDENTIALS REDACTED" : val);
     }
     BOOST_LOG(debug) << " [--] "sv;
     for (auto &[name, val] : request->parse_query_string()) {

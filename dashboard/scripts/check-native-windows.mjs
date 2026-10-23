@@ -454,6 +454,15 @@ try {
 	assert(await page.getByRole("button", { name: "Reiniciar host", exact: true }).isEnabled())
 	assert.equal(child.exitCode, null, "Renewing a session must not replay the restart")
 	assert.deepEqual(errors, [])
+	const nativeLog = await readFile(resolve(process.cwd(), "native-test.log"), "utf8")
+	assert(
+		!nativeLog.includes(cookie.slice(cookie.indexOf("=") + 1)),
+		"Debug logs must not expose the session cookie"
+	)
+	assert(
+		!nativeLog.includes(renewedCookie.slice(renewedSeparator + 1)),
+		"Debug logs must not expose the renewed session cookie"
+	)
 	// Exercise the actual authenticated browser action, not a mocked restart.
 	// This is permitted only in the isolated fork runner guarded above.
 	await page.getByRole("button", { name: "Reiniciar host", exact: true }).click()
