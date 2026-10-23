@@ -79,7 +79,7 @@ export function AccessPage({
 			<header className="mb-12 flex flex-wrap items-center justify-between gap-4 border-b pb-5">
 				<div className="flex items-baseline gap-3">
 					<span className="font-semibold tracking-tight">Apollo</span>
-					<span className="text-muted-foreground text-xs">Laboratório</span>
+					<span className="text-muted-foreground text-xs">Painel do host</span>
 				</div>
 				<ThemeSelect />
 			</header>
@@ -98,7 +98,7 @@ export function AccessPage({
 					</p>
 					<p className="max-w-md border-l-2 pl-4 text-muted-foreground text-sm leading-6">
 						Este acesso pertence a este host Apollo. Não é sua conta Steam nem o PIN de
-						pareamento. A instalação original continua independente.
+						pareamento.
 					</p>
 				</section>
 				<Card>
@@ -206,25 +206,6 @@ export function AccessPage({
 					</CardContent>
 				</Card>
 			</div>
-			<footer className="mt-12 flex flex-wrap gap-5 border-t pt-5 text-muted-foreground text-xs">
-				<span>Configuração independente</span>
-				<a
-					href="https://github.com/ClassicOldSong/Apollo/blob/master/LICENSE"
-					target="_blank"
-					rel="noreferrer"
-					className="underline"
-				>
-					Licença Apollo
-				</a>
-				<a
-					href="https://github.com/ClassicOldSong/Apollo/blob/master/NOTICE"
-					target="_blank"
-					rel="noreferrer"
-					className="underline"
-				>
-					Avisos de terceiros
-				</a>
-			</footer>
 		</main>
 	)
 }

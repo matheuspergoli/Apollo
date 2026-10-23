@@ -450,7 +450,7 @@
 				"key": "isolated_virtual_display_option",
 				"defaultValue": "disabled",
 				"label": "Isolar posicionamento do display virtual",
-				"description": "Move o display virtual para a extremidade inferior direita e reorganiza os demais à esquerda, limitando a passagem do ponteiro entre eles. Revise o layout dos monitores após o teste."
+				"description": "Move o display virtual para a extremidade inferior direita e reorganiza os demais à esquerda, limitando a passagem do ponteiro entre eles. Revise o layout dos monitores após alterar esta opção."
 			}
 		]
 	},

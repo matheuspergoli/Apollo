@@ -170,6 +170,18 @@ Falhas e correções anteriores estão em [VALIDATION-HISTORY.md](VALIDATION-HIS
 
 ## Capas, estado externo e usabilidade
 
+### Refinamento de sessão e apresentação
+
+- Respostas 401 exibem reentrada em outra aba, preservando rascunhos. O reinício
+  fica bloqueado até verificar a sessão; renovar o acesso não repete mutações.
+- Reiniciar host tem rótulo visível no header. Diálogo Artemis sem overflow
+  horizontal verificado em 320, 390, 640 e 1280 px; header/editor também em 768 px.
+- Visão geral identifica configurações salvas e explica a negociação com o cliente
+  sem sugerir que os valores salvos não valem. Removidas referências de laboratório
+  e ressalvas redundantes da interface; mantidos limites reais de medição.
+- Validação local: 117 unitários, 112 testes Chromium, Biome, TypeScript e build.
+  Ensaio Windows ampliado para rejeição de reinício sem sessão e recuperação sem replay.
+
 - Investigação somente leitura confirmou corrupção da cópia PNG no Windows por
   gravação em modo texto. Corrigido para modo binário, com assinatura/tamanho e
   verificação de falha na escrita; o caminho de upload é uma cópia em config/covers,

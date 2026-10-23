@@ -41,13 +41,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 	return <ThemeContext value={{ theme, setTheme }}>{children}</ThemeContext>
 }
 
-export function ThemeSelect() {
+export function ThemeSelect({ compact = false }: { compact?: boolean }) {
 	const context = useContext(ThemeContext)
 	const id = useId()
 	if (!context) throw new Error("ThemeProvider is required")
 	return (
 		<Field orientation="horizontal" className="w-auto">
-			<FieldLabel htmlFor={id}>Tema</FieldLabel>
+			<FieldLabel htmlFor={id} className={compact ? "sr-only lg:not-sr-only" : undefined}>
+				Tema
+			</FieldLabel>
 			<Select
 				items={[
 					{ value: "auto", label: "Sistema" },
@@ -60,7 +62,11 @@ export function ThemeSelect() {
 						context.setTheme(value)
 				}}
 			>
-				<SelectTrigger id={id} aria-label="Tema" className="min-w-28">
+				<SelectTrigger
+					id={id}
+					aria-label="Tema"
+					className={compact ? "w-24 min-w-0 sm:w-28" : "min-w-28"}
+				>
 					<SelectValue />
 				</SelectTrigger>
 				<SelectContent>

@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 import type { ReactNode } from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
 	AlertDialog,
 	AlertDialogContent,
@@ -11,6 +11,7 @@ import {
 	AlertDialogTrigger
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { ApiError } from "@/lib/api"
 import { RequestError } from "./request-error"
 
 export function ConfirmedAction({
@@ -39,8 +40,14 @@ export function ConfirmedAction({
 		mutationFn: execute,
 		gcTime: 0,
 		retry: false,
-		onSuccess: () => setOpen(false)
+		onSuccess: () => setOpen(false),
+		onError: (error) => {
+			if (error instanceof ApiError && error.status === 401) setOpen(false)
+		}
 	})
+	useEffect(() => {
+		if (disabled && !mutation.isPending) setOpen(false)
+	}, [disabled, mutation.isPending])
 	return (
 		<AlertDialog
 			open={open}
@@ -81,7 +88,7 @@ export function ConfirmedAction({
 					</Button>
 					<Button
 						variant={destructive ? "destructive" : "default"}
-						disabled={mutation.isPending}
+						disabled={mutation.isPending || disabled}
 						onClick={() => mutation.mutate()}
 					>
 						{mutation.isPending ? "Executando…" : "Confirmar"}

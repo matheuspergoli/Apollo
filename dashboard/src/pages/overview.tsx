@@ -87,7 +87,7 @@ export function OverviewPage() {
 							: config.data?.vdisplayStatus === undefined
 								? "—"
 								: "Verificar",
-						"Estado de inicialização, não FPS"
+						"Estado de inicialização"
 					]
 				].map(([label, value, help]) => (
 					<Card key={label}>
@@ -101,16 +101,11 @@ export function OverviewPage() {
 			</div>
 			<RequestError error={clients.error || apps.error} />
 			{config.isPending && <p role="status">Consultando o host…</p>}
-			{config.error && (
+			{config.error && !(config.error instanceof ApiError && config.error.status === 401) && (
 				<Alert variant="destructive">
 					<AlertTitle>Não foi possível consultar o host</AlertTitle>
 					<AlertDescription>
 						<p>{config.error.message}</p>
-						{config.error instanceof ApiError && config.error.status === 401 && (
-							<Link to="/login" className="underline">
-								Entrar novamente
-							</Link>
-						)}
 					</AlertDescription>
 				</Alert>
 			)}
@@ -118,9 +113,9 @@ export function OverviewPage() {
 				<div className="grid gap-5 md:grid-cols-2">
 					<Card>
 						<CardHeader>
-							<CardTitle>Configuração declarada</CardTitle>
+							<CardTitle>Configurações salvas</CardTitle>
 							<CardDescription>
-								Valores do arquivo, não estado efetivo do stream.
+								Valores do arquivo de configuração do Apollo. Algumas mudanças exigem reinício.
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
@@ -190,8 +185,9 @@ export function OverviewPage() {
 								</Link>
 							</div>
 							<p className="mt-5 text-muted-foreground text-xs leading-6">
-								Codec negociado, FPS, rede e decode devem ser conferidos no Artemis. O painel
-								não transforma configuração declarada em telemetria nem mede input-to-photon.
+								As configurações salvas orientam as sessões. Codec, resolução e FPS também
+								dependem do cliente e do monitor. Confira a transmissão e as estatísticas de
+								rede/decodificação no Artemis; este painel não mede latência de ponta a ponta.
 							</p>
 						</CardContent>
 					</Card>
@@ -203,7 +199,7 @@ export function OverviewPage() {
 						<div>
 							<CardTitle>Aplicativo atual</CardTitle>
 							<CardDescription>
-								Estado retornado pelo processo do host, sem inferência por configuração.
+								Aplicativo informado pelo host na última leitura.
 							</CardDescription>
 						</div>
 						<Link to="/apps" className={buttonVariants({ variant: "outline" })}>
@@ -223,8 +219,8 @@ export function OverviewPage() {
 							: "Estado ainda não disponível"}
 					</p>
 					<p className="mt-2 text-muted-foreground text-sm">
-						Inicie ou encerre aplicativos pela biblioteca. Ações que interrompem a sessão
-						exigem confirmação.
+						Abra a biblioteca para iniciar ou encerrar aplicativos. Encerrar pode interromper
+						sessões e exige confirmação.
 					</p>
 				</CardContent>
 			</Card>

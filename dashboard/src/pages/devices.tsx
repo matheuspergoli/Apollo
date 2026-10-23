@@ -131,7 +131,7 @@ function Pairing({ refresh }: { refresh: () => Promise<unknown> }) {
 							id="pair-name"
 							value={name}
 							onChange={(event) => setName(event.target.value)}
-							placeholder="Galaxy S25+"
+							placeholder="Ex.: celular"
 						/>
 					</Field>
 					<Tabs defaultValue="pin">

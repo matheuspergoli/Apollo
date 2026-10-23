@@ -107,15 +107,15 @@ export function AppShell() {
 					>
 						<div className="flex min-w-0 items-center gap-3">
 							<SidebarTrigger />
-							<Separator orientation="vertical" className="h-4" />
+							<Separator orientation="vertical" className="hidden h-4 sm:block" />
 							<span className="truncate text-sm">{title}</span>
-							<Badge variant="outline" className="hidden sm:inline-flex">
+							<Badge variant="outline" className="hidden lg:inline-flex">
 								Host local
 							</Badge>
 						</div>
 						<div className="flex shrink-0 items-center gap-2">
 							<QuickHostRestart />
-							<ThemeSelect />
+							<ThemeSelect compact />
 						</div>
 					</header>
 					<div className="mx-auto w-full max-w-7xl flex-1 space-y-6 p-4 md:p-8">

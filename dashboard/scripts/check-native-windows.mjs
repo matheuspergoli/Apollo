@@ -317,7 +317,7 @@ try {
 		).json.status,
 		true
 	)
-	await page.reload()
+	await page.getByRole("button", { name: "Atualizar aplicativos", exact: true }).click()
 	await page
 		.locator('[data-slot="card"]')
 		.filter({
@@ -404,17 +404,38 @@ try {
 	assert.equal(changed.status, 200)
 	assert.equal(changed.json.status, true)
 	assert.equal((await http("/api/config", { cookie })).status, 401)
-	assert.equal(
-		(
-			await http("/api/login", {
-				method: "POST",
-				data: { ...credentials, password: "ci-only-new-password" }
-			})
-		).status,
-		200
-	)
+	assert.equal((await http("/api/restart", { method: "POST", cookie, data: {} })).status, 401)
+	assert.equal(child.exitCode, null, "An unauthorized restart must not stop the host")
+	await page.reload()
+	await page.getByRole("status").filter({ hasText: "Sessão expirada" }).waitFor()
+	assert(await page.getByRole("button", { name: "Reiniciar host", exact: true }).isDisabled())
+	const reauthenticated = await http("/api/login", {
+		method: "POST",
+		data: { ...credentials, password: "ci-only-new-password" }
+	})
+	assert.equal(reauthenticated.status, 200)
+	const renewedCookie = reauthenticated.headers["set-cookie"]?.[0]?.split(";")[0]
+	assert(renewedCookie)
+	const renewedSeparator = renewedCookie.indexOf("=")
+	await context.addCookies([
+		{
+			name: renewedCookie.slice(0, renewedSeparator),
+			value: renewedCookie.slice(renewedSeparator + 1),
+			url: base,
+			secure: true,
+			sameSite: "Strict"
+		}
+	])
+	await page.getByRole("button", { name: "Verificar sessão", exact: true }).click()
+	await page
+		.getByRole("status")
+		.filter({ hasText: "Sessão expirada" })
+		.waitFor({ state: "hidden" })
+	assert(await page.getByRole("button", { name: "Reiniciar host", exact: true }).isEnabled())
+	assert.equal(child.exitCode, null, "Renewing a session must not replay the restart")
+	assert.deepEqual(errors, [])
 	console.log(
-		"Native Windows integration passed: authenticated React pages/assets, config file roundtrip, application create/edit/delete and unknown-field preservation, no language endpoint/option, UTF-8 credentials, session invalidation."
+		"Native Windows integration passed: authenticated React pages/assets, config/application roundtrips, PNG bytes, session invalidation/recovery and rejection of unauthorized restart without replay."
 	)
 } catch (error) {
 	await writeFile(

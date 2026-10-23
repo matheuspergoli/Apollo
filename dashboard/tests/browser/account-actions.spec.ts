@@ -40,7 +40,10 @@ test("successful account change clears credentials and requests a fresh login", 
 		newPassword: "nova senha ç",
 		confirmNewPassword: "nova senha ç"
 	})
-	await page.getByRole("link", { name: "Entrar novamente", exact: true }).click()
+	await page
+		.locator("form")
+		.getByRole("link", { name: "Entrar novamente", exact: true })
+		.click()
 	await expect(page).toHaveURL(/\/login$/)
 })
 

@@ -122,7 +122,8 @@ function Editor({ initial }: { initial: Snapshot }) {
 					</p>
 					<h1 className="font-semibold text-3xl tracking-tight">Configurações</h1>
 					<p className="mt-2 text-muted-foreground text-sm">
-						Arquivo declarado. Salvar não reinicia nem muda silenciosamente a sessão atual.
+						Revise e salve os ajustes do Apollo. Salvar não reinicia o host; alguns ajustes só
+						entram em uso após reiniciar.
 					</p>
 				</div>
 				<Badge variant={dirty ? "secondary" : "outline"}>
@@ -169,7 +170,7 @@ function Editor({ initial }: { initial: Snapshot }) {
 					ref={searchInput}
 					id="settings-search"
 					aria-label="Buscar configurações"
-					placeholder="Buscar opções"
+					placeholder="Buscar opções…"
 					maxLength={256}
 					spellCheck={false}
 					value={filter}

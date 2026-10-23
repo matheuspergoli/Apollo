@@ -57,7 +57,7 @@ export function ArtemisLaunch({
 				<IconPlayerPlay />
 				Abrir no Artemis
 			</DialogTrigger>
-			<DialogContent className="max-h-[85dvh] overflow-y-auto">
+			<DialogContent className="max-h-[85dvh] min-w-0 overflow-y-auto sm:max-w-xl">
 				<DialogHeader>
 					<DialogTitle>Continuar no Artemis</DialogTitle>
 					<DialogDescription>
@@ -84,9 +84,10 @@ export function ArtemisLaunch({
 						Link copiado. Abra-o no dispositivo com Artemis.
 					</p>
 				)}
-				<DialogFooter>
+				<DialogFooter className="min-w-0 flex-col flex-wrap sm:flex-row">
 					<Button
 						variant="outline"
+						className="w-full sm:w-auto"
 						onClick={() => {
 							navigator.clipboard
 								.writeText(link)
@@ -94,9 +95,9 @@ export function ArtemisLaunch({
 								.catch(() => setError(new Error("Não foi possível copiar o link.")))
 						}}
 					>
-						Copiar link do aplicativo
+						Copiar link
 					</Button>
-					<a className={buttonVariants()} href={link}>
+					<a className={buttonVariants({ className: "w-full sm:w-auto" })} href={link}>
 						Abrir Artemis neste dispositivo
 					</a>
 				</DialogFooter>

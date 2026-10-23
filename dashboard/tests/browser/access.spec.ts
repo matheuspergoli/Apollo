@@ -78,16 +78,21 @@ test("login works by keyboard and exposes rejected authentication through shadcn
 	await expect(page.getByRole("button", { name: "Entrar no painel" })).toBeEnabled()
 })
 
-test("expired host session uses the shared alert and provides a working login link", async ({
+test("expired host session blocks actions and opens login without replacing the current tab", async ({
 	page
 }) => {
 	await page.route("**/api/config", (route) => route.fulfill({ status: 401 }))
 	await page.goto("/")
-	await expect(page.getByRole("alert")).toHaveAttribute("data-slot", "alert")
-	await expect(page.getByRole("alert")).toContainText("Sessão expirada")
+	await expect(page.getByRole("status").filter({ hasText: "Sessão expirada" })).toBeVisible()
+	await expect(
+		page.getByRole("button", { name: "Reiniciar host", exact: true })
+	).toBeDisabled()
+	const opening = page.waitForEvent("popup")
 	await page.getByRole("link", { name: "Entrar novamente" }).click()
-	await expect(page).toHaveURL(/\/login$/)
-	await expect(page.getByLabel("Senha", { exact: true })).toBeVisible()
+	const login = await opening
+	await expect(login).toHaveURL(/\/login$/)
+	await expect(login.getByLabel("Senha", { exact: true })).toBeVisible()
+	await expect(page).toHaveURL(/\/$/)
 })
 
 for (const width of [390, 1280]) {

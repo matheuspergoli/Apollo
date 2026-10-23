@@ -69,7 +69,7 @@ export function DiagnosticsPage() {
 					</p>
 					<h1 className="mt-2 font-semibold text-3xl tracking-tight">Diagnóstico</h1>
 					<p className="mt-2 text-muted-foreground text-sm">
-						Logs reais do host, sem diagnósticos inventados ou reinícios automáticos.
+						Consulte os logs e acesse ações de recuperação do host.
 					</p>
 				</div>
 				<Button
@@ -92,8 +92,8 @@ export function DiagnosticsPage() {
 				<CardHeader>
 					<CardTitle>Log do Apollo</CardTitle>
 					<CardDescription>
-						Mostrando até 1.000 linhas filtradas de {all.length} linhas carregadas. A leitura é
-						manual; não há polling pesado em segundo plano.
+						Mostrando até 1.000 linhas filtradas de {all.length} linhas carregadas. Use
+						Atualizar log para uma nova leitura.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
@@ -202,10 +202,9 @@ export function DiagnosticsPage() {
 				</Card>
 				<Card>
 					<CardHeader>
-						<CardTitle>Contexto da leitura</CardTitle>
+						<CardTitle>Informações do host</CardTitle>
 						<CardDescription>
-							Configuração declarada e estado de inicialização; não representam FPS ou latência
-							de um stream.
+							Versão, driver virtual e opções salvas do Apollo.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-3 text-sm">
@@ -221,10 +220,10 @@ export function DiagnosticsPage() {
 									? "Não informado"
 									: `Código ${config.data.vdisplayStatus}`}
 						</p>
-						<p>Captura declarada: {config.data?.capture || "Automática"}</p>
+						<p>Captura configurada: {config.data?.capture || "Automática"}</p>
 						<p className="text-muted-foreground">
-							Use as estatísticas do Artemis e ensaios controlados para investigar rede, decode
-							e apresentação. O painel não mede input-to-photon.
+							Confira codec, FPS, rede e decodificação nas estatísticas do Artemis. A latência
+							de ponta a ponta não é medida por este painel.
 						</p>
 						<Button variant="outline" onClick={() => void config.refetch()}>
 							Verificar resposta do host
