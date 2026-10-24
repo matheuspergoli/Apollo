@@ -179,6 +179,14 @@ try {
 	const snapshot = await http("/api/config", { cookie })
 	assert.equal(snapshot.status, 200)
 	assert.equal(snapshot.json.status, true)
+	const expectedVersion = JSON.parse(
+		await readFile(new URL("../package.json", import.meta.url), "utf8")
+	).version
+	assert.equal(
+		snapshot.json.version,
+		expectedVersion,
+		"Native and dashboard release versions must match exactly"
+	)
 	assert(!Object.hasOwn(snapshot.json, "locale"))
 	assert.equal((await http("/api/configLocale", { cookie })).status, 404)
 	const before = await readFile(config, "utf8")

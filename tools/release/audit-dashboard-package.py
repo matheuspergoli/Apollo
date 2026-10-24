@@ -28,8 +28,11 @@ def audit(archive: Path, source: Path) -> dict:
             raise ValueError("Expected exactly one packaged Apollo host")
         web = "Apollo/assets/web/"
         manifest = json.loads(package.read(web + "ui-build.json"))
-        if manifest.get("router") != "file-based" or manifest.get("releaseReady") is not False:
-            raise ValueError("Expected file-based React validation candidate, not an unverified release")
+        version = json.loads((source / "dashboard/package.json").read_text(encoding="utf-8"))["version"]
+        if manifest.get("router") != "file-based" or manifest.get("version") != version:
+            raise ValueError("Expected file-based React dashboard with matching release version")
+        if manifest.get("language") != "pt-BR" or manifest.get("mode") != "react-dashboard":
+            raise ValueError("Unexpected dashboard mode or language")
         entries = {"/" if page == "index" else "/" + page for page in pages}
         if set(manifest.get("entryPoints", [])) != entries:
             raise ValueError("Missing host page entry points")
@@ -50,7 +53,7 @@ def audit(archive: Path, source: Path) -> dict:
                 original = original.replace(b"\r\n", b"\n")
             if packaged != original:
                 raise ValueError(f"Image changed in packaging: {image.name}")
-    return {"archive": archive.name, "sha256": hashlib.sha256(archive.read_bytes()).hexdigest(), "entries": len(names), "hostPages": len(pages), "imageAssets": len(images), "status": "candidate-audit-passed", "deviceValidated": False}
+    return {"archive": archive.name, "version": version, "sha256": hashlib.sha256(archive.read_bytes()).hexdigest(), "entries": len(names), "hostPages": len(pages), "imageAssets": len(images), "status": "package-audit-passed"}
 
 
 if __name__ == "__main__":

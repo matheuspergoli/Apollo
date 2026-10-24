@@ -1,10 +1,9 @@
 # Apollo dashboard
 
-Apollo's only web implementation is this React package, with all eight host page
-entries and no parallel legacy frontend. It is a validation candidate, not yet a
-hardware-accepted replacement release. Evidence and limitations are tracked in
-[MIGRATION.md](MIGRATION.md); the isolated hardware acceptance procedure is in
-[TESTE-NO-HOST.md](TESTE-NO-HOST.md).
+A única interface web do Apollo 1.0 é este pacote React, com as oito entradas
+nativas, pt-BR fixo e sem frontend legado paralelo. Uso e limites estão em
+[release-1.0.md](../docs/release-1.0.md); regressões manuais estão em
+[testing-host.md](../docs/testing-host.md).
 
 ## Templates por seção
 
@@ -175,7 +174,8 @@ API, avoiding the current CLI CommonJS circular-export warning without hiding
 warnings or manually generating a tree. No TanStack Start is required.
 
 Intent preloading loads route code, never mutations. Query owns freshness and
-cancellation. No automatic mutation retries or focus refetch. No DB was added
+cancellation. Mutations are never retried automatically. Application status refreshes
+on focus and every three seconds while visible, except during editing or after errors. No DB was added
 merely to duplicate Query's server-state cache. Start does support static SPA;
 revisit it only for concrete deployment/SSR/server-function requirements.
 
@@ -212,9 +212,8 @@ under SUNSHINE_ASSETS_DIR/assets/web, not the user's installation. Source maps
 are opt-in with APOLLO_UI_SOURCEMAP=true. The host fixture serves the actual HTML
 files, not a catch-all that could conceal missing host entries.
 
-The old hash-preview source and packager were removed. CMake builds only the
+CMake builds only the
 React package and replaces its managed staging output rather than merging old
 catalogs/chunks into it. Native tray/favicon assets were preserved unchanged.
-Do not
-deploy over the working host, remove rollback data or release a "complete" ZIP
-until the migration matrix and native integration gates are satisfied.
+Preserve rollback data when updating an installation. Native integration and
+package audits gate every release; browser mocks do not replace device tests.

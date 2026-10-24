@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - .github/workflows/apollo-windows.yml
+      - CMakeLists.txt
       - cmake/**
       - src/**
       - dashboard/**
@@ -55,7 +56,13 @@ jobs:
           ./clock-test.exe
       - name: Configure native host and contracts
         shell: msys2 {0}
-        run: cmake -S . -B build-windows -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_DOCS=OFF -DBUILD_TESTS=OFF -DBUILD_UI_CONTRACT_TESTS=ON
+        env:
+          BRANCH: ${{ github.ref_name }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          git diff --exit-code --ignore-submodules=all
+          export BUILD_VERSION="$(node -p "require('./dashboard/package.json').version")"
+          cmake -S . -B build-windows -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_DOCS=OFF -DBUILD_TESTS=OFF -DBUILD_UI_CONTRACT_TESTS=ON
       - name: Build native host and React assets
         shell: msys2 {0}
         run: cmake --build build-windows --parallel 4
@@ -64,28 +71,31 @@ jobs:
         run: |
           cd build-windows/tests/ui-contracts
           ./apollo_ui_contracts.exe
-      - name: Package for validation
+      - name: Package Windows ZIP and installer
         shell: msys2 {0}
         run: |
           cd build-windows
           cpack -G ZIP --config CPackConfig.cmake
+          cpack -G NSIS --config CPackConfig.cmake
           git rev-parse HEAD > SOURCE_COMMIT.txt
-          sha256sum cpack_artifacts/*.zip > SHA256SUMS.txt
+          sha256sum cpack_artifacts/*.zip cpack_artifacts/*.exe > SHA256SUMS.txt
       - name: Install browser for isolated native integration
         working-directory: dashboard
         run: npm exec playwright install -- chromium
       - name: Audit React package and preserved assets without installation
         run: |
-          python tools/release/test_audit_dashboard_package.py
+          python -m unittest discover -s tools/release -p 'test_*.py'
           python tools/release/audit-dashboard-package.py build-windows/cpack_artifacts/Apollo.zip
+          python tools/release/audit-windows-installer.py build-windows/cpack_artifacts/Apollo.exe build-windows/cpack_artifacts/Apollo.zip
       - name: Native HTTPS and React integration on the isolated runner
         working-directory: dashboard
         run: node scripts/check-native-windows.mjs ../build-windows/cpack_artifacts/Apollo.zip
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: apollo-windows-validation
+          name: apollo-windows-release
           path: |
             build-windows/cpack_artifacts/*.zip
+            build-windows/cpack_artifacts/*.exe
             build-windows/SOURCE_COMMIT.txt
             build-windows/SHA256SUMS.txt
           if-no-files-found: error

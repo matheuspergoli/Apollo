@@ -1,7 +1,7 @@
 # Histórico de validação da migração
 
 Este arquivo preserva os marcos e falhas anteriores, inclusive pendências que já
-foram resolvidas. O estado atual está em [MIGRATION.md](MIGRATION.md).
+foram resolvidas. Este é um registro histórico; o produto atual está documentado em [release-1.0.md](../release-1.0.md).
 
 "Implemented" means source code exists, not that native/device gates passed.
 

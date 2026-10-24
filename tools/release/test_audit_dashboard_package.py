@@ -21,7 +21,7 @@ class PackageAuditTests(unittest.TestCase):
         web = "Apollo/assets/web/"
         for page in pages:
             entries[web + page + ".html"] = b'<html lang="pt-BR"></html>'
-        entries[web + "ui-build.json"] = json.dumps({"router": "file-based", "releaseReady": False, "entryPoints": ["/" if page == "index" else "/" + page for page in pages]}).encode()
+        entries[web + "ui-build.json"] = json.dumps({"router": "file-based", "version": json.loads((SOURCE / "dashboard/package.json").read_text())["version"], "mode": "react-dashboard", "language": "pt-BR", "entryPoints": ["/" if page == "index" else "/" + page for page in pages]}).encode()
         for image in (SOURCE / "dashboard/public/images").iterdir():
             if image.is_file():
                 data = image.read_bytes()
@@ -36,8 +36,12 @@ class PackageAuditTests(unittest.TestCase):
                 archive.writestr(name, data)
         return path
 
-    def test_candidate_and_windows_svg_line_endings(self):
-        self.assertEqual(MODULE.audit(self.package(), SOURCE)["status"], "candidate-audit-passed")
+    def test_package_and_windows_svg_line_endings(self):
+        self.assertEqual(MODULE.audit(self.package(), SOURCE)["status"], "package-audit-passed")
+
+    def test_rejects_mismatched_release_version(self):
+        with self.assertRaises(ValueError):
+            MODULE.audit(self.package({"Apollo/assets/web/ui-build.json": b'{"router":"file-based","version":"0.0.0"}'}), SOURCE)
 
     def test_rejects_private_legacy_and_unsafe_entries(self):
         for name in ["Apollo/config/credentials.json", "Apollo/key.pem", "Apollo/assets/web/locale/en.json", "../escape", "C:/escape"]:

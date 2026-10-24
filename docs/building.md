@@ -71,14 +71,14 @@ a `std::bad_weak_ptr` regression that crashes Node during process init (see
 toolchain trail). The official MSVC-built Node.js isn't affected.
 
 Make sure `node.exe` is on `PATH` before running `cmake` — the `web-ui` CMake target
-invokes `npm install` via `find_program(NPM npm)`, so the official Node's `npm` must be
+invokes `npm ci --ignore-scripts` via `find_program(NPM npm)`, so the official Node's `npm` must be
 visible to CMake.
 
 ### Clone
 Ensure [git](https://git-scm.com) is installed on your system, then clone the repository using the following command:
 
 ```bash
-git clone https://github.com/ClassicOldSong/Apollo.git --recurse-submodules
+git clone https://github.com/matheuspergoli/Apollo.git --recurse-submodules
 cd Apollo
 mkdir build
 ```
@@ -92,7 +92,7 @@ ninja -C build
 
 > [!TIP]
 > Available build options can be found in
-> [options.cmake](https://github.com/LizardByte/Sunshine/blob/master/cmake/prep/options.cmake).
+> [options.cmake](../cmake/prep/options.cmake).
 
 ### Package
 

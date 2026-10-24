@@ -1,4 +1,8 @@
-# Estado da migração Apollo
+# Histórico da migração React
+
+Registro de engenharia anterior à versão 1.0. Contagens, limitações e nomes de
+artefatos abaixo descrevem suas respectivas etapas, não instruções de uso atuais.
+Consulte [a documentação da versão 1.0](../release-1.0.md) para o produto publicado.
 
 ## Entrega de engenharia
 
@@ -101,7 +105,7 @@ conta, chave, serviço ou pareamento ativo foi alterado automaticamente.
 - O candidato não instala drivers nem substitui o serviço. O retorno à versão
   anterior depende de manter pastas e dados originais separados.
 
-Falhas e correções anteriores estão em [VALIDATION-HISTORY.md](VALIDATION-HISTORY.md).
+Falhas e correções anteriores estão em [validation-history.md](validation-history.md).
 
 ## Configuração global e áudio
 

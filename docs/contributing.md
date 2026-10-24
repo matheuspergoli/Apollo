@@ -19,7 +19,7 @@ npm run test:browser
 ```
 
 As regras do pacote, a arquitetura e os gates estão em `dashboard/AGENTS.md`,
-`dashboard/README.md` e `dashboard/MIGRATION.md`. Use componentes do registro
+`dashboard/README.md` e `docs/release-1.0.md`. Use componentes do registro
 shadcn configurado antes de criar qualquer controle próprio. Não adicione uma
 infraestrutura de idiomas ou camada de compatibilidade com o frontend removido.
 

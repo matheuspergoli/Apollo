@@ -1,33 +1,26 @@
-# Validação que depende do seu Windows e do S25+
+# Regressões manuais no host e no cliente
 
-Este é um candidato com a interface React inteira, não uma prévia paralela.
-A versão estável anterior e seus arquivos privados devem permanecer intactos.
-O pacote é de teste: não execute instaladores de serviço ou drivers incluídos nele.
+Checklist para futuras alterações e atualização de versões. Não é uma lista de
+pendências da 1.0: o aceite real do usuário está registrado no guia da release.
+Testes automatizados com API simulada e ensaios de dispositivo têm escopos diferentes.
 
 ## Preparação isolada
 
-1. Extraia o candidato em uma pasta nova, nunca sobre a instalação atual.
+1. Faça backup privado e extraia o ZIP em uma pasta nova, nunca sobre os dados existentes.
 2. Salve o progresso dos jogos. Encerre o host antigo pelo seu procedimento habitual
-   antes de iniciar o candidato: portas diferentes não isolam GPU e displays.
-3. Abra PowerShell na pasta extraída `Apollo`, onde está `sunshine.exe`.
-4. Crie **somente o arquivo novo abaixo**, sem copiar conta, chaves ou pareamentos:
-
-```powershell
-New-Item -ItemType Directory -Path .\config -Force | Out-Null
-if (Test-Path .\config\teste-react.conf) { throw 'O arquivo de teste já existe. Não sobrescreva seus ajustes.' }
-$text = "port = 50989`nsunshine_name = Apollo React Teste`nenable_discovery = disabled`nupnp = disabled`nsystem_tray = disabled`n"
-[IO.File]::WriteAllText((Join-Path $PWD 'config\teste-react.conf'), $text, [Text.UTF8Encoding]::new($false))
-.\sunshine.exe .\config\teste-react.conf
-```
+   antes de iniciar outro host: portas diferentes não isolam GPU e displays.
+3. Decida explicitamente se usará uma cópia privada dos dados existentes ou uma
+   instalação limpa. Não sobrescreva conta, chaves ou pareamentos para fazer um teste.
+4. Inicie o executável manualmente. Para validar apenas o ZIP, não execute o instalador,
+   scripts de serviço, firewall ou drivers. A instalação convencional é um ensaio separado.
 
 No Windows, os dados deste host ficam em `config` ao lado do executável. Usar uma
 pasta nova separa conta, certificados, biblioteca e pareamentos dos originais.
 Não publique essa pasta após o teste: ela passará a conter dados privados.
 
-Abra `https://localhost:50990`, confira que é o host de teste e crie uma conta
-temporária. O certificado local pode exigir confirmação no navegador.
-No Artemis, adicione manualmente o IP do PC com a porta base `50989`.
-Não altere o cadastro do host estável para apontar para outro executável.
+Abra o endereço HTTPS informado pelo host e confira qual instalação está acessando.
+O painel usa porta base + 1. Para parear uma instalação limpa, use no Artemis o IP
+do PC e a porta base escolhida; não substitua o cadastro do host habitual por engano.
 
 ### Atenção ao importar templates
 
@@ -46,10 +39,9 @@ reinício não confirma sucesso nem falha e não deve provocar repetição autom
 
 - [ ] Todas as telas abrem e recarregam: visão geral, dispositivos, aplicativos,
   configurações, acesso/senha e diagnóstico; sem painel antigo ou seletor de idioma.
-- [ ] No S25+, menus, campos, diálogos e temas claro/escuro permanecem utilizáveis.
+- [ ] No dispositivo cliente, menus, campos, diálogos e temas claro/escuro permanecem utilizáveis.
 - [ ] Nos editores de dispositivo/aplicativo, a barra de salvar acompanha as bordas
   dos cartões durante a rolagem. No desktop, confira também a navegação recolhida.
-  O antigo rodapé de instalação de teste/código/licença não aparece mais.
 - [ ] Pareamento por PIN funciona; confira nome e permissões antes de transmitir.
 - [ ] Código temporário/QR funciona; após expirar, não permite reutilizar o link.
 - [ ] Aplicativo de teste pode ser criado, editado, ordenado, iniciado e encerrado.
@@ -73,9 +65,9 @@ reinício não confirma sucesso nem falha e não deve provocar repetição autom
   conexão até parear novamente.
 - [ ] Logs podem ser filtrados e baixados. Revise dados pessoais antes de compartilhar.
 - [ ] Troca de senha exige o acesso atual, invalida a sessão e permite novo login.
-- [ ] Reenvie uma capa PNG no candidato corrigido e salve o aplicativo. O caminho
+- [ ] Envie uma capa PNG e salve o aplicativo. O caminho
   em config/covers é uma cópia no host; para usar o original, informe seu caminho
-  sem aspas. Não reutilize a cópia corrompida gerada pelo candidato anterior.
+  sem aspas. Cópias corrompidas por versões antigas precisam ser reenviadas.
 - [ ] Inicie um aplicativo no host e encerre pelo Artemis: ao retornar ao painel,
   confira a atualização automática, sem precisar enviar outro Encerrar.
 - [ ] Abra o link/QR do aplicativo no dispositivo com Artemis instalado e o host

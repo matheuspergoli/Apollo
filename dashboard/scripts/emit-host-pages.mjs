@@ -3,6 +3,7 @@ import { resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const packageRoot = fileURLToPath(new URL("../", import.meta.url))
+const { version } = JSON.parse(await readFile(resolve(packageRoot, "package.json"), "utf8"))
 const dist = resolve(packageRoot, "dist")
 const html = await readFile(resolve(dist, "index.html"), "utf8")
 const licenses = resolve(dist, "licenses")
@@ -45,8 +46,7 @@ await writeFile(
 			],
 			mode: "react-dashboard",
 			language: "pt-BR",
-			validation: "candidate",
-			releaseReady: false
+			version
 		},
 		null,
 		2

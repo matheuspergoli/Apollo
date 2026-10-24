@@ -1,7 +1,8 @@
-# Golden clock correctness candidate (APL-001/002)
+# Correções de relógio do Windows (APL-001/002)
 
-Base: adc5c5a0bd80831ce495434bb16aee2cd4175fb8. Local experimental branch;
-not installed, not Windows-build validated, no performance improvement claimed.
+Base da investigação: adc5c5a0bd80831ce495434bb16aee2cd4175fb8.
+As correções fazem parte da versão 1.0 e possuem regressões no CI Windows.
+Corrigem unidades de tempo; não demonstram ganho de desempenho por si só.
 
 ## Findings
 
@@ -25,8 +26,7 @@ results saturate before integer casts. Invalid frequencies return zero.
 
 Read-only Windows probe on 19 October 2026 using System.Diagnostics.Stopwatch:
 frequency 10,000,000; high resolution true; OSVersion 10.0.26300.0.
-This OS build differs from the older Golden snapshot and should not be silently
-replaced by that snapshot's value in future diagnostics.
+Este é um registro datado da investigação, não detecção do sistema do leitor.
 
 19 assertions passed with GCC C++17, -Wall -Wextra -Werror and UBSan:
 
@@ -39,7 +39,8 @@ g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=undefined \
 
 The standalone test is outside tests/ because upstream recursively collects
 all test .cpp files into a single GoogleTest executable with its own main.
-Windows API integration and MSVC behavior still require a native build/test.
+O CI Windows compila o host e executa essas regressões usando GCC/MSYS2.
+Isso não equivale a validar outra toolchain, como MSVC.
 
 ## Sources
 
@@ -52,9 +53,8 @@ Implementation here was written independently from the documented unit
 relationships. Context7 was unavailable; Microsoft documentation was fetched
 directly. No driver, refresh, NVENC preset, network or client behavior was changed.
 
-## Acceptance before promotion
+## Limites da validação
 
-Native Windows compile, smoke tests in DXGI and WGC, SDR and HDR captures,
-timestamp sanity against QPC and comparison of client pacing/host statistics.
-Keep the exact upstream baseline for A/B. A successful arithmetic test is not
-a successful stream test.
+A compilação nativa e os ensaios de streaming do usuário são evidências distintas.
+O usuário confirmou sessões reais; não foi feito um benchmark controlado de
+latência ou comparação de desempenho entre backends DXGI e WGC.
