@@ -31,8 +31,10 @@ def compare_payload(extracted: Path, archive: Path) -> int:
             target = root.joinpath(*path.parts[1:]).resolve()
             if not target.is_relative_to(root) or not target.is_file():
                 raise ValueError(f"Missing or unsafe installer payload: {entry.filename}")
-            if hashlib.sha256(target.read_bytes()).digest() != hashlib.sha256(package.read(entry)).digest():
-                raise ValueError(f"Installer/ZIP payload mismatch: {entry.filename}")
+            actual, expected = target.read_bytes(), package.read(entry)
+            if hashlib.sha256(actual).digest() != hashlib.sha256(expected).digest():
+                offset = next((i for i, pair in enumerate(zip(actual, expected)) if pair[0] != pair[1]), min(len(actual), len(expected)))
+                raise ValueError(f"Installer/ZIP payload mismatch: {entry.filename}; first differing byte {offset}; lengths {len(actual)}/{len(expected)}")
             count += 1
     if count == 0:
         raise ValueError("Empty installer payload")

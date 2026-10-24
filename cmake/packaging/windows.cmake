@@ -1,4 +1,7 @@
 # windows specific packaging
+# Both Windows packages must contain the same build output. Strip once before
+# packaging, not independently in each CPack staging directory (PE timestamps).
+set(CPACK_STRIP_FILES NO)
 install(TARGETS sunshine RUNTIME DESTINATION "." COMPONENT application)
 
 # Hardening: include zlib1.dll (loaded via LoadLibrary() in openssl's libcrypto.a)

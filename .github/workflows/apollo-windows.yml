@@ -75,6 +75,7 @@ jobs:
         shell: msys2 {0}
         run: |
           cd build-windows
+          strip --strip-unneeded sunshine.exe
           cpack -G ZIP --config CPackConfig.cmake
           cpack -G NSIS --config CPackConfig.cmake
           git rev-parse HEAD > SOURCE_COMMIT.txt
@@ -106,6 +107,8 @@ jobs:
           name: apollo-windows-diagnostics
           path: |
             build-windows/CMakeFiles/CMakeConfigureLog.yaml
+            build-windows/cpack_artifacts/Apollo.zip
+            build-windows/cpack_artifacts/Apollo.exe
             build-windows/CMakeCache.txt
             dashboard/native-test.log
             dashboard/native-browser-diagnostics.json
