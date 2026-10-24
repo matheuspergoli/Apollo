@@ -2,6 +2,7 @@ import importlib.util
 import json
 from pathlib import Path
 import re
+import subprocess
 import tempfile
 import unittest
 import zipfile
@@ -13,6 +14,16 @@ SPEC.loader.exec_module(MODULE)
 
 
 class ReleaseMetadataTests(unittest.TestCase):
+    def test_checkout_guard_ignores_only_crlf(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            left, right = Path(temporary) / "source", Path(temporary) / "checkout"
+            left.write_bytes(b"int value = 1;\n")
+            right.write_bytes(b"int value = 1;\r\n")
+            command = ["git", "diff", "--no-index", "--ignore-cr-at-eol", "--exit-code", str(left), str(right)]
+            self.assertEqual(subprocess.run(command, capture_output=True).returncode, 0)
+            right.write_bytes(b"int value = 2;\r\n")
+            self.assertEqual(subprocess.run(command, capture_output=True).returncode, 1)
+
     def test_versions_match(self):
         version = json.loads((ROOT / "dashboard/package.json").read_text())["version"]
         self.assertRegex(version, r"^\d+\.\d+\.\d+$")

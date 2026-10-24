@@ -60,7 +60,7 @@ jobs:
           BRANCH: ${{ github.ref_name }}
           COMMIT: ${{ github.sha }}
         run: |
-          git diff --exit-code --ignore-submodules=all
+          git diff --ignore-cr-at-eol --quiet --ignore-submodules=all
           export BUILD_VERSION="$(node -p "require('./dashboard/package.json').version")"
           cmake -S . -B build-windows -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_DOCS=OFF -DBUILD_TESTS=OFF -DBUILD_UI_CONTRACT_TESTS=ON
       - name: Build native host and React assets
