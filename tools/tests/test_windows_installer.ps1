@@ -165,9 +165,13 @@ try {
     $diagnostics += (Get-CimInstance Win32_PnPEntity | Where-Object { @($_.HardwareID) -contains 'ROOT\SudoMaker\SudoVDA' } | Select-Object Name, Status, ConfigManagerErrorCode | ConvertTo-Json)
     $log = Join-Path $managed 'config\sunshine.log'
     if (Test-Path -LiteralPath $log) { $diagnostics += Get-Content -LiteralPath $log -Tail 80 }
-    foreach ($directory in Get-ChildItem -LiteralPath ([IO.Path]::GetTempPath()) -Directory -Filter 'apollo-installer-*' | Where-Object { $_.CreationTimeUtc -ge $startedAt }) {
-        $updateLog = Join-Path $directory.FullName 'update.log'
-        if (Test-Path -LiteralPath $updateLog) { $diagnostics += Get-Content -LiteralPath $updateLog }
+    $temporaryRoots = @([IO.Path]::GetTempPath(), $env:TEMP, $env:TMP, $env:RUNNER_TEMP, (Join-Path $env:SystemRoot 'Temp')) | Select-Object -Unique
+    foreach ($temporaryRoot in $temporaryRoots) {
+        if (-not $temporaryRoot -or -not (Test-Path -LiteralPath $temporaryRoot)) { continue }
+        foreach ($directory in Get-ChildItem -LiteralPath $temporaryRoot -Directory -Filter 'apollo-installer-*' -ErrorAction SilentlyContinue | Where-Object { $_.CreationTimeUtc -ge $startedAt }) {
+            $updateLog = Join-Path $directory.FullName 'update.log'
+            if (Test-Path -LiteralPath $updateLog) { $diagnostics += Get-Content -LiteralPath $updateLog }
+        }
     }
     $diagnostics | Set-Content -LiteralPath 'installer-test.log' -Encoding utf8
     throw $failure

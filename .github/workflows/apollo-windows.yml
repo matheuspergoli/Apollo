@@ -95,6 +95,8 @@ jobs:
         run: |
           cd build-windows/tests/ui-contracts
           ./apollo_ui_contracts.exe
+      - name: Direct update helper integration before packaging
+        run: pwsh -NoProfile -NonInteractive -File tools/tests/test_update_helper.ps1 -HostExecutable build-windows/sunshine.exe
       - name: Package Windows ZIP and installer
         shell: msys2 {0}
         run: |
@@ -143,6 +145,7 @@ jobs:
             dashboard/native-browser-failure.png
             dashboard/native-browser-failure.html
             installer-test.log
-            build-windows/_CPack_Packages/win64/NSIS/project.nsi
+            build-windows/cpack_artifacts/_CPack_Packages/**/project.nsi
+            build-windows/CPackConfig.cmake
           if-no-files-found: ignore
           retention-days: 7
