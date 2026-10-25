@@ -58,7 +58,8 @@ prepare_portable:
 prepare_result:
   Pop $0
   StrCmp $0 "0" prepare_done
-  MessageBox MB_OK|MB_ICONSTOP "Nao foi possivel preparar uma atualizacao segura. Os arquivos do programa nao foram substituidos. Consulte os detalhes da instalacao."
+  MessageBox MB_OK|MB_ICONSTOP "Nao foi possivel preparar uma atualizacao segura. Os arquivos do programa nao foram substituidos. Consulte os detalhes da instalacao." /SD IDOK
+  SetErrorLevel 1
   Abort "Atualizacao bloqueada na preparacao."
 prepare_done:
 ]=])
@@ -104,7 +105,7 @@ finish_result:
 install_failed:
   Call ApolloRestorePrevious
   SetErrorLevel 1
-  MessageBox MB_OK|MB_ICONSTOP "A instalacao nao foi confirmada. Consulte os detalhes e o backup privado em $INSTDIR.backups. Nao remova suas configuracoes nem reinstale drivers repetidamente."
+  MessageBox MB_OK|MB_ICONSTOP "A instalacao nao foi confirmada. Consulte os detalhes e o backup privado em $INSTDIR.backups. Nao remova suas configuracoes nem reinstale drivers repetidamente." /SD IDOK
   Abort "Falha na integracao do host."
 install_done:
   StrCmp $ApolloNeedsReboot "1" 0 +2
@@ -117,7 +118,7 @@ set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS [=[
   nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\scripts\update-installation.ps1" -InstallDir "$INSTDIR" -Mode RemoveService'
   Pop $0
   StrCmp $0 "0" +3
-  MessageBox MB_OK|MB_ICONSTOP "Nao foi possivel parar o servico desta instalacao com seguranca. A desinstalacao foi interrompida."
+  MessageBox MB_OK|MB_ICONSTOP "Nao foi possivel parar o servico desta instalacao com seguranca. A desinstalacao foi interrompida." /SD IDOK
   Abort
 ]=])
 

@@ -15,6 +15,13 @@ Set-StrictMode -Version Latest
 $root = Get-LocalInstallRoot $InstallDir
 $serviceBinary = Join-Path $root 'tools\sunshinesvc.exe'
 $hostBinary = Join-Path $root 'sunshine.exe'
+$logDirectory = Join-Path ([IO.Path]::GetTempPath()) ('apollo-installer-' + [guid]::NewGuid().ToString('N'))
+New-PrivateInstallDirectory $logDirectory
+$operationLog = Join-Path $logDirectory 'update.log'
+function Write-UpdateLog([string]$Message) {
+    [IO.File]::AppendAllText($operationLog, ([DateTime]::UtcNow.ToString('o') + ' ' + $Message + [Environment]::NewLine), (New-Object Text.UTF8Encoding($false)))
+}
+Write-UpdateLog "Mode=$Mode; Root=$root; NoHostIntegration=$NoHostIntegration"
 
 function Get-OwnedApolloService {
     $service = Get-CimInstance Win32_Service -Filter "Name='ApolloService'"
@@ -140,8 +147,10 @@ try {
         $wasRunning = $service -and $service.State -eq 'Running'
         if ($wasRunning -and $service.StartMode -eq 'Disabled') { throw 'Resolve the running/disabled service state before updating.' }
         if ($service) { Stop-OwnedApolloService }
+        Write-UpdateLog 'Owned service stop/preflight completed.'
         if (@(Get-OwnedHostProcesses).Count -gt 0) { throw 'Close the standalone Apollo process before updating.' }
         $snapshot = New-InstallationSnapshot $root
+        Write-UpdateLog 'Private snapshot created and verified.'
         $state = [pscustomobject]@{
             Snapshot = $snapshot; HadHost = [bool]$hadHost; HadService = [bool]$service
             WasRunning = [bool]$wasRunning; NoHostIntegration = [bool]$NoHostIntegration
@@ -198,5 +207,6 @@ try {
         try { Start-OwnedApolloService } catch { Write-Warning 'The previous service requires manual recovery.' }
     }
     Write-Error $_ -ErrorAction Continue
+    Write-UpdateLog ('FAILED: ' + $_.Exception.Message + '; ' + $_.ScriptStackTrace)
     exit 1
 }

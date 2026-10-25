@@ -3,6 +3,7 @@ param([Parameter(Mandatory = $true)][string]$Archive, [Parameter(Mandatory = $tr
       [Parameter(Mandatory = $true)][string]$DriverTest)
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+$startedAt = [DateTime]::UtcNow
 if ($env:GITHUB_ACTIONS -cne 'true' -or $env:GITHUB_REPOSITORY -cne 'matheuspergoli/Apollo' -or -not $IsWindows) {
     throw 'Installer integration is restricted to the disposable Windows runner of this fork.'
 }
@@ -22,7 +23,14 @@ function Invoke-Installer([string]$Root, [switch]$NoIntegration) {
     if ($NoIntegration) { $arguments += '/NoHostIntegration ' }
     # NSIS /D must be last, without quoting its value, including spaces.
     $arguments += '/D=' + $Root
-    $process = Start-Process -FilePath ([IO.Path]::GetFullPath($Installer)) -ArgumentList $arguments -Wait -PassThru
+    Write-Output "Starting installer qualification; NoHostIntegration=$NoIntegration"
+    $process = Start-Process -FilePath ([IO.Path]::GetFullPath($Installer)) -ArgumentList $arguments -PassThru
+    if (-not $process.WaitForExit(240000)) {
+        $windows = @(Get-Process | Where-Object { $_.MainWindowTitle -match 'Apollo' } | Select-Object Id, ProcessName, MainWindowTitle)
+        $windows | ConvertTo-Json | Write-Output
+        $process.Kill()
+        throw 'Installer exceeded its bounded deadline; release qualification is blocked.'
+    }
     if ($process.ExitCode -ne 0) { throw "Installer integration failed or requires reboot: $($process.ExitCode)" }
 }
 function Get-ServiceHost([string]$Root) {
@@ -43,7 +51,13 @@ function Invoke-TestApi([string]$Path, [string]$Method = 'GET', [object]$Body = 
 function Uninstall-TestCopy([string]$Root) {
     $uninstaller = Join-Path $Root 'Uninstall.exe'
     if (Test-Path -LiteralPath $uninstaller) {
-        $process = Start-Process -FilePath $uninstaller -ArgumentList '/S' -Wait -PassThru
+        $process = Start-Process -FilePath $uninstaller -ArgumentList '/S' -PassThru
+        if (-not $process.WaitForExit(120000)) { $process.Kill(); throw 'Uninstaller exceeded its bounded deadline.' }
+        for ($attempt = 0; $attempt -lt 60; $attempt++) {
+            if (-not (Test-Path -LiteralPath $uninstaller)) { break }
+            Start-Sleep -Seconds 1
+        }
+        if (Test-Path -LiteralPath $uninstaller) { throw 'Uninstaller launcher exited without completing removal.' }
         if ($process.ExitCode -ne 0) { throw 'Test-copy uninstallation failed.' }
     }
 }
@@ -151,6 +165,10 @@ try {
     $diagnostics += (Get-CimInstance Win32_PnPEntity | Where-Object { @($_.HardwareID) -contains 'ROOT\SudoMaker\SudoVDA' } | Select-Object Name, Status, ConfigManagerErrorCode | ConvertTo-Json)
     $log = Join-Path $managed 'config\sunshine.log'
     if (Test-Path -LiteralPath $log) { $diagnostics += Get-Content -LiteralPath $log -Tail 80 }
+    foreach ($directory in Get-ChildItem -LiteralPath ([IO.Path]::GetTempPath()) -Directory -Filter 'apollo-installer-*' | Where-Object { $_.CreationTimeUtc -ge $startedAt }) {
+        $updateLog = Join-Path $directory.FullName 'update.log'
+        if (Test-Path -LiteralPath $updateLog) { $diagnostics += Get-Content -LiteralPath $updateLog }
+    }
     $diagnostics | Set-Content -LiteralPath 'installer-test.log' -Encoding utf8
     throw $failure
 } finally {

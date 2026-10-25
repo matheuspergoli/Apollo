@@ -22,6 +22,13 @@ class RepositoryPolicyTests(unittest.TestCase):
         self.assertIn("set(CPACK_MONOLITHIC_INSTALL ON)", source)
         self.assertNotIn('RMDir /r', source)
 
+    def test_installer_errors_have_silent_defaults(self):
+        source = (ROOT / "cmake/packaging/windows_nsis.cmake").read_text()
+        messages = [line for line in source.splitlines() if line.strip().startswith("MessageBox ")]
+        self.assertTrue(messages)
+        for line in messages:
+            self.assertIn("/SD IDOK", line)
+
     def test_external_actions_are_pinned_to_commits(self):
         for path in (ROOT / ".github/workflows").glob("*.yml"):
             workflow = path.read_text(encoding="utf-8")
