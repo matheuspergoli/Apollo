@@ -234,12 +234,10 @@ namespace proc {
     }
 
 #ifdef _WIN32
-    if (
-      config::video.headless_mode        // Headless mode
-      || launch_session->virtual_display // User requested virtual display
-      || _app.virtual_display            // App is configured to use virtual display
-      || !video::allow_encoder_probing() // No active display presents
-    ) {
+    const bool no_active_display = !(config::video.headless_mode || launch_session->virtual_display || _app.virtual_display)
+                                   && !video::allow_encoder_probing();
+    if (VDISPLAY::virtual_target_required(config::video.headless_mode, launch_session->virtual_display,
+                                         _app.virtual_display, no_active_display)) {
       if (vDisplayDriverStatus != VDISPLAY::DRIVER_STATUS::OK) {
         // Try init driver again
         initVDisplayDriver();
@@ -301,7 +299,7 @@ namespace proc {
         // We need to track it properly to remove the display when the session terminates.
         launch_session->virtual_display = true;
 
-        if (!vdisplayName.empty()) {
+        if (VDISPLAY::virtual_target_usable(vDisplayDriverStatus == VDISPLAY::DRIVER_STATUS::OK, !vdisplayName.empty())) {
           BOOST_LOG(info) << "Virtual Display created at " << vdisplayName;
 
           // Don't change display settings when no params are given
@@ -326,11 +324,14 @@ namespace proc {
 
           config::video.output_name = display_device::map_display_name(this->display_name);
         } else {
-          BOOST_LOG(warning) << "Virtual Display creation failed, or cannot get created display name in time!";
+          BOOST_LOG(error) << "Virtual display target was not identified; refusing physical-display fallback";
+          return 503;
         }
       } else {
         // Driver isn't working so we don't need to track virtual display.
         launch_session->virtual_display = false;
+        BOOST_LOG(error) << "Virtual display driver is unavailable; refusing physical-display fallback";
+        return 503;
       }
     }
 

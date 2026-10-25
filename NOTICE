@@ -2,8 +2,19 @@
 registered trademarks of Valve Corporation in the U.S. and/or other countries. All
 rights reserved.
 
-shadcn/ui — MIT License
+MIT-licensed incorporated components
+
+shadcn/ui
 Copyright (c) 2023 shadcn
+
+nefcon (Nefarius Software Solutions)
+Copyright (c) 2022-2026 Nefarius Software Solutions e.U.
+https://github.com/nefarius/nefcon
+
+SudoVDA, based on the Microsoft Indirect Display Driver sample.
+Copyright (c) Microsoft Corporation. All rights reserved.
+SudoMaker offers its modifications under MIT/CC0/public-domain terms.
+https://github.com/SudoMaker/SudoVDA
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

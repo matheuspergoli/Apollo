@@ -1350,10 +1350,23 @@ namespace confighttp {
 
     print_req(request);
 
-    proc::proc.terminate();
-
-    // We may not return from this call
-    platf::restart();
+    // Finish the HTTP acknowledgement before shutting down its connection.
+    // This confirms acceptance, not completion of the restart. Never retry it
+    // automatically if the acknowledgement cannot be delivered.
+    response->close_connection_after_response = true;
+    send_response(response, {{"status", true}, {"accepted", true}, {"operation", "restart"}});
+    response->send([](const auto &error) {
+      if (error) {
+        BOOST_LOG(warning) << "Restart acknowledgement could not be sent; host restart was not started";
+        return;
+      }
+      try {
+        proc::proc.terminate();
+        platf::restart();
+      } catch (const std::exception &failure) {
+        BOOST_LOG(error) << "Accepted restart did not complete: " << failure.what();
+      }
+    });
   }
 
   /**

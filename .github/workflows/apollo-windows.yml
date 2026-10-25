@@ -16,7 +16,7 @@ on:
       - src/**
       - dashboard/**
       - tests/**
-      - tools/release/**
+      - tools/**
       - '!dashboard/**/*.md'
 permissions:
   contents: read
@@ -66,6 +66,15 @@ jobs:
         run: |
           g++ -std=c++17 -Wall -Wextra -Werror -I . tools/tests/test_clock.cpp -o clock-test.exe
           ./clock-test.exe
+      - name: Driver policy and data preservation regressions
+        run: |
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools/tests/test_driver_policy.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools/tests/test_installation_data.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build isolated live-driver test
+        shell: msys2 {0}
+        run: g++ -std=c++23 -static -static-libgcc -static-libstdc++ -pthread -I . tools/tests/test_sudovda_live.cpp -o driver-live-test.exe -lsetupapi -lcfgmgr32 -lole32
       - name: Configure native host and contracts
         shell: msys2 {0}
         env:
@@ -88,6 +97,9 @@ jobs:
         run: |
           cd build-windows
           strip --strip-unneeded sunshine.exe
+          stage="$(mktemp -d "$PWD/install-manifest.XXXXXX")"
+          cmake --install . --prefix "$stage"
+          python ../tools/release/create-install-manifest.py "$stage" "$PWD/installation-manifest.json"
           cpack -G ZIP --config CPackConfig.cmake
           cpack -G NSIS --config CPackConfig.cmake
           git rev-parse HEAD > SOURCE_COMMIT.txt
@@ -99,6 +111,8 @@ jobs:
         run: |
           python tools/release/audit-dashboard-package.py build-windows/cpack_artifacts/Apollo.zip
           python tools/release/audit-windows-installer.py build-windows/cpack_artifacts/Apollo.exe build-windows/cpack_artifacts/Apollo.zip
+      - name: Real installer, upgrade, service restart and live driver qualification
+        run: pwsh -NoProfile -NonInteractive -File tools/tests/test_windows_installer.ps1 -Archive build-windows/cpack_artifacts/Apollo.zip -Installer build-windows/cpack_artifacts/Apollo.exe -DriverTest ./driver-live-test.exe
       - name: Native HTTPS and React integration on the isolated runner
         working-directory: dashboard
         run: node scripts/check-native-windows.mjs ../build-windows/cpack_artifacts/Apollo.zip
@@ -125,5 +139,7 @@ jobs:
             dashboard/native-browser-diagnostics.json
             dashboard/native-browser-failure.png
             dashboard/native-browser-failure.html
+            installer-test.log
+            build-windows/_CPack_Packages/win64/NSIS/project.nsi
           if-no-files-found: ignore
           retention-days: 7

@@ -179,6 +179,11 @@ try {
 	const snapshot = await http("/api/config", { cookie })
 	assert.equal(snapshot.status, 200)
 	assert.equal(snapshot.json.status, true)
+	assert.equal(
+		snapshot.json.vdisplayStatus,
+		0,
+		"The packaged host must open the real installed SudoVDA interface"
+	)
 	const expectedVersion = JSON.parse(
 		await readFile(new URL("../package.json", import.meta.url), "utf8")
 	).version
@@ -483,10 +488,25 @@ try {
 	// This is permitted only in the isolated fork runner guarded above.
 	await page.getByRole("button", { name: "Reiniciar host", exact: true }).click()
 	restartRequested = true
+	const acknowledgementReady = page.waitForResponse(
+		(response) =>
+			response.url().endsWith("/api/restart") && response.request().method() === "POST"
+	)
 	await page
 		.getByRole("alertdialog")
 		.getByRole("button", { name: "Confirmar", exact: true })
 		.click()
+	const acknowledgement = await acknowledgementReady
+	assert.equal(
+		acknowledgement.status(),
+		200,
+		"Restart must acknowledge before closing its HTTP connection"
+	)
+	assert.deepEqual(await acknowledgement.json(), {
+		status: true,
+		accepted: true,
+		operation: "restart"
+	})
 	// The driverless runner repeatedly waits for virtual-display cleanup during
 	// termination. Keep a bounded shutdown budget, independent of the HTTP timeout;
 	// still require the original process to exit normally (not merely accept POST).
@@ -498,6 +518,38 @@ try {
 		0,
 		"A newly authenticated browser restart must exit the original host successfully"
 	)
+	let returned = false
+	for (let attempt = 0; attempt < 120; attempt++) {
+		try {
+			// A new process has no administrative session. Require its endpoint to
+			// respond after the original PID exited; exit alone is not a restart.
+			if ((await http("/api/config")).status === 401) {
+				returned = true
+				break
+			}
+		} catch {
+			/* Startup can temporarily leave the port unavailable. */
+		}
+		await new Promise((resolve) => setTimeout(resolve, 1000))
+	}
+	assert(returned, "Restart must return an operational HTTP endpoint, not only exit")
+	const replacementPids = JSON.parse(
+		execFileSync(
+			"powershell.exe",
+			[
+				"-NoProfile",
+				"-NonInteractive",
+				"-Command",
+				"ConvertTo-Json -Compress -InputObject @(Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -eq $env:APOLLO_TEST_EXECUTABLE } | Select-Object -ExpandProperty ProcessId)"
+			],
+			{
+				env: { ...process.env, APOLLO_TEST_EXECUTABLE: resolve(home, "sunshine.exe") },
+				encoding: "utf8"
+			}
+		)
+	)
+	assert.equal(replacementPids.length, 1, "Exactly one replacement host must be running")
+	assert.notEqual(replacementPids[0], child.pid, "Restart must create a new host process")
 	console.log(
 		"Native Windows integration passed: authenticated React pages/assets, config/application roundtrips, PNG bytes, session invalidation/recovery and rejection of unauthorized restart without replay."
 	)

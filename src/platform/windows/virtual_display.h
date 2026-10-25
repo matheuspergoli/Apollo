@@ -10,6 +10,7 @@
 #include <ddk/d4iface.h>
 #include <ddk/d4drvif.h>
 #include <sudovda/sudovda.h>
+#include "virtual_display_policy.h"
 
 namespace VDISPLAY {
 	enum class DRIVER_STATUS {

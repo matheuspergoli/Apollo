@@ -3,6 +3,7 @@
 # packaging, not independently in each CPack staging directory (PE timestamps).
 set(CPACK_STRIP_FILES NO)
 install(TARGETS sunshine RUNTIME DESTINATION "." COMPONENT application)
+install(FILES "${CMAKE_BINARY_DIR}/installation-manifest.json" DESTINATION "." COMPONENT application OPTIONAL)
 
 # Hardening: include zlib1.dll (loaded via LoadLibrary() in openssl's libcrypto.a)
 install(FILES "${ZLIB}" DESTINATION "." COMPONENT application)
@@ -27,11 +28,17 @@ install(TARGETS audio-info RUNTIME DESTINATION "tools" COMPONENT audio)
 
 # Mandatory tools
 install(TARGETS sunshinesvc RUNTIME DESTINATION "tools" COMPONENT application)
+install(TARGETS sudovda-status RUNTIME DESTINATION "tools" COMPONENT application)
 
 # Drivers
+include("${CMAKE_MODULE_PATH}/dependencies/sudovda.cmake")
 install(DIRECTORY "${SUNSHINE_SOURCE_ASSETS_DIR}/windows/drivers/sudovda"
         DESTINATION "drivers"
         COMPONENT sudovda)
+install(FILES "${SUDOVDA_BINARY_DIR}/SudoVDA.dll" "${SUDOVDA_BINARY_DIR}/nefconc.exe"
+        DESTINATION "drivers/sudovda" COMPONENT sudovda)
+install(FILES "${CMAKE_SOURCE_DIR}/packaging/windows/runtime-contract.json"
+        DESTINATION "drivers/sudovda" COMPONENT sudovda)
 
 # Mandatory scripts
 install(DIRECTORY "${SUNSHINE_SOURCE_ASSETS_DIR}/windows/misc/service/"
@@ -72,7 +79,7 @@ cmake_path(CONVERT "${SUNSHINE_SOURCE_ASSETS_DIR}/windows/assets/shaders"
 cmake_path(CONVERT "${CMAKE_BINARY_DIR}/assets/shaders" TO_NATIVE_PATH_LIST shaders_in_build_dest_native)
 execute_process(COMMAND cmd.exe /c mklink /J "${shaders_in_build_dest_native}" "${shaders_in_build_src_native}")
 
-set(CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}\\\\apollo.ico")
+set(CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/apollo.ico")
 
 # The name of the directory that will be created in C:/Program files/
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "${CPACK_PACKAGE_NAME}")

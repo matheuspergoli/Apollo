@@ -26,6 +26,21 @@ Leia as opções e faça backup dos dados antes de atualizar.
 Os dados Windows ficam no diretório `config` ao lado do executável. Esse diretório
 pode conter segredos: não o publique nem o incorpore em um ZIP de distribuição.
 
+### Atualização a partir da linha 1.0
+
+Use a revisão corretiva 1.0.1 ou posterior na mesma pasta, sem executar primeiro
+o desinstalador antigo. O instalador interrompe somente o serviço pertencente à
+instalação escolhida, cria um backup privado em `<diretorio>.backups` e preserva
+os arquivos de configuração, aplicativos, credenciais e pareamento. Não há mudança
+de formato desses dados nesta revisão. Serviço desabilitado/parado não é
+reativado às cegas. Dados antigos fora de `config` e diretórios com links exigem
+migração/backup explícitos; uma situação ambígua interrompe a atualização.
+
+Não apague o backup até conferir o funcionamento. Ele contém dados privados e não
+é um pacote de distribuição. O arquivo de configurações exportado pelo painel
+não substitui esse backup integral. Drivers compartilhados não são removidos na
+desinstalação do Apollo, e o instalador não força reinício do Windows.
+
 SudoVDA cria o display virtual. ViGEmBus disponibiliza controles virtuais; não cria
 monitores. Instale ou altere drivers apenas por uma decisão explícita, com acesso
 local para recuperação.

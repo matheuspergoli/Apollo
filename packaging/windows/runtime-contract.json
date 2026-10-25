@@ -1,0 +1,45 @@
+{
+  "requiredFiles": [
+    "sunshine.exe",
+    "zlib1.dll",
+    "tools/sunshinesvc.exe",
+    "tools/sudovda-status.exe",
+    "drivers/sudovda/SudoVDA.dll",
+    "drivers/sudovda/SudoVDA.inf",
+    "drivers/sudovda/sudovda.cat",
+    "drivers/sudovda/sudovda.cer",
+    "drivers/sudovda/nefconc.exe",
+    "drivers/sudovda/install.bat",
+    "drivers/sudovda/install-driver.ps1",
+    "drivers/sudovda/driver-policy.ps1",
+    "drivers/sudovda/runtime-contract.json",
+    "drivers/sudovda/uninstall.bat",
+    "scripts/install-service.bat",
+    "scripts/uninstall-service.bat",
+    "scripts/update-installation.ps1",
+    "scripts/installation-data.ps1",
+    "scripts/install-gamepad.ps1",
+    "scripts/vigembus_installer.exe"
+  ],
+  "peX64": [
+    "sunshine.exe",
+    "zlib1.dll",
+    "tools/sunshinesvc.exe",
+    "tools/sudovda-status.exe",
+    "drivers/sudovda/SudoVDA.dll",
+    "drivers/sudovda/nefconc.exe"
+  ],
+  "sha256": {
+    "drivers/sudovda/SudoVDA.dll": "47ee263cb5de9382c6630a2d7f3dafec4a49419f953beec869ca5dd0c460ff63",
+    "drivers/sudovda/SudoVDA.inf": "ad69ac682756f0cf339b081fac7e6e8159fdf2ca01ca69df8945c7246c286925",
+    "drivers/sudovda/sudovda.cat": "2f9189de5604bec9d86f51640cc540639e394d9ad0f8e689129375e95f2d22f8",
+    "drivers/sudovda/sudovda.cer": "6accdcd519f6179d967db4eaa20ecf25a732ba30e87f4cffebc768b2c13c9007",
+    "drivers/sudovda/nefconc.exe": "9dba1f1a9e2b21843c4a0ca6c6ffa9e747250dd6e42c8c14325ca069ad43ea8f",
+    "scripts/vigembus_installer.exe": "155c50f1eec07bdc28d2f61a3e3c2c6c132fee7328412de224695f89143316bc"
+  },
+  "sudovdaSource": {
+    "url": "https://github.com/ClassicOldSong/Apollo/releases/download/v0.4.6/Apollo-0.4.6.exe",
+    "sha256": "42b2aefaacb3474511517a56b96ee9f0517f30ac38b5dd2fda9fd5b478f5021a",
+    "driverVersion": "1.10.9.289"
+  }
+}

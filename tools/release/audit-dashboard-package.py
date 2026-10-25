@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path, PurePosixPath
+import struct
 import zipfile
 
 
@@ -28,6 +29,40 @@ def audit(archive: Path, source: Path) -> dict:
         hosts = [name for name in names if PurePosixPath(name).name.lower() == "sunshine.exe"]
         if hosts != ["Apollo/sunshine.exe"]:
             raise ValueError("Expected exactly one packaged Apollo host")
+        contract = json.loads((source / "packaging/windows/runtime-contract.json").read_text(encoding="utf-8"))
+        for name in contract["requiredFiles"]:
+            if "Apollo/" + name not in names or not package.read("Apollo/" + name):
+                raise ValueError(f"Required runtime file is missing or empty: {name}")
+        packaged_contract = json.loads(package.read("Apollo/drivers/sudovda/runtime-contract.json"))
+        if packaged_contract != contract:
+            raise ValueError("Packaged runtime contract differs from the source contract")
+        for name, expected in contract["sha256"].items():
+            if hashlib.sha256(package.read("Apollo/" + name)).hexdigest() != expected:
+                raise ValueError(f"Vendor payload differs from the approved package: {name}")
+        for name in contract["peX64"]:
+            data = package.read("Apollo/" + name)
+            if len(data) < 64 or data[:2] != b"MZ":
+                raise ValueError(f"Required Windows binary is invalid: {name}")
+            offset = struct.unpack_from("<I", data, 0x3C)[0]
+            if offset > len(data) - 6 or data[offset:offset + 4] != b"PE\0\0":
+                raise ValueError(f"Required Windows binary has no PE header: {name}")
+            if struct.unpack_from("<H", data, offset + 4)[0] != 0x8664:
+                raise ValueError(f"Required Windows binary is not x64: {name}")
+        installed = json.loads(package.read("Apollo/installation-manifest.json"))
+        version = json.loads((source / "dashboard/package.json").read_text(encoding="utf-8"))["version"]
+        if (not isinstance(installed, dict) or installed.get("format") != "apollo-installed-files"
+                or installed.get("version") != 1 or installed.get("appVersion") != version):
+            raise ValueError("Invalid installed-files manifest")
+        records = installed.get("files")
+        expected_files = {
+            entry.filename.removeprefix("Apollo/") for entry in package.infolist()
+            if not entry.is_dir() and entry.filename != "Apollo/installation-manifest.json"
+        }
+        if not isinstance(records, dict) or set(records) != expected_files:
+            raise ValueError("Installed-files manifest does not cover the complete package")
+        for name, expected in records.items():
+            if hashlib.sha256(package.read("Apollo/" + name)).hexdigest() != expected:
+                raise ValueError(f"Installed-files manifest hash mismatch: {name}")
         web = "Apollo/assets/web/"
         manifest = json.loads(package.read(web + "ui-build.json"))
         version = json.loads((source / "dashboard/package.json").read_text(encoding="utf-8"))["version"]

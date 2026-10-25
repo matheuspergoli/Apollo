@@ -28,3 +28,8 @@ target_link_libraries(sunshinesvc
         wtsapi32
         ${PLATFORM_LIBRARIES})
 target_compile_options(sunshinesvc PRIVATE ${SUNSHINE_COMPILE_OPTIONS})
+
+add_executable(sudovda-status sudovda-status.cpp)
+set_target_properties(sudovda-status PROPERTIES CXX_STANDARD 23)
+target_link_libraries(sudovda-status setupapi cfgmgr32 ${PLATFORM_LIBRARIES})
+target_compile_options(sudovda-status PRIVATE ${SUNSHINE_COMPILE_OPTIONS})
