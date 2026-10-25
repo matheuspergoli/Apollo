@@ -1355,8 +1355,8 @@ namespace confighttp {
     // automatically if the acknowledgement cannot be delivered.
     response->close_connection_after_response = true;
     send_response(response, {{"status", true}, {"accepted", true}, {"operation", "restart"}});
-    response->send([](const auto &error) {
-      if (error) {
+    response->send([](const auto &transport_error) {
+      if (transport_error) {
         BOOST_LOG(warning) << "Restart acknowledgement could not be sent; host restart was not started";
         return;
       }
