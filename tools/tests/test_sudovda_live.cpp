@@ -8,6 +8,7 @@
 #include <cstring>
 #include <atomic>
 #include <thread>
+#include <vector>
 #include "third-party/sudovda/sudovda.h"
 
 int main() {

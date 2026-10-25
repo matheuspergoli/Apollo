@@ -6,6 +6,7 @@
 #include <winioctl.h>
 #include <cstdio>
 #include <cstring>
+#include <vector>
 #include "third-party/sudovda/sudovda.h"
 
 int main(int argc, char **argv) {
