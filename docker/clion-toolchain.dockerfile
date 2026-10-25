@@ -5,11 +5,16 @@
 # no-cache-filters: toolchain-base,toolchain
 ARG BASE=debian
 ARG TAG=trixie-slim
+FROM node:24-bookworm AS web-toolchain
 FROM ${BASE}:${TAG} AS toolchain-base
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 FROM toolchain-base AS toolchain
+
+COPY --from=web-toolchain /usr/local/bin/node /usr/local/bin/node
+COPY --from=web-toolchain /usr/local/lib/node_modules/corepack /usr/local/lib/node_modules/corepack
+RUN ln -s /usr/local/lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack && corepack enable pnpm
 
 ARG TARGETPLATFORM
 RUN echo "target_platform: ${TARGETPLATFORM}"
@@ -54,7 +59,6 @@ apt-get install -y --no-install-recommends \
   libxfixes-dev \
   libxrandr-dev \
   libxtst-dev \
-  npm \
   udev \
   wget \
   x11-xserver-utils \

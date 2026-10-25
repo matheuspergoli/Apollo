@@ -25,7 +25,7 @@ test("successful account change clears credentials and requests a fresh login", 
 	await page.goto("/password")
 	await fillCredentials(page)
 	await page.getByRole("button", { name: "Alterar acesso", exact: true }).click()
-	await expect(page.getByRole("status")).toContainText("Acesso atualizado")
+	await expect(page.locator("form").getByRole("status")).toContainText("Acesso atualizado")
 	await expect(page.getByLabel("Senha atual", { exact: true })).toHaveValue("")
 	await expect(page.getByLabel("Nova senha", { exact: true })).toHaveValue("")
 	await expect(

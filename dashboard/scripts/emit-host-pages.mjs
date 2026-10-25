@@ -1,22 +1,28 @@
 import { cp, lstat, mkdir, readFile, rm, writeFile } from "node:fs/promises"
-import { resolve } from "node:path"
+import { basename, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+import { dependencyNotices } from "./notices.mjs"
 
 const packageRoot = fileURLToPath(new URL("../", import.meta.url))
 const { version } = JSON.parse(await readFile(resolve(packageRoot, "package.json"), "utf8"))
 const dist = resolve(packageRoot, "dist")
 const html = await readFile(resolve(dist, "index.html"), "utf8")
-const licenses = resolve(dist, "licenses")
-await mkdir(licenses, { recursive: true })
-for (const [source, filename] of [
-	["../LICENSE", "Apollo-LICENSE.txt"],
-	["../NOTICE", "Apollo-NOTICE.txt"],
-	["SHADCN_LICENSE.txt", "SHADCN-LICENSE.txt"],
-	["THIRD_PARTY_NOTICES.md", "THIRD-PARTY-NOTICES.md"],
-	["node_modules/zod/LICENSE", "ZOD-LICENSE.txt"],
-	["node_modules/fflate/LICENSE", "FFLATE-LICENSE.txt"]
-])
-	await cp(resolve(packageRoot, source), resolve(licenses, filename))
+const manager = process.env.npm_execpath
+if (!manager || !basename(manager).toLowerCase().includes("pnpm"))
+	throw new Error("Build the dashboard with pnpm")
+const managerIsScript = /\.[cm]?js$/i.test(manager)
+const report = JSON.parse(
+	execFileSync(
+		managerIsScript ? process.execPath : manager,
+		[...(managerIsScript ? [manager] : []), "licenses", "list", "--prod", "--json"],
+		{ cwd: packageRoot, encoding: "utf8", maxBuffer: 10 * 1024 * 1024 }
+	)
+)
+await cp(resolve(packageRoot, "../LICENSE"), resolve(dist, "LICENSE.txt"))
+await writeFile(
+	resolve(dist, "NOTICE.txt"),
+	await dependencyNotices(report, await readFile(resolve(packageRoot, "../NOTICE"), "utf8"))
+)
 for (const page of [
 	"apps",
 	"config",
@@ -81,3 +87,5 @@ if (process.argv.includes("--host")) {
 	await cp(dist, destination, { recursive: true })
 	console.log(`Apollo UI assets staged: ${destination}`)
 }
+
+import { execFileSync } from "node:child_process"

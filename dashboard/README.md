@@ -2,8 +2,8 @@
 
 A única interface web do Apollo 1.0 é este pacote React, com as oito entradas
 nativas, pt-BR fixo e sem frontend legado paralelo. Uso e limites estão em
-[release-1.0.md](../docs/release-1.0.md); regressões manuais estão em
-[testing-host.md](../docs/testing-host.md).
+[getting_started.md](../docs/getting_started.md); arquitetura, comandos e escopo
+dos testes estão em [development.md](../docs/development.md).
 
 ## Templates por seção
 
@@ -136,26 +136,25 @@ border with the cards' outer ring. Keep 16px inner padding and 8px action gaps;
 validate full-content alignment, including sidebar transitions and capped desktop
 widths. Do not compensate for mismatched box models with negative margins.
 
-The user's ~/monorepo was read for Biome, shadcn, theme, TS and Router/Query
-conventions. No private auth, tRPC, infrastructure, DB or environment was copied.
-See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for source/license changes.
+Development conventions are documented in [development.md](../docs/development.md).
+Required source notices live in [NOTICE](../NOTICE); the build consolidates dependency notices.
 
 ## Commands
 
 ```sh
-npm ci --ignore-scripts
-npm run routes:generate
-npm run check
-npm run typecheck
-npm test
-npm run check:dev
-npm exec playwright install --with-deps chromium
-npm run test:browser
-npm run dev
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm run routes:generate
+pnpm run check
+pnpm run typecheck
+pnpm test
+pnpm run check:dev
+pnpm exec playwright install --with-deps chromium
+pnpm run test:browser
+pnpm run dev
 ```
 
-`pnpm dev` also runs the script when dependencies are installed. The committed
-installation lock is npm's; do not mix installers/lockfiles in one checkout.
+O workspace usa somente pnpm, com versão fixada em package.json e um lockfile
+na raiz. Os mesmos comandos podem ser executados pela raiz do repositório.
 Dev binds 127.0.0.1:5174 and does not proxy to the real host automatically. Without
 the native API or test fixture, API-backed screens show an error, not fake data.
 `test:browser` builds fresh assets first to prevent stale-dist test results.

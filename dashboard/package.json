@@ -3,16 +3,22 @@
 	"private": true,
 	"license": "GPL-3.0-only",
 	"version": "1.0.0",
+	"packageManager": "pnpm@12.15.0",
+	"engines": {
+		"node": ">=24 <25"
+	},
 	"type": "module",
 	"scripts": {
 		"dev": "vite --host 127.0.0.1",
-		"build": "npm run typecheck && vite build && node scripts/emit-host-pages.mjs",
-		"build:host": "npm run build && node scripts/emit-host-pages.mjs --host",
+		"build": "pnpm run typecheck && vite build && node scripts/emit-host-pages.mjs",
+		"build:host": "pnpm run build && node scripts/emit-host-pages.mjs --host",
 		"routes:generate": "node scripts/generate-routes.mjs",
-		"typecheck": "npm run routes:generate && tsc --noEmit",
-		"test": "vitest run",
+		"typecheck": "pnpm run routes:generate && tsc --noEmit",
+		"test": "vitest run && pnpm run test:tooling",
+		"test:tooling": "node --test scripts/tests/notices.mjs",
 		"check:dev": "node scripts/check-dev.mjs",
-		"test:browser": "npm run build && playwright test",
+		"test:browser": "pnpm run build && playwright test",
+		"verify": "pnpm run check && pnpm run typecheck && pnpm test && pnpm run check:dev && pnpm run test:browser",
 		"check": "biome check .",
 		"format": "biome format --write ."
 	},

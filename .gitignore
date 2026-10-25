@@ -42,9 +42,10 @@ build/
 cmake-*/
 docs/doxyconfig*
 
-# npm
+# JavaScript tooling
 node_modules/
-package-lock.json
+.pnpm-store/
+pnpm-debug.log*
 
 # Translations
 *.mo

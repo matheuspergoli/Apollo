@@ -1,0 +1,26 @@
+name: Repository checks
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  repository:
+    if: github.repository == 'matheuspergoli/Apollo'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Repository policy, documentation links and package audits
+        run: python3 -m unittest discover -s tools/release -p 'test_*.py'
+      - name: Linux helper syntax
+        run: bash -n scripts/linux_build.sh packaging/linux/Arch/PKGBUILD
+      - name: Clock arithmetic regressions
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=undefined -fno-sanitize-recover=all -I . tools/tests/test_clock.cpp -o "$RUNNER_TEMP/apollo-clock-test"
+          "$RUNNER_TEMP/apollo-clock-test"

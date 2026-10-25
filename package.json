@@ -1,11 +1,19 @@
 {
   "name": "apollo",
   "private": true,
+  "license": "GPL-3.0-only",
+  "version": "1.0.0",
+  "packageManager": "pnpm@12.15.0",
+  "engines": { "node": ">=24 <25" },
   "type": "module",
   "scripts": {
-    "dev": "npm --prefix dashboard run dev",
-    "build": "npm --prefix dashboard run build:host",
-    "check": "npm --prefix dashboard run check",
-    "test": "npm --prefix dashboard test"
+    "dev": "pnpm --dir dashboard run dev",
+    "build": "pnpm --dir dashboard run build",
+    "build:host": "pnpm --dir dashboard run build:host",
+    "check": "pnpm --dir dashboard run check",
+    "typecheck": "pnpm --dir dashboard run typecheck",
+    "test": "pnpm --dir dashboard test",
+    "test:browser": "pnpm --dir dashboard run test:browser",
+    "verify": "pnpm --dir dashboard run verify"
   }
 }

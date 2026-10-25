@@ -9,7 +9,6 @@
 			"*.json",
 			"*.ts",
 			"index.html",
-			"!package-lock.json",
 			"!src/routeTree.gen.ts"
 		]
 	},

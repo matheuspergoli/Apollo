@@ -65,7 +65,8 @@ de ponta a ponta e esta versão não promete ganhos de desempenho não medidos.
 
 ## Documentação e desenvolvimento
 
-- [Guia da versão 1.0](docs/release-1.0.md)
+- [Instalação e uso](docs/getting_started.md)
+- [Desenvolvimento e testes](docs/development.md)
 - [Painel e formatos JSON](dashboard/README.md)
 - [Compilação](docs/building.md)
 - [Configuração nativa](docs/configuration.md)
@@ -74,7 +75,6 @@ de ponta a ponta e esta versão não promete ganhos de desempenho não medidos.
 
 O painel usa React/TypeScript, TanStack Router/Query, Tailwind e shadcn/Base UI.
 Os testes, ensaio HTTPS Windows e auditorias de pacote são executados pelo CI.
-Registros antigos de engenharia ficam em `docs/history/`, não são guias de instalação.
 
 ## Suporte e licença
 
@@ -82,5 +82,5 @@ Relate problemas deste fork em
 [Issues](https://github.com/matheuspergoli/Apollo/issues), informando versão e passos
 de reprodução. Remova senhas, tokens, certificados e dados privados dos logs.
 
-Licença [GPL-3.0](LICENSE). Veja também [NOTICE](NOTICE) e os avisos de terceiros
-incluídos no painel e nos pacotes. O histórico e a autoria das contribuições foram preservados.
+Licença [GPL-3.0](LICENSE). Atribuições obrigatórias ficam em [NOTICE](NOTICE) e são
+consolidadas no pacote. O histórico e a autoria das contribuições foram preservados.

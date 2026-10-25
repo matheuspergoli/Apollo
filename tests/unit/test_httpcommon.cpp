@@ -55,9 +55,9 @@ TEST_P(DownloadFileTest, Run) {
 }
 
 #ifdef SUNSHINE_BUILD_FLATPAK
-// requires running `npm run serve` prior to running the tests
-constexpr const char *URL_1 = "http://0.0.0.0:3000/hello.txt";
-constexpr const char *URL_2 = "http://0.0.0.0:3000/hello-redirect.txt";
+// Requires the local HTTP fixture server from the Flatpak test command.
+constexpr const char *URL_1 = "http://127.0.0.1:3000/hello.txt";
+constexpr const char *URL_2 = "http://127.0.0.1:3000/hello-redirect.txt";
 #else
 constexpr const char *URL_1 = "https://httpbin.org/base64/aGVsbG8h";
 constexpr const char *URL_2 = "https://httpbin.org/redirect-to?url=/base64/aGVsbG8h";

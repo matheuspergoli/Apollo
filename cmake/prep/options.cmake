@@ -10,7 +10,7 @@ set(SUNSHINE_PUBLISHER_ISSUE_URL "https://github.com/matheuspergoli/Apollo/issue
 option(BUILD_DOCS "Build documentation" OFF)
 option(BUILD_TESTS "Build tests" OFF)
 option(BUILD_UI_CONTRACT_TESTS "Build focused React/native configuration contract tests" OFF)
-option(NPM_OFFLINE "Use offline npm packages. You must ensure packages are in your npm cache." OFF)
+option(PNPM_OFFLINE "Use the local pnpm store without network access." OFF)
 
 option(BUILD_WERROR "Enable -Werror flag." OFF)
 

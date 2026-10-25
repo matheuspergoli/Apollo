@@ -1,22 +1,20 @@
-<div align="center">
-  <img src="https://raw.githubusercontent.com/LizardByte/Sunshine/master/sunshine.png" />
-  <h1 align="center">Sunshine</h1>
-  <h4 align="center">Self-hosted game stream host for Moonlight.</h4>
-</div>
+# Receita Flatpak
 
-<div align="center">
-  <a href="https://flathub.org/apps/dev.lizardbyte.app.Sunshine"><img src="https://img.shields.io/flathub/downloads/dev.lizardbyte.app.Sunshine?style=for-the-badge&logo=flathub" alt="Flathub installs"></a>
-  <a href="https://flathub.org/apps/dev.lizardbyte.app.Sunshine"><img src="https://img.shields.io/flathub/v/dev.lizardbyte.app.Sunshine?style=for-the-badge&logo=flathub" alt="Flathub Version"></a>
-</div>
+Esta é uma receita auxiliar de build, não um pacote publicado ou validado no
+Flathub por este fork. O identificador herdado não indica afiliação com o projeto
+original. O suporte nativo Linux e a distribuição de um Flatpak são escopos diferentes.
 
-## ℹ️ About
+O manifesto usa SDK com Node.js 24 e instalação offline por pnpm. Antes de gerar
+o manifesto, o responsável pelo pacote precisa fornecer `generated-sources.json`
+com o binário da versão de pnpm declarada e o store correspondente ao lockfile:
 
-Sunshine is a self-hosted game stream host for Moonlight.
+- `flatpak-node/pnpm/`: binário pnpm para a arquitetura de destino;
+- `flatpak-node/pnpm-store/`: store previamente preenchido para o build offline.
 
-LizardByte has the full documentation hosted on [Read the Docs](https://docs.lizardbyte.dev/projects/sunshine)
+O código-fonte deve corresponder ao commit do manifesto. O CMake copia o lockfile
+e os metadados do workspace para o diretório de geração. Não reutilize bundles de
+outro gerenciador nem habilite rede para mascarar um store incompleto.
 
-* [Stable](https://docs.lizardbyte.dev/projects/sunshine/latest/)
-* [Beta](https://docs.lizardbyte.dev/projects/sunshine/master/)
-
-This repo is synced from the upstream [Sunshine](https://github.com/LizardByte/Sunshine) repo.
-Please report issues and contribute to the upstream repo.
+Alterações nessa receita exigem um build Flatpak completo antes de anunciar suporte.
+Os testes HTTP usam apenas fixtures locais dentro do sandbox; não dependem de um
+servidor de desenvolvimento da interface.

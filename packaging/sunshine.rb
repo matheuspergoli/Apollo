@@ -1,5 +1,3 @@
-require "language/node"
-
 class @PROJECT_NAME@ < Formula
   # conflicts_with "sunshine", because: "sunshine and sunshine-beta cannot be installed at the same time"
   desc "@PROJECT_DESCRIPTION@"
@@ -30,7 +28,8 @@ class @PROJECT_NAME@ < Formula
   depends_on :linux
   depends_on "doxygen" => :build
   depends_on "graphviz" => :build
-  depends_on "node" => :build
+  depends_on "node@24" => :build
+  depends_on "pnpm" => :build
   depends_on "pkgconf" => :build
   depends_on "curl"
   depends_on "miniupnpc"

@@ -36,7 +36,7 @@ export async function mockHost(page: Page): Promise<MockHost> {
 		clients: [
 			{
 				uuid: "device-1",
-				name: "Galaxy S25+",
+				name: "Dispositivo de exemplo",
 				perm: 0x03000000,
 				connected: false,
 				display_mode: "1920x1080x120",

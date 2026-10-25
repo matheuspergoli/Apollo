@@ -28,10 +28,14 @@ class ReleaseMetadataTests(unittest.TestCase):
         version = json.loads((ROOT / "dashboard/package.json").read_text())["version"]
         self.assertRegex(version, r"^\d+\.\d+\.\d+$")
         native = re.search(r"project\(Apollo VERSION ([\d.]+)", (ROOT / "CMakeLists.txt").read_text()).group(1)
-        lock = json.loads((ROOT / "dashboard/package-lock.json").read_text())
+        root_package = json.loads((ROOT / "package.json").read_text())
+        dashboard = json.loads((ROOT / "dashboard/package.json").read_text())
         self.assertEqual(native, version)
-        self.assertEqual(lock["version"], version)
-        self.assertEqual(lock["packages"][""]["version"], version)
+        self.assertEqual(root_package["version"], version)
+        self.assertEqual(root_package["packageManager"], dashboard["packageManager"])
+        self.assertRegex(root_package["packageManager"], r"^pnpm@\d+\.\d+\.\d+$")
+        self.assertTrue((ROOT / "pnpm-lock.yaml").is_file())
+        self.assertFalse((ROOT / "dashboard/package-lock.json").exists())
 
     def test_installer_payload_must_match_zip(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -40,7 +40,7 @@ BuildRequires: git
 BuildRequires: mesa-libGL-devel
 BuildRequires: mesa-libgbm-devel
 BuildRequires: miniupnpc-devel
-BuildRequires: npm
+BuildRequires: pnpm
 BuildRequires: numactl-devel
 BuildRequires: openssl-devel
 BuildRequires: opus-devel

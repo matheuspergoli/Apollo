@@ -19,9 +19,11 @@ def audit(archive: Path, source: Path) -> dict:
             if path.is_absolute() or ".." in path.parts or "\\" in name or ":" in name:
                 raise ValueError(f"Unsafe archive path: {name}")
             lower = name.lower()
-            if any(token in lower for token in ("apollo-preview", ".vue", "bootstrap", "i18next", "/locale/", "/locales/")):
+            legacy_tokens = ("apollo-preview", ".vue", "bootstrap", "i18next", "/locale/", "/locales/")
+            if any(token in lower for token in legacy_tokens):
                 raise ValueError(f"Legacy web asset: {name}")
-            if path.name.lower() in {"sunshine.conf", "sunshine_state.json", "credentials.json", "sunshine.log"} or path.suffix.lower() in {".pem", ".key"}:
+            private_files = {"sunshine.conf", "sunshine_state.json", "credentials.json", "sunshine.log"}
+            if path.name.lower() in private_files or path.suffix.lower() in {".pem", ".key"}:
                 raise ValueError(f"Private host state in package: {name}")
         hosts = [name for name in names if PurePosixPath(name).name.lower() == "sunshine.exe"]
         if hosts != ["Apollo/sunshine.exe"]:
@@ -33,6 +35,15 @@ def audit(archive: Path, source: Path) -> dict:
             raise ValueError("Expected file-based React dashboard with matching release version")
         if manifest.get("language") != "pt-BR" or manifest.get("mode") != "react-dashboard":
             raise ValueError("Unexpected dashboard mode or language")
+        license_text = package.read(web + "LICENSE.txt").decode("utf-8").replace("\r\n", "\n")
+        if license_text != (source / "LICENSE").read_text(encoding="utf-8"):
+            raise ValueError("Apollo license is missing or changed")
+        notices = package.read(web + "NOTICE.txt").decode("utf-8").replace("\r\n", "\n")
+        if not notices.startswith((source / "NOTICE").read_text(encoding="utf-8").strip()):
+            raise ValueError("Required source notices are missing")
+        dependencies = json.loads((source / "dashboard/package.json").read_text(encoding="utf-8"))["dependencies"]
+        if any(f"{name}@{version}" not in notices for name, version in dependencies.items()):
+            raise ValueError("Dependency notices are incomplete")
         entries = {"/" if page == "index" else "/" + page for page in pages}
         if set(manifest.get("entryPoints", [])) != entries:
             raise ValueError("Missing host page entry points")
@@ -53,7 +64,15 @@ def audit(archive: Path, source: Path) -> dict:
                 original = original.replace(b"\r\n", b"\n")
             if packaged != original:
                 raise ValueError(f"Image changed in packaging: {image.name}")
-    return {"archive": archive.name, "version": version, "sha256": hashlib.sha256(archive.read_bytes()).hexdigest(), "entries": len(names), "hostPages": len(pages), "imageAssets": len(images), "status": "package-audit-passed"}
+    return {
+        "archive": archive.name,
+        "version": version,
+        "sha256": hashlib.sha256(archive.read_bytes()).hexdigest(),
+        "entries": len(names),
+        "hostPages": len(pages),
+        "imageAssets": len(images),
+        "status": "package-audit-passed",
+    }
 
 
 if __name__ == "__main__":

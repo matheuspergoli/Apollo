@@ -63,7 +63,7 @@ pacman -S "${dependencies[@]}"
 ```
 
 ##### Install Node.js
-Install Node.js separately from [nodejs.org](https://nodejs.org/) (LTS or current) or via
+Install Node.js 24 LTS separately from [nodejs.org](https://nodejs.org/) or via
 [nvm-windows](https://github.com/coreybutler/nvm-windows). Don't install MSYS2's
 `mingw-w64-ucrt-x86_64-nodejs` — it's compiled with the MSYS2 gcc-16 libstdc++ which has
 a `std::bad_weak_ptr` regression that crashes Node during process init (see
@@ -71,8 +71,9 @@ a `std::bad_weak_ptr` regression that crashes Node during process init (see
 toolchain trail). The official MSVC-built Node.js isn't affected.
 
 Make sure `node.exe` is on `PATH` before running `cmake` — the `web-ui` CMake target
-invokes `npm ci --ignore-scripts` via `find_program(NPM npm)`, so the official Node's `npm` must be
-visible to CMake.
+invokes `pnpm install --frozen-lockfile --ignore-scripts`. Use Node.js 24 and the
+pnpm version pinned in the repository package.json. With Corepack available, run
+`corepack enable pnpm`; ensure `pnpm` is on PATH for CMake.
 
 ### Clone
 Ensure [git](https://git-scm.com) is installed on your system, then clone the repository using the following command:

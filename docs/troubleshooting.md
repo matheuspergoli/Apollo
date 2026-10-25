@@ -1,5 +1,18 @@
 # Troubleshooting
 
+## Cortes de áudio
+
+Correlacione o horário do corte com o log e as estatísticas do cliente. Compare
+o áudio local do host com o recebido remotamente e observe se a imagem também
+parou. Um encerramento/reinício do encoder de vídeo não prova falha da captura de áudio.
+
+No Windows, a captura registra descontinuidade no nível debug e overflow como
+aviso. Ausência de uma mensagem de debug em um log Info não comprova ausência do
+evento. Coletas de debug devem ser curtas: podem aumentar a carga e conter dados privados.
+
+Altere uma variável de cada vez em uma reprodução controlada. Não trate mudanças
+genéricas de drivers, HAGS, prioridade ou buffers como correção sem evidência.
+
 ## General
 
 ### Forgotten Credentials

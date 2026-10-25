@@ -1,16 +1,23 @@
 name: Apollo Windows
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
     paths:
       - .github/workflows/apollo-windows.yml
       - CMakeLists.txt
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - NOTICE
       - cmake/**
       - src/**
       - dashboard/**
       - tests/**
       - tools/release/**
+      - '!dashboard/**/*.md'
 permissions:
   contents: read
 jobs:
@@ -23,6 +30,8 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Check repository metadata and tooling policy
+        run: python -m unittest discover -s tools/release -p 'test_*.py'
       - name: Checkout native dependencies
         shell: bash
         run: >-
@@ -31,12 +40,15 @@ jobs:
           third-party/nanors third-party/nv-codec-headers
           third-party/nvapi-open-source-sdk third-party/Simple-Web-Server
           third-party/tray third-party/ViGEmClient third-party/moonlight-common-c
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          run_install: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
-          cache: npm
-          cache-dependency-path: dashboard/package-lock.json
-      - uses: msys2/setup-msys2@v2
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
         with:
           msystem: UCRT64
           update: true
@@ -82,10 +94,9 @@ jobs:
           sha256sum cpack_artifacts/*.zip cpack_artifacts/*.exe > SHA256SUMS.txt
       - name: Install browser for isolated native integration
         working-directory: dashboard
-        run: npm exec playwright install -- chromium
+        run: pnpm exec playwright install chromium
       - name: Audit React package and preserved assets without installation
         run: |
-          python -m unittest discover -s tools/release -p 'test_*.py'
           python tools/release/audit-dashboard-package.py build-windows/cpack_artifacts/Apollo.zip
           python tools/release/audit-windows-installer.py build-windows/cpack_artifacts/Apollo.exe build-windows/cpack_artifacts/Apollo.zip
       - name: Native HTTPS and React integration on the isolated runner

@@ -33,8 +33,14 @@ def compare_payload(extracted: Path, archive: Path) -> int:
                 raise ValueError(f"Missing or unsafe installer payload: {entry.filename}")
             actual, expected = target.read_bytes(), package.read(entry)
             if hashlib.sha256(actual).digest() != hashlib.sha256(expected).digest():
-                offset = next((i for i, pair in enumerate(zip(actual, expected)) if pair[0] != pair[1]), min(len(actual), len(expected)))
-                raise ValueError(f"Installer/ZIP payload mismatch: {entry.filename}; first differing byte {offset}; lengths {len(actual)}/{len(expected)}")
+                offset = next(
+                    (i for i, pair in enumerate(zip(actual, expected)) if pair[0] != pair[1]),
+                    min(len(actual), len(expected)),
+                )
+                raise ValueError(
+                    f"Installer/ZIP payload mismatch: {entry.filename}; "
+                    f"first differing byte {offset}; lengths {len(actual)}/{len(expected)}"
+                )
             count += 1
     if count == 0:
         raise ValueError("Empty installer payload")
@@ -42,13 +48,27 @@ def compare_payload(extracted: Path, archive: Path) -> int:
 
 
 def audit(installer: Path, archive: Path) -> dict:
-    if sys.platform != "win32" or os.environ.get("GITHUB_ACTIONS") != "true" or os.environ.get("GITHUB_REPOSITORY") != "matheuspergoli/Apollo":
+    if (
+        sys.platform != "win32"
+        or os.environ.get("GITHUB_ACTIONS") != "true"
+        or os.environ.get("GITHUB_REPOSITORY") != "matheuspergoli/Apollo"
+    ):
         raise RuntimeError("Installer extraction is restricted to the isolated Windows runner of this fork")
     seven_zip = shutil.which("7z") or str(Path(os.environ["ProgramFiles"]) / "7-Zip/7z.exe")
     with tempfile.TemporaryDirectory(prefix="apollo-installer-", dir=os.environ["RUNNER_TEMP"]) as temporary:
-        subprocess.run([seven_zip, "x", str(installer.resolve()), f"-o{temporary}", "-y"], check=True, capture_output=True)
+        subprocess.run(
+            [seven_zip, "x", str(installer.resolve()), f"-o{temporary}", "-y"],
+            check=True,
+            capture_output=True,
+        )
         count = compare_payload(Path(temporary), archive)
-    return {"installer": installer.name, "sha256": hashlib.sha256(installer.read_bytes()).hexdigest(), "payloadFiles": count, "status": "installer-payload-audit-passed", "installationExecuted": False}
+    return {
+        "installer": installer.name,
+        "sha256": hashlib.sha256(installer.read_bytes()).hexdigest(),
+        "payloadFiles": count,
+        "status": "installer-payload-audit-passed",
+        "installationExecuted": False,
+    }
 
 
 if __name__ == "__main__":

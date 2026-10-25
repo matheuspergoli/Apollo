@@ -24,17 +24,16 @@ results saturate before integer casts. Invalid frequencies return zero.
 
 ## Evidence and tests
 
-Read-only Windows probe on 19 October 2026 using System.Diagnostics.Stopwatch:
-frequency 10,000,000; high resolution true; OSVersion 10.0.26300.0.
-Este é um registro datado da investigação, não detecção do sistema do leitor.
+As regressões exercitam frequências distintas de QPC, deltas negativos, limites
+inteiros e timestamps de longa duração; não dependem de um modelo de computador.
 
 19 assertions passed with GCC C++17, -Wall -Wextra -Werror and UBSan:
 
 ```
 g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=undefined \
   -fno-sanitize-recover=all -I . tools/tests/test_clock.cpp \
-  -o /tmp/opencode/apollo-clock-test
-/tmp/opencode/apollo-clock-test
+  -o build/apollo-clock-test
+./build/apollo-clock-test
 ```
 
 The standalone test is outside tests/ because upstream recursively collects

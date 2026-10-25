@@ -35,7 +35,7 @@ if(UNIX)
         file(COPY packaging/linux/flatpak/deps/ DESTINATION ${CMAKE_BINARY_DIR})
         file(COPY packaging/linux/flatpak/modules DESTINATION ${CMAKE_BINARY_DIR})
         file(COPY generated-sources.json DESTINATION ${CMAKE_BINARY_DIR})
-        file(COPY package-lock.json DESTINATION ${CMAKE_BINARY_DIR})
+        file(COPY pnpm-lock.yaml pnpm-workspace.yaml package.json DESTINATION ${CMAKE_BINARY_DIR})
     endif()
 endif()
 

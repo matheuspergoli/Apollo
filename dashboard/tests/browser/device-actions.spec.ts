@@ -139,7 +139,10 @@ test("disconnect keeps pairing and sends only the selected device ID", async ({ 
 test("unpair cancellation preserves the device; confirmation revokes it", async ({ page }) => {
 	const host = await mockHost(page)
 	await page.goto("/pin")
-	const revoke = page.getByRole("button", { name: "Desvincular Galaxy S25+", exact: true })
+	const revoke = page.getByRole("button", {
+		name: "Desvincular Dispositivo de exemplo",
+		exact: true
+	})
 	await revoke.click()
 	await page
 		.getByRole("alertdialog")
@@ -166,7 +169,9 @@ test("rejected unpair stays visible and is not retried automatically", async ({ 
 		await route.fulfill({ json: { status: false, error: "Não foi possível revogar." } })
 	})
 	await page.goto("/pin")
-	await page.getByRole("button", { name: "Desvincular Galaxy S25+", exact: true }).click()
+	await page
+		.getByRole("button", { name: "Desvincular Dispositivo de exemplo", exact: true })
+		.click()
 	const dialog = page.getByRole("alertdialog")
 	await dialog.getByRole("button", { name: "Confirmar", exact: true }).click()
 	await expect(dialog.getByText("Não foi possível revogar.", { exact: true })).toBeVisible()

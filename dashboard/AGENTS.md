@@ -1,6 +1,6 @@
 # Apollo frontend constraints
 
-- This is Apollo. Do not introduce Golden branding, component prefixes or CSS classes.
+- Use Apollo branding only; do not add project-specific prefixes to primitives.
 - Use React/TypeScript, TanStack Router/Query, Tailwind utilities and semantic shadcn tokens.
 - Use TanStack Router file-based routes and the official Vite plugin/code splitter.
   Do not maintain a manual createRoute/lazyRouteComponent tree or hand-edit generated routes.
@@ -14,18 +14,20 @@
   in an unnecessary project-specific component.
 - Own components compose screens, domain behavior and providers. Ordinary semantic
   layout HTML remains appropriate; do not turn every layout into an abstraction.
-- Keep official generated UI sources in components/ui and record any accessibility,
-  correctness or lint adaptations in THIRD_PARTY_NOTICES.md. Do not disable lint
+- Keep official generated UI sources in components/ui and record significant accessibility,
+  correctness or lint adaptations in docs/development.md. Do not disable lint
   broadly to accept generated code.
 - Do not add Vue, Bootstrap, bespoke visual CSS classes or a second design system.
-- Use the user's ~/monorepo as a read-only reference for conventions, not a source
-  of private auth, infrastructure, environment or unrelated product dependencies.
+- Do not copy private authentication, infrastructure, environment files or unrelated
+  product dependencies from external projects.
 - Do not add Start, DB, state libraries or generators without a concrete Apollo need.
-- Keep exact compatible dependency versions and the package lock. Use npm ci in CI.
+- Use pnpm exclusively, at the version pinned in package.json. The workspace and
+  pnpm-lock.yaml live at the repository root. Install with
+  pnpm install --frozen-lockfile --ignore-scripts. Do not create other lockfiles.
 - Run Biome, strict TypeScript, unit tests, production build and relevant browser tests.
   Test labels, keyboard behavior, invalid/disabled/loading/error states, mobile and themes.
-- Preserve backend contracts, existing settings and recovery. Do not deploy this partial
-  migration over a working dashboard before parity/integration tests are complete.
+- Preserve backend contracts, existing settings and recovery. Run native integration
+  checks before distributing changes to the packaged dashboard.
 - No invented live metrics or performance claims. Mocked API tests are not device tests.
 - Never change the user's active host files, services, credentials or pairing during
   frontend development. Publish only to matheuspergoli/Apollo, never upstream.

@@ -37,19 +37,19 @@ endif()
 target_compile_options(sunshine PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${SUNSHINE_COMPILE_OPTIONS}>;$<$<COMPILE_LANGUAGE:CUDA>:${SUNSHINE_COMPILE_OPTIONS_CUDA};-std=c++17>)  # cmake-lint: disable=C0301
 
 #WebUI build
-find_program(NPM npm REQUIRED)
+find_program(PNPM NAMES pnpm pnpm.cmd REQUIRED)
 
-if (NPM_OFFLINE)
-    set(NPM_INSTALL_FLAGS "--offline")
+if (PNPM_OFFLINE)
+    set(PNPM_INSTALL_FLAGS "--offline")
 else()
-    set(NPM_INSTALL_FLAGS "")
+    set(PNPM_INSTALL_FLAGS "")
 endif()
 
 add_custom_target(web-ui ALL
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/dashboard"
-        COMMENT "Installing NPM Dependencies and Building the Web UI"
-        COMMAND "$<$<BOOL:${WIN32}>:cmd;/C>" "${NPM}" ci --ignore-scripts ${NPM_INSTALL_FLAGS}
-        COMMAND "${CMAKE_COMMAND}" -E env "SUNSHINE_ASSETS_DIR=${CMAKE_BINARY_DIR}" "$<$<BOOL:${WIN32}>:cmd;/C>" "${NPM}" run build:host  # cmake-lint: disable=C0301
+        COMMENT "Installing locked pnpm dependencies and building the Web UI"
+        COMMAND "$<$<BOOL:${WIN32}>:cmd;/C>" "${PNPM}" install --frozen-lockfile --ignore-scripts ${PNPM_INSTALL_FLAGS}
+        COMMAND "${CMAKE_COMMAND}" -E env "SUNSHINE_ASSETS_DIR=${CMAKE_BINARY_DIR}" "$<$<BOOL:${WIN32}>:cmd;/C>" "${PNPM}" run build:host  # cmake-lint: disable=C0301
         COMMAND_EXPAND_LISTS
         VERBATIM)
 

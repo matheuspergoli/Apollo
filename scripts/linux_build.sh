@@ -61,10 +61,10 @@ function setup_nvm_environment() {
     if [ -f "$HOME/.nvm/nvm.sh" ]; then
       # shellcheck source=/dev/null
       source "$HOME/.nvm/nvm.sh"
-      # Use the default node version installed by NVM
-      nvm use default 2>/dev/null || nvm use node 2>/dev/null || true
+      # Use the supported Node.js LTS version.
+      nvm use 24 2>/dev/null || true
       echo "Using NVM Node.js version: $(node --version 2>/dev/null || echo 'not available')"
-      echo "Using NVM npm version: $(npm --version 2>/dev/null || echo 'not available')"
+      echo "Using pnpm version: $(pnpm --version 2>/dev/null || echo 'not available')"
     else
       echo "NVM not found, using system Node.js if available"
     fi
@@ -191,7 +191,6 @@ function add_arch_deps() {
     'miniupnpc'
     'ninja'
     'nodejs'
-    'npm'
     'numactl'
     'openssl'
     'opus'
@@ -246,7 +245,6 @@ function add_debian_based_deps() {
     "libxrandr-dev"  # X11
     "libxtst-dev"  # X11
     "ninja-build"
-    "npm"  # web-ui
     "udev"
     "wget"  # necessary for cuda install with `run` file
     "xvfb"  # necessary for headless unit testing
@@ -311,7 +309,6 @@ function add_fedora_deps() {
     "mesa-libgbm-devel"
     "miniupnpc-devel"
     "ninja-build"
-    "npm"
     "numactl-devel"
     "openssl-devel"
     "opus-devel"
@@ -510,8 +507,9 @@ function run_step_deps() {
 
     # shellcheck source=/dev/null  # we don't care that shellcheck cannot find nvm.sh
     source "$HOME/.nvm/nvm.sh"
-    nvm install node
-    nvm use node
+    nvm install 24
+    nvm use 24
+    corepack enable pnpm
   fi
 
   # run the cuda install

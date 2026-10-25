@@ -218,7 +218,7 @@ test("permission export includes draft values but excludes pairing identity", as
 	const raw = strFromU8(files["apollo-dispositivo/dispositivo.json"])
 	expect(JSON.parse(raw).settings.perm).toBe(0x03000100)
 	expect(raw).not.toContain("device-1")
-	expect(raw).not.toContain("Galaxy S25+")
+	expect(raw).not.toContain("Dispositivo de exemplo")
 	expect(host.calls.some((call) => call.method === "POST")).toBe(false)
 })
 
@@ -243,6 +243,6 @@ test("permission import rejects certificate/identity changes without altering dr
 	})
 	await expect(page.getByRole("alert")).toBeVisible()
 	await expect(page.getByRole("dialog")).toHaveCount(0)
-	await expect(page.getByLabel("Nome", { exact: true })).toHaveValue("Galaxy S25+")
+	await expect(page.getByLabel("Nome", { exact: true })).toHaveValue("Dispositivo de exemplo")
 	expect(host.calls.some((call) => call.method === "POST")).toBe(false)
 })

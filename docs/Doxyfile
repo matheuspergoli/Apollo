@@ -22,12 +22,12 @@
 # doxygen -x_noenv [configFile]
 
 # project metadata
-DOCSET_BUNDLE_ID = dev.lizardbyte.Sunshine
-DOCSET_PUBLISHER_ID = dev.lizardbyte.Sunshine.documentation
-PROJECT_BRIEF = "Self-hosted game stream host for Moonlight."
-PROJECT_ICON = ../sunshine.ico
-PROJECT_LOGO = ../sunshine.png
-PROJECT_NAME = Sunshine
+DOCSET_BUNDLE_ID = dev.matheuspergoli.Apollo
+DOCSET_PUBLISHER_ID = dev.matheuspergoli.Apollo.documentation
+PROJECT_BRIEF = "Self-hosted game stream host for Artemis."
+PROJECT_ICON = ../apollo.ico
+PROJECT_LOGO = ../apollo.png
+PROJECT_NAME = Apollo
 
 # project specific settings
 DOT_GRAPH_MAX_NODES = 60
@@ -56,6 +56,7 @@ INPUT = ../README.md \
         troubleshooting.md \
         building.md \
         contributing.md \
+        development.md \
         ../third-party/doxyconfig/docs/source_code.md \
         ../src
 

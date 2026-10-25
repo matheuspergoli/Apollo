@@ -52,7 +52,7 @@ makedepends=(
   'git'
   'make'
   'nodejs'
-  'npm'
+  'pnpm'
 )
 
 optdepends=(

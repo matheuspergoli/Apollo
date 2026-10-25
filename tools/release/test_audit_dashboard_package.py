@@ -19,9 +19,20 @@ class PackageAuditTests(unittest.TestCase):
         entries = {"Apollo/sunshine.exe": b"test fixture, not executable"}
         pages = ["index", "apps", "config", "pin", "password", "login", "welcome", "troubleshooting"]
         web = "Apollo/assets/web/"
+        entries[web + "LICENSE.txt"] = (SOURCE / "LICENSE").read_bytes()
+        dependencies = json.loads((SOURCE / "dashboard/package.json").read_text(encoding="utf-8"))["dependencies"]
+        notices = (SOURCE / "NOTICE").read_text(encoding="utf-8").strip()
+        notices += "\n" + "\n".join(f"{name}@{version}" for name, version in dependencies.items())
+        entries[web + "NOTICE.txt"] = notices.encode()
         for page in pages:
             entries[web + page + ".html"] = b'<html lang="pt-BR"></html>'
-        entries[web + "ui-build.json"] = json.dumps({"router": "file-based", "version": json.loads((SOURCE / "dashboard/package.json").read_text())["version"], "mode": "react-dashboard", "language": "pt-BR", "entryPoints": ["/" if page == "index" else "/" + page for page in pages]}).encode()
+        entries[web + "ui-build.json"] = json.dumps({
+            "router": "file-based",
+            "version": json.loads((SOURCE / "dashboard/package.json").read_text(encoding="utf-8"))["version"],
+            "mode": "react-dashboard",
+            "language": "pt-BR",
+            "entryPoints": ["/" if page == "index" else "/" + page for page in pages],
+        }).encode()
         for image in (SOURCE / "dashboard/public/images").iterdir():
             if image.is_file():
                 data = image.read_bytes()
@@ -41,10 +52,18 @@ class PackageAuditTests(unittest.TestCase):
 
     def test_rejects_mismatched_release_version(self):
         with self.assertRaises(ValueError):
-            MODULE.audit(self.package({"Apollo/assets/web/ui-build.json": b'{"router":"file-based","version":"0.0.0"}'}), SOURCE)
+            manifest = b'{"router":"file-based","version":"0.0.0"}'
+            MODULE.audit(self.package({"Apollo/assets/web/ui-build.json": manifest}), SOURCE)
 
     def test_rejects_private_legacy_and_unsafe_entries(self):
-        for name in ["Apollo/config/credentials.json", "Apollo/key.pem", "Apollo/assets/web/locale/en.json", "../escape", "C:/escape"]:
+        unsafe = [
+            "Apollo/config/credentials.json",
+            "Apollo/key.pem",
+            "Apollo/assets/web/locale/en.json",
+            "../escape",
+            "C:/escape",
+        ]
+        for name in unsafe:
             with self.subTest(name=name), self.assertRaises(ValueError):
                 MODULE.audit(self.package({name: b"invalid"}), SOURCE)
 
@@ -55,6 +74,11 @@ class PackageAuditTests(unittest.TestCase):
     def test_rejects_modified_binary_asset(self):
         with self.assertRaises(ValueError):
             MODULE.audit(self.package({"Apollo/assets/web/images/apollo.ico": b"changed"}), SOURCE)
+
+    def test_rejects_dropped_license_or_notices(self):
+        for name in ["LICENSE.txt", "NOTICE.txt"]:
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                MODULE.audit(self.package({"Apollo/assets/web/" + name: b"incomplete"}), SOURCE)
 
 
 if __name__ == "__main__":
