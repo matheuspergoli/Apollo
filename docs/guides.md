@@ -1,19 +1,12 @@
-# Guides
+# Guias
 
-@admonition{Community | A collection of guides written by the community is available on our
-[blog](https://app.lizardbyte.dev/blog).
-Feel free to contribute your own tips and trips by making a PR to
-[LizardByte.github.io](https://github.com/LizardByte/LizardByte.github.io).}
+- [Instalação e atualização](getting_started.md)
+- [Configuração do host](configuration.md)
+- [Aplicativos](app_examples.md)
+- [Diagnóstico](troubleshooting.md)
+- [Desenvolvimento, arquitetura e testes](development.md)
+- [Compilação](building.md)
 
-<div class="section_buttons">
-
-| Previous                                |                                        Next |
-|:----------------------------------------|--------------------------------------------:|
-| [Awesome-Sunshine](awesome_sunshine.md) | [Performance Tuning](performance_tuning.md) |
-
-</div>
-
-<details style="display: none;">
-  <summary></summary>
-  [TOC]
-</details>
+Para esta distribuição, use as instruções e os pacotes deste repositório.
+Materiais do Sunshine podem servir de referência, mas não comprovam suporte ou
+compatibilidade das mesmas opções, interfaces e pacotes no Apollo.

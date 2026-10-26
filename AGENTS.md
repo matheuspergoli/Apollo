@@ -51,3 +51,6 @@
 - Review changes as a whole before release. Passing CI is necessary evidence, not
   a guarantee of zero defects; publish only artifacts tied to the reviewed commit
   and report any remaining release validation explicitly.
+- Freeze release binaries before manual acceptance. Publish those exact hashes;
+  documentation-only follow-ups must not silently replace or retag the tested build.
+  Investigate warnings in context; do not suppress them merely to make logs look clean.

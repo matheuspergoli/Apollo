@@ -1,22 +1,10 @@
-# Changelog
+# Histórico de versões
 
-@htmlonly
-<script type="module" src="https://md-block.verou.me/md-block.js"></script>
-<md-block
-  hmin="2"
-  src="https://raw.githubusercontent.com/LizardByte/Sunshine/changelog/CHANGELOG.md">
-</md-block>
-@endhtmlonly
+As versões desta distribuição são publicadas em
+[matheuspergoli/Apollo](https://github.com/matheuspergoli/Apollo/releases).
+O histórico de outros projetos não representa os pacotes deste fork.
 
-<div class="section_buttons">
-
-| Previous                              |                          Next |
-|:--------------------------------------|------------------------------:|
-| [Getting Started](getting_started.md) | [Docker](../DOCKER_README.md) |
-
-</div>
-
-<details style="display: none;">
-  <summary></summary>
-  [TOC]
-</details>
+- [1.0.1](releases/v1.0.1.md): corrige o pacote SudoVDA, o reinício e a atualização
+  com preservação dos dados.
+- [1.0.0](releases/v1.0.0.md): introduz o painel React em português. O pacote
+  Windows possui uma omissão conhecida nos binários do driver virtual.

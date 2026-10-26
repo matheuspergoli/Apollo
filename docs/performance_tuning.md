@@ -1,25 +1,12 @@
-# Performance Tuning
-In addition to the options available in the [Configuration](configuration.md) section, there are a few additional
-system options that can be used to help improve the performance of Sunshine.
+# Desempenho
 
-## AMD
+Use as estatísticas do Artemis para distinguir tempo de codificação, rede e
+decodificação. O painel do Apollo não mede latência de ponta a ponta.
 
-In Windows, enabling *Enhanced Sync* in AMD's settings may help reduce the latency by an additional frame. This
-applies to `amfenc` and `libx264`.
+Comece com resolução, FPS, bitrate e codec adequados ao host, cliente e rede.
+Consulte [configuração](configuration.md) e [diagnóstico](troubleshooting.md).
+Compare uma alteração por vez na mesma carga de trabalho antes de mantê-la.
 
-## NVIDIA
-
-Enabling *Fast Sync* in Nvidia settings may help reduce latency.
-
-<div class="section_buttons">
-
-| Previous            |          Next |
-|:--------------------|--------------:|
-| [Guides](guides.md) | [API](api.md) |
-
-</div>
-
-<details style="display: none;">
-  <summary></summary>
-  [TOC]
-</details>
+Opções do driver gráfico, sincronização, HAGS e prioridades não garantem melhora
+universal. Não prometa ganhos em frames ou milissegundos sem medição. Preserve uma
+configuração conhecida e um meio local de recuperação antes de alterar o sistema.

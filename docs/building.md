@@ -1,138 +1,70 @@
-# Building
-Sunshine binaries are built using [CMake](https://cmake.org) and requires `cmake` > 3.25.
+# Compilação
 
-## Building Locally
+Windows x64 é o alvo principal de distribuição. Linux mantém os backends existentes,
+mas este fork não anuncia pacotes Linux ou compatibilidade universal de hardware.
+As regras de desenvolvimento e cobertura estão em [development.md](development.md).
 
-### Compiler
-It is recommended to use one of the following compilers:
+## Windows
 
-| Compiler    | Version |
-|:------------|:--------|
-| GCC         | 13+     |
-| Clang       | 17+     |
+Use o terminal **MSYS2 UCRT64**, GCC com suporte a C++23, CMake, Ninja, Python,
+Node.js 24 oficial e a versão de pnpm fixada em `package.json`. Instale o Node fora
+do MSYS2 e disponibilize `node` e `pnpm` no `PATH`. A lista usada pelo CI está em
+[apollo-windows.yml](../.github/workflows/apollo-windows.yml).
 
-### Dependencies
-
-#### Linux
-Dependencies vary depending on the distribution. You can reference our
-[linux_build.sh](https://github.com/LizardByte/Sunshine/blob/master/scripts/linux_build.sh) script for a list of
-dependencies we use in Debian-based and Fedora-based distributions. Please submit a PR if you would like to extend the
-script to support other distributions.
-
-##### CUDA Toolkit
-Sunshine requires CUDA Toolkit for NVFBC capture. There are two caveats to CUDA:
-
-1. The version installed depends on the version of GCC.
-2. The version of CUDA you use will determine compatibility with various GPU generations.
-   At the time of writing, the recommended version to use is CUDA ~12.9.
-   See [CUDA compatibility](https://docs.nvidia.com/deploy/cuda-compatibility/index.html) for more info.
-
-> [!NOTE]
-> To install older versions, select the appropriate run file based on your desired CUDA version and architecture
-> according to [CUDA Toolkit Archive](https://developer.nvidia.com/cuda-toolkit-archive)
-
-#### Windows
-First you need to install [MSYS2](https://www.msys2.org), then startup "MSYS2 UCRT64" and execute the following
-commands.
-
-##### Update all packages
-```bash
-pacman -Syu
+```sh
+pacman -S --needed git mingw-w64-ucrt-x86_64-toolchain \
+  mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja \
+  mingw-w64-ucrt-x86_64-pkgconf mingw-w64-ucrt-x86_64-boost \
+  mingw-w64-ucrt-x86_64-cppwinrt mingw-w64-ucrt-x86_64-curl-winssl \
+  mingw-w64-ucrt-x86_64-MinHook mingw-w64-ucrt-x86_64-miniupnpc \
+  mingw-w64-ucrt-x86_64-nsis mingw-w64-ucrt-x86_64-onevpl \
+  mingw-w64-ucrt-x86_64-openssl mingw-w64-ucrt-x86_64-opus \
+  mingw-w64-ucrt-x86_64-nlohmann_json
 ```
 
-##### Install dependencies
-```bash
-dependencies=(
-  "git"
-  "mingw-w64-ucrt-x86_64-boost"  # Optional
-  "mingw-w64-ucrt-x86_64-cmake"
-  "mingw-w64-ucrt-x86_64-cppwinrt"
-  "mingw-w64-ucrt-x86_64-curl-winssl"
-  "mingw-w64-ucrt-x86_64-doxygen"  # Optional, for docs... better to install official Doxygen
-  "mingw-w64-ucrt-x86_64-graphviz"  # Optional, for docs
-  "mingw-w64-ucrt-x86_64-MinHook"
-  "mingw-w64-ucrt-x86_64-miniupnpc"
-  "mingw-w64-ucrt-x86_64-nsis"
-  "mingw-w64-ucrt-x86_64-onevpl"
-  "mingw-w64-ucrt-x86_64-openssl"
-  "mingw-w64-ucrt-x86_64-opus"
-  "mingw-w64-ucrt-x86_64-toolchain"
-  "mingw-w64-ucrt-x86_64-nlohmann_json"
-)
-pacman -S "${dependencies[@]}"
-```
-
-##### Install Node.js
-Install Node.js 24 LTS separately from [nodejs.org](https://nodejs.org/) or via
-[nvm-windows](https://github.com/coreybutler/nvm-windows). Don't install MSYS2's
-`mingw-w64-ucrt-x86_64-nodejs` — it's compiled with the MSYS2 gcc-16 libstdc++ which has
-a `std::bad_weak_ptr` regression that crashes Node during process init (see
-[apache/arrow#49958](https://github.com/apache/arrow/issues/49958) for the upstream
-toolchain trail). The official MSVC-built Node.js isn't affected.
-
-Make sure `node.exe` is on `PATH` before running `cmake` — the `web-ui` CMake target
-invokes `pnpm install --frozen-lockfile --ignore-scripts`. Use Node.js 24 and the
-pnpm version pinned in the repository package.json. With Corepack available, run
-`corepack enable pnpm`; ensure `pnpm` is on PATH for CMake.
-
-### Clone
-Ensure [git](https://git-scm.com) is installed on your system, then clone the repository using the following command:
-
-```bash
-git clone https://github.com/matheuspergoli/Apollo.git --recurse-submodules
+```sh
+git clone --recurse-submodules https://github.com/matheuspergoli/Apollo.git
 cd Apollo
-mkdir build
+pnpm install --frozen-lockfile --ignore-scripts
+export BUILD_VERSION="$(node -p "require('./package.json').version")"
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_DOCS=OFF -DBUILD_TESTS=OFF -DBUILD_UI_CONTRACT_TESTS=ON
+cmake --build build --parallel 4
 ```
 
-### Build
+As opções estão em [options.cmake](../cmake/prep/options.cmake). O build gera o
+painel com pnpm e obtém dependências de distribuição com hashes fixados. Compilar
+ou extrair os pacotes não instala drivers nem serviços no computador.
 
-```bash
-cmake -B build -G Ninja -S .
-ninja -C build
+## Pacotes Windows
+
+O manifesto deve ser gerado **depois** da preparação dos binários e **antes** do
+CPack. Não publique um instalador gerado sem essa etapa.
+
+```sh
+strip --strip-unneeded build/sunshine.exe
+stage="$(mktemp -d "$PWD/build/install-manifest.XXXXXX")"
+cmake --install build --prefix "$stage"
+python tools/release/create-install-manifest.py "$stage" "$PWD/build/installation-manifest.json"
+cd build
+cpack -G ZIP --config CPackConfig.cmake
+cpack -G NSIS --config CPackConfig.cmake
+cd ..
+python tools/release/audit-dashboard-package.py build/cpack_artifacts/Apollo.zip
 ```
 
-> [!TIP]
-> Available build options can be found in
-> [options.cmake](../cmake/prep/options.cmake).
+O CI também compara o conteúdo do instalador ao ZIP, verifica integridade e impede
+a inclusão de dados privados. Um pacote compilado não é, por si só, uma release
+qualificada. As releases publicadas identificam o commit de origem e os hashes dos
+binários; não substitua seus arquivos silenciosamente.
 
-### Package
+## Linux e documentação
 
-@tabs{
-  @tab{Linux | @tabs{
-    @tab{deb | ```bash
-      cpack -G DEB --config ./build/CPackConfig.cmake
-      ```}
-    @tab{rpm | ```bash
-      cpack -G RPM --config ./build/CPackConfig.cmake
-      ```}
-  }}
-  @tab{Windows | @tabs{
-    @tab{Installer | ```bash
-      cpack -G NSIS --config ./build/CPackConfig.cmake
-      ```}
-    @tab{Portable | ```bash
-      cpack -G ZIP --config ./build/CPackConfig.cmake
-      ```}
-  }}
-}
+As dependências Linux variam por distribuição; consulte o helper local
+[linux_build.sh](../scripts/linux_build.sh) e as opções CMake antes de executar
+operações no sistema. NVFBC, CUDA, VA-API, Wayland e X11 dependem do backend e do
+hardware. Não use a qualificação Windows como evidência de streaming Linux.
 
-### Remote Build
-It may be beneficial to build remotely in some cases. This will enable easier building on different operating systems.
-
-1. Fork the project
-2. Activate workflows
-3. Trigger the *CI* workflow manually
-4. Download the artifacts/binaries from the workflow run summary
-
-<div class="section_buttons">
-
-| Previous                              |                            Next |
-|:--------------------------------------|--------------------------------:|
-| [Troubleshooting](troubleshooting.md) | [Contributing](contributing.md) |
-
-</div>
-
-<details style="display: none;">
-  <summary></summary>
-  [TOC]
-</details>
+A documentação Doxygen usa [Doxyfile](Doxyfile) e o submódulo `third-party/doxyconfig`.
+O código-fonte e os arquivos Markdown locais são a referência deste fork, não os
+sites ou pipelines de publicação de outros projetos.

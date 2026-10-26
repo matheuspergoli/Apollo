@@ -43,6 +43,8 @@ USE_MDFILE_AS_MAINPAGE = ../README.md
 INPUT = ../README.md \
         getting_started.md \
         changelog.md \
+        releases/v1.0.0.md \
+        releases/v1.0.1.md \
         ../DOCKER_README.md \
         third_party_packages.md \
         gamestream_migration.md \
