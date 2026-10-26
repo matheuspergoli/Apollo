@@ -1353,7 +1353,8 @@ namespace confighttp {
     // Finish the HTTP acknowledgement before shutting down its connection.
     // This confirms acceptance, not completion of the restart. Never retry it
     // automatically if the acknowledgement cannot be delivered.
-    response->close_connection_after_response = true;
+    // Keep Content-Length framing: close_connection_after_response suppresses
+    // it in Simple-Web-Server, making clients wait for EOF during shutdown.
     send_response(response, {{"status", true}, {"accepted", true}, {"operation", "restart"}});
     response->send([](const auto &transport_error) {
       if (transport_error) {

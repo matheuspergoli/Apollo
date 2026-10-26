@@ -494,7 +494,13 @@ try {
 			(response) =>
 				response.url().endsWith("/api/restart") && response.request().method() === "POST"
 		)
-		.then(async (response) => ({ status: response.status(), body: await response.json() }))
+		.then(async (response) => {
+			assert(
+				Number(response.headers()["content-length"]) > 0,
+				"Restart acknowledgement must be length-framed, not wait for shutdown EOF"
+			)
+			return { status: response.status(), body: await response.json() }
+		})
 	const [acknowledgement] = await Promise.all([
 		acknowledgementReady,
 		page
