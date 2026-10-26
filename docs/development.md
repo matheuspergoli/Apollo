@@ -78,9 +78,16 @@ Teste o efeito observado e a ausência de gravações inesperadas, não apenas t
 ou um status HTTP. Exemplos e fixtures devem ser genéricos e não conter dados pessoais.
 
 Testes com API simulada não verificam streaming, HDR ou drivers. A auditoria extrai
-o instalador sem instalar serviços. A instalação completa, a matriz de hardware
-e o streaming Linux continuam fora dessa cobertura; não descreva essas áreas
-como garantidas por uma contagem de testes. Não altere um host ativo para testar.
+o instalador sem instalar serviços. Separadamente, o workflow Windows exige testes
+do instalador real em runner descartável. Como o instalador oficial do ViGEmBus
+recusa Windows Server, a preparação exclusiva do CI extrai o pacote com hash
+verificado e instala seu driver sem modificar o MSI ou remover dispositivos
+existentes. Um controle virtual deve ser criado, enviar um estado observado pelo
+XInput e ser removido antes de prosseguir. Reboot pendente ou falha bloqueiam o job.
+Isso qualifica o caminho com ViGEmBus já instalado, não a instalação limpa do
+fornecedor em Windows 10/11. Essa validação, a matriz de hardware e o streaming
+Linux permanecem separados; não os declare aprovados por uma contagem de testes.
+Não altere um host ativo para testar.
 
 ## Dependências e distribuição
 

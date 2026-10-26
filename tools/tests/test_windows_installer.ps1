@@ -113,6 +113,10 @@ try {
     }
     Write-Output 'Real NSIS 1.0.0 upgrade and uninstall preserved all data fixtures byte-for-byte.'
 
+    # The official vendor setup rejects Server. Prepare the exact signed vendor
+    # payload only here, not in the shipped installer or on a user's machine.
+    & (Join-Path $PSScriptRoot 'prepare_vigem_runner.ps1') -Candidate $candidate -Probe './vigem-live-test.exe'
+
     New-Item -ItemType Directory -Path (Join-Path $managed 'config') -Force | Out-Null
     $config = "port = 50989`nsunshine_name = CI managed host`nsystem_tray = disabled`nenable_discovery = disabled`nupnp = disabled`nheadless_mode = disabled`nignore_encoder_probe_failure = enabled`nnvenc_realtime_hags = disabled`nnvenc_latency_over_power = disabled`nnvenc_opengl_vulkan_on_dxgi = disabled`n"
     [IO.File]::WriteAllText((Join-Path $managed 'config\sunshine.conf'), $config, [Text.UTF8Encoding]::new($false))

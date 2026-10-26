@@ -14,6 +14,8 @@ on:
       - NOTICE
       - cmake/**
       - src/**
+      - src_assets/**
+      - packaging/**
       - dashboard/**
       - tests/**
       - tools/**
@@ -75,6 +77,9 @@ jobs:
       - name: Build isolated live-driver test
         shell: msys2 {0}
         run: g++ -std=c++23 -static -static-libgcc -static-libstdc++ -pthread -I . tools/tests/test_sudovda_live.cpp -o driver-live-test.exe -lsetupapi -lcfgmgr32 -lole32
+      - name: Build isolated virtual gamepad lifecycle probe
+        shell: msys2 {0}
+        run: g++ -std=c++17 -static -pthread -I third-party/ViGEmClient/include tools/tests/test_vigem_live.cpp third-party/ViGEmClient/src/ViGEmClient.cpp -o vigem-live-test.exe -lsetupapi -lxinput1_4
       - name: Configure native host and contracts
         shell: msys2 {0}
         env:
