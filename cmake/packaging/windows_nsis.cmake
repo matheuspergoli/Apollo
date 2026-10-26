@@ -96,24 +96,33 @@ set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS [=[
   StrCmp $0 "0" +2
   Goto install_failed
   StrCmp $ApolloNoHostIntegration "1" finish_portable
-  nsExec::ExecToLog '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\drivers\sudovda\install-driver.ps1"'
+  nsExec::ExecToStack '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\drivers\sudovda\install-driver.ps1"'
   Pop $0
+  Pop $ApolloCommandOutput
+  StrCpy $ApolloCommandOutput "SudoVDA: $ApolloCommandOutput"
+  Call ApolloRecordCommandResult
   StrCmp $0 "3010" driver_reboot
   StrCmp $0 "0" install_gamepad install_failed
 driver_reboot:
   StrCpy $ApolloNeedsReboot "1"
   SetRebootFlag true
 install_gamepad:
-  nsExec::ExecToLog '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\scripts\install-gamepad.ps1"'
+  nsExec::ExecToStack '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\scripts\install-gamepad.ps1"'
   Pop $0
+  Pop $ApolloCommandOutput
+  StrCpy $ApolloCommandOutput "Gamepad: $ApolloCommandOutput"
+  Call ApolloRecordCommandResult
   StrCmp $0 "3010" gamepad_reboot
   StrCmp $0 "0" install_rules install_failed
 gamepad_reboot:
   StrCpy $ApolloNeedsReboot "1"
   SetRebootFlag true
 install_rules:
-  nsExec::ExecToLog '"$SYSDIR\cmd.exe" /D /C ""$INSTDIR\scripts\add-firewall-rule.bat""'
+  nsExec::ExecToStack '"$SYSDIR\cmd.exe" /D /C ""$INSTDIR\scripts\add-firewall-rule.bat""'
   Pop $0
+  Pop $ApolloCommandOutput
+  StrCpy $ApolloCommandOutput "Firewall: $ApolloCommandOutput"
+  Call ApolloRecordCommandResult
   StrCmp $0 "0" finish_managed install_failed
 finish_managed:
   StrCmp $ApolloNeedsReboot "1" finish_deferred
