@@ -171,6 +171,10 @@ try {
         foreach ($directory in Get-ChildItem -LiteralPath $temporaryRoot -Directory -Filter 'apollo-installer-*' -ErrorAction SilentlyContinue | Where-Object { $_.CreationTimeUtc -ge $startedAt }) {
             $updateLog = Join-Path $directory.FullName 'update.log'
             if (Test-Path -LiteralPath $updateLog) { $diagnostics += Get-Content -LiteralPath $updateLog }
+            foreach ($gamepadLog in Get-ChildItem -LiteralPath $directory.FullName -File -Filter 'gamepad*.log') {
+                $diagnostics += ('ViGEmBus diagnostic: ' + $gamepadLog.Name)
+                $diagnostics += Get-Content -LiteralPath $gamepadLog.FullName -Tail 150
+            }
         }
         foreach ($launcherLog in Get-ChildItem -LiteralPath $temporaryRoot -File -Filter '*.apollo-launcher.log' -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTimeUtc -ge $startedAt }) {
             $diagnostics += Get-Content -LiteralPath $launcherLog.FullName

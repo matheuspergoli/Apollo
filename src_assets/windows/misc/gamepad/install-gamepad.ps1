@@ -21,7 +21,15 @@ try {
     if ($expected -notmatch '^[a-f0-9]{64}$' -or (Get-FileHash -LiteralPath $installer).Hash -ine $expected) {
         throw 'ViGEmBus installer does not match the approved package.'
     }
-    $process = Start-Process -FilePath $installer -ArgumentList '/passive', '/norestart' -Wait -PassThru
+    . (Join-Path $PSScriptRoot 'installation-data.ps1')
+    $logDirectory = Join-Path ([IO.Path]::GetTempPath()) ('apollo-installer-' + [guid]::NewGuid().ToString('N'))
+    New-PrivateInstallDirectory $logDirectory
+    $installerLog = Join-Path $logDirectory 'gamepad.log'
+    $process = Start-Process -FilePath $installer -ArgumentList ('/quiet /norestart /log "' + $installerLog + '"') -PassThru
+    if (-not $process.WaitForExit(120000)) {
+        $process.Kill()
+        throw "ViGEmBus installer timed out. Private diagnostic log: $installerLog"
+    }
     if ($process.ExitCode -notin @(0, 3010)) { throw "ViGEmBus installer failed: $($process.ExitCode)" }
     if ($process.ExitCode -eq 3010) { Write-Warning 'Windows restart is required for ViGEmBus.'; exit 3010 }
     for ($attempt = 0; $attempt -lt 30; $attempt++) {
