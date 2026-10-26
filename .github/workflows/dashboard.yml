@@ -4,6 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
+    branches: [main]
     paths:
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -38,13 +39,11 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - run: pnpm run routes:generate
-      - run: pnpm run check
-      - run: pnpm run typecheck
-      - run: pnpm test
-      - run: pnpm run check:dev
+        working-directory: .
+      - run: pnpm audit
+        working-directory: .
       - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm run test:browser
+      - run: pnpm verify
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: apollo-dashboard

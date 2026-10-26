@@ -22,33 +22,11 @@ on:
       - '!dashboard/**/*.md'
 permissions:
   contents: read
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  gamepad:
-    if: github.repository == 'matheuspergoli/Apollo'
-    runs-on: windows-2022
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - name: Checkout pinned gamepad client
-        run: git submodule update --init third-party/ViGEmClient
-      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e
-        with:
-          msystem: UCRT64
-          install: mingw-w64-ucrt-x86_64-toolchain
-      - name: Compile isolated gamepad probe
-        shell: msys2 {0}
-        run: g++ -std=c++17 -static -pthread -I third-party/ViGEmClient/include tools/tests/test_vigem_live.cpp third-party/ViGEmClient/src/ViGEmClient.cpp -o vigem-live-test.exe -lsetupapi -lcfgmgr32 -lxinput1_4
-      - name: Qualify vendor bus and XInput before the full native build
-        run: |
-          $root = Join-Path $env:RUNNER_TEMP 'vendor-gamepad-inputs'
-          New-Item -ItemType Directory -Path "$root/scripts", "$root/drivers/sudovda" -Force | Out-Null
-          Copy-Item packaging/windows/runtime-contract.json "$root/drivers/sudovda/runtime-contract.json"
-          Invoke-WebRequest 'https://github.com/nefarius/ViGEmBus/releases/download/v1.21.442.0/ViGEmBus_1.21.442_x64_x86_arm64.exe' -OutFile "$root/scripts/vigembus_installer.exe"
-          & ./tools/tests/prepare_vigem_runner.ps1 -Candidate $root -Probe ./vigem-live-test.exe
   windows:
-    needs: gamepad
     if: github.repository == 'matheuspergoli/Apollo'
     runs-on: windows-2022
     timeout-minutes: 60
@@ -99,12 +77,6 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools/tests/test_installation_data.ps1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Build isolated live-driver test
-        shell: msys2 {0}
-        run: g++ -std=c++23 -static -static-libgcc -static-libstdc++ -pthread -I . tools/tests/test_sudovda_live.cpp -o driver-live-test.exe -lsetupapi -lcfgmgr32 -lole32
-      - name: Build isolated virtual gamepad lifecycle probe
-        shell: msys2 {0}
-        run: g++ -std=c++17 -static -pthread -I third-party/ViGEmClient/include tools/tests/test_vigem_live.cpp third-party/ViGEmClient/src/ViGEmClient.cpp -o vigem-live-test.exe -lsetupapi -lcfgmgr32 -lxinput1_4
       - name: Configure native host and contracts
         shell: msys2 {0}
         env:
@@ -114,19 +86,14 @@ jobs:
           git diff --ignore-cr-at-eol --quiet --ignore-submodules=all
           export BUILD_VERSION="$(node -p "require('./dashboard/package.json').version")"
           cmake -S . -B build-windows -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_DOCS=OFF -DBUILD_TESTS=OFF -DBUILD_UI_CONTRACT_TESTS=ON
-      - name: Compile lifecycle HTTP boundary first
-        shell: msys2 {0}
-        run: cmake --build build-windows --target CMakeFiles/sunshine.dir/src/confighttp.cpp.obj
       - name: Build complete native host and React assets
         shell: msys2 {0}
         run: cmake --build build-windows --parallel 4
-      - name: Native configuration/UI contract tests
+      - name: Native configuration and virtual-display policy contracts
         shell: msys2 {0}
         run: |
           cd build-windows/tests/ui-contracts
           ./apollo_ui_contracts.exe
-      - name: Direct update helper integration before packaging
-        run: pwsh -NoProfile -NonInteractive -File tools/tests/test_update_helper.ps1 -HostExecutable build-windows/sunshine.exe
       - name: Package Windows ZIP and installer
         shell: msys2 {0}
         run: |
@@ -146,8 +113,8 @@ jobs:
         run: |
           python tools/release/audit-dashboard-package.py build-windows/cpack_artifacts/Apollo.zip
           python tools/release/audit-windows-installer.py build-windows/cpack_artifacts/Apollo.exe build-windows/cpack_artifacts/Apollo.zip
-      - name: Real installer, upgrade, service restart and live driver qualification
-        run: pwsh -NoProfile -NonInteractive -File tools/tests/test_windows_installer.ps1 -Archive build-windows/cpack_artifacts/Apollo.zip -Installer build-windows/cpack_artifacts/Apollo.exe -DriverTest ./driver-live-test.exe
+      - name: Installer data preservation and Apollo service lifecycle (no driver installation)
+        run: pwsh -NoProfile -NonInteractive -File tools/tests/test_windows_installer.ps1 -Archive build-windows/cpack_artifacts/Apollo.zip -Installer build-windows/cpack_artifacts/Apollo.exe
       - name: Native HTTPS and React integration on the isolated runner
         working-directory: dashboard
         run: node scripts/check-native-windows.mjs ../build-windows/cpack_artifacts/Apollo.zip

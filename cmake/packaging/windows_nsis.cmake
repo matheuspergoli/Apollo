@@ -20,24 +20,6 @@ Var ApolloPowerShell
 Var ApolloNoHostIntegration
 Var ApolloRestored
 Var ApolloNeedsReboot
-Var ApolloCommandOutput
-Function ApolloRecordCommandResult
-  ClearErrors
-  GetTempFileName $R7 "$TEMP"
-  IfErrors record_done
-  Rename "$R7" "$R7.apollo-launcher.log"
-  IfErrors record_done
-  StrCpy $R7 "$R7.apollo-launcher.log"
-  System::Call 'advapi32::ConvertStringSecurityDescriptorToSecurityDescriptorW(w "D:P(A;;FA;;;SY)(A;;FA;;;BA)", i 1, *p .r5, p 0) i .r6'
-  StrCmp $6 "0" record_done
-  System::Call 'advapi32::SetFileSecurityW(w "$R7", i 0x80000004, p r5) i .r6'
-  System::Call 'kernel32::LocalFree(p r5)'
-  StrCmp $6 "0" record_done
-  FileOpen $R6 "$R7" w
-  FileWrite $R6 "ExitCode=$0$\r$\n$ApolloCommandOutput$\r$\n"
-  FileClose $R6
-record_done:
-FunctionEnd
 Function ApolloRestorePrevious
   StrCmp $ApolloRestored "1" restore_done
   StrCpy $ApolloRestored "1"
@@ -74,14 +56,12 @@ set(CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS [=[
   File "/oname=$PLUGINSDIR\installation-data.ps1" "@APOLLO_DATA_SCRIPT@"
   File "/oname=$PLUGINSDIR\installation-manifest.json" "@APOLLO_INSTALL_MANIFEST@"
   StrCmp $ApolloNoHostIntegration "1" prepare_portable
-  nsExec::ExecToStack '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\update-installation.ps1" -InstallDir "$INSTDIR" -Mode Prepare -StatePath "$PLUGINSDIR\apollo-update-state.json" -Version "@PROJECT_VERSION@"'
+  nsExec::ExecToLog '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\update-installation.ps1" -InstallDir "$INSTDIR" -Mode Prepare -StatePath "$PLUGINSDIR\apollo-update-state.json" -Version "@PROJECT_VERSION@"'
   Goto prepare_result
 prepare_portable:
-  nsExec::ExecToStack '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\update-installation.ps1" -InstallDir "$INSTDIR" -Mode Prepare -StatePath "$PLUGINSDIR\apollo-update-state.json" -Version "@PROJECT_VERSION@" -NoHostIntegration'
+  nsExec::ExecToLog '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\update-installation.ps1" -InstallDir "$INSTDIR" -Mode Prepare -StatePath "$PLUGINSDIR\apollo-update-state.json" -Version "@PROJECT_VERSION@" -NoHostIntegration'
 prepare_result:
   Pop $0
-  Pop $ApolloCommandOutput
-  Call ApolloRecordCommandResult
   StrCmp $0 "0" prepare_done
   MessageBox MB_OK|MB_ICONSTOP "Nao foi possivel preparar uma atualizacao segura. Os arquivos do programa nao foram substituidos. Consulte os detalhes da instalacao." /SD IDOK
   SetErrorLevel 1
@@ -96,33 +76,24 @@ set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS [=[
   StrCmp $0 "0" +2
   Goto install_failed
   StrCmp $ApolloNoHostIntegration "1" finish_portable
-  nsExec::ExecToStack '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\drivers\sudovda\install-driver.ps1"'
+  nsExec::ExecToLog '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\drivers\sudovda\install-driver.ps1"'
   Pop $0
-  Pop $ApolloCommandOutput
-  StrCpy $ApolloCommandOutput "SudoVDA: $ApolloCommandOutput"
-  Call ApolloRecordCommandResult
   StrCmp $0 "3010" driver_reboot
   StrCmp $0 "0" install_gamepad install_failed
 driver_reboot:
   StrCpy $ApolloNeedsReboot "1"
   SetRebootFlag true
 install_gamepad:
-  nsExec::ExecToStack '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\scripts\install-gamepad.ps1"'
+  nsExec::ExecToLog '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\scripts\install-gamepad.ps1"'
   Pop $0
-  Pop $ApolloCommandOutput
-  StrCpy $ApolloCommandOutput "Gamepad: $ApolloCommandOutput"
-  Call ApolloRecordCommandResult
   StrCmp $0 "3010" gamepad_reboot
   StrCmp $0 "0" install_rules install_failed
 gamepad_reboot:
   StrCpy $ApolloNeedsReboot "1"
   SetRebootFlag true
 install_rules:
-  nsExec::ExecToStack '"$SYSDIR\cmd.exe" /D /C ""$INSTDIR\scripts\add-firewall-rule.bat""'
+  nsExec::ExecToLog '"$SYSDIR\cmd.exe" /D /C ""$INSTDIR\scripts\add-firewall-rule.bat""'
   Pop $0
-  Pop $ApolloCommandOutput
-  StrCpy $ApolloCommandOutput "Firewall: $ApolloCommandOutput"
-  Call ApolloRecordCommandResult
   StrCmp $0 "0" finish_managed install_failed
 finish_managed:
   StrCmp $ApolloNeedsReboot "1" finish_deferred

@@ -30,7 +30,7 @@ try {
         $process.Kill()
         throw "ViGEmBus installer timed out. Private diagnostic log: $installerLog"
     }
-    if ($process.ExitCode -notin @(0, 3010)) { throw "ViGEmBus installer failed: $($process.ExitCode)" }
+    if ($process.ExitCode -notin @(0, 3010)) { throw "ViGEmBus installer failed: $($process.ExitCode). Private diagnostic log: $installerLog" }
     if ($process.ExitCode -eq 3010) { Write-Warning 'Windows restart is required for ViGEmBus.'; exit 3010 }
     for ($attempt = 0; $attempt -lt 30; $attempt++) {
         if (Test-VigemReady) { Write-Output 'ViGEmBus driver is running.'; exit 0 }

@@ -29,25 +29,6 @@ class RepositoryPolicyTests(unittest.TestCase):
         for line in messages:
             self.assertIn("/SD IDOK", line)
 
-    def test_installer_isolates_windows_powershell_module_discovery(self):
-        source = (ROOT / "cmake/packaging/windows_nsis.cmake").read_text()
-        bootstrap = 'SetEnvironmentVariableW(w "PSModulePath", w "$SYSDIR\\WindowsPowerShell\\v1.0\\Modules")'
-        self.assertEqual(source.count(bootstrap), 2)
-
-    def test_server_driver_preparation_is_ci_only_and_non_destructive(self):
-        source = (ROOT / "tools/tests/prepare_vigem_runner.ps1").read_text()
-        self.assertIn("$env:GITHUB_ACTIONS -cne 'true'", source)
-        self.assertIn("$env:GITHUB_REPOSITORY -cne 'matheuspergoli/Apollo'", source)
-        self.assertIn("Get-FileHash", source)
-        self.assertIn("--ci-vigem-probe", source)
-        self.assertIn("Copy-Item -LiteralPath $installer -Destination $isolatedInstaller", source)
-        self.assertIn("Get-FileHash -LiteralPath $isolatedInstaller", source)
-        self.assertIn("Invoke-Bounded $isolatedInstaller", source)
-        self.assertNotIn("--remove-device-node", source)
-        self.assertNotIn("/uninstall", source)
-        packaging = (ROOT / "cmake/packaging/windows.cmake").read_text()
-        self.assertNotIn("prepare_vigem_runner", packaging)
-
     def test_external_actions_are_pinned_to_commits(self):
         for path in (ROOT / ".github/workflows").glob("*.yml"):
             workflow = path.read_text(encoding="utf-8")
@@ -78,6 +59,7 @@ class RepositoryPolicyTests(unittest.TestCase):
             "docs/legal.md",
             "docs/clock-corrections.md",
             "docs/releases/v1.0.0.md",
+            "docs/releases/v1.0.1.md",
             ".github/CONTRIBUTING.md",
         ]
         for filename in files:

@@ -48,7 +48,7 @@ endif()
 add_custom_target(web-ui ALL
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/dashboard"
         COMMENT "Installing locked pnpm dependencies and building the Web UI"
-        COMMAND "$<$<BOOL:${WIN32}>:cmd;/C>" "${PNPM}" install --frozen-lockfile --ignore-scripts ${PNPM_INSTALL_FLAGS}
+        COMMAND "$<$<BOOL:${WIN32}>:cmd;/C>" "${PNPM}" --dir "${CMAKE_SOURCE_DIR}" install --frozen-lockfile --ignore-scripts ${PNPM_INSTALL_FLAGS}
         COMMAND "${CMAKE_COMMAND}" -E env "SUNSHINE_ASSETS_DIR=${CMAKE_BINARY_DIR}" "$<$<BOOL:${WIN32}>:cmd;/C>" "${PNPM}" run build:host  # cmake-lint: disable=C0301
         COMMAND_EXPAND_LISTS
         VERBATIM)

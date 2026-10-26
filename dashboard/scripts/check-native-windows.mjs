@@ -181,8 +181,8 @@ try {
 	assert.equal(snapshot.json.status, true)
 	assert.equal(
 		snapshot.json.vdisplayStatus,
-		0,
-		"The packaged host must open the real installed SudoVDA interface"
+		-1,
+		"Without a driver installed, Apollo must not claim virtual display readiness"
 	)
 	const expectedVersion = JSON.parse(
 		await readFile(new URL("../package.json", import.meta.url), "utf8")
@@ -507,9 +507,8 @@ try {
 		accepted: true,
 		operation: "restart"
 	})
-	// The driverless runner repeatedly waits for virtual-display cleanup during
-	// termination. Keep a bounded shutdown budget, independent of the HTTP timeout;
-	// still require the original process to exit normally (not merely accept POST).
+	// Bound process shutdown separately from HTTP delivery. An accepted POST is
+	// insufficient: require a normal exit and a responding replacement process.
 	for (let attempt = 0; attempt < 1200 && child.exitCode === null; attempt++) {
 		await new Promise((resolve) => setTimeout(resolve, 100))
 	}

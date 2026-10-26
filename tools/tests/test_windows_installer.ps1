@@ -1,15 +1,16 @@
 #requires -Version 7.0
 param([Parameter(Mandatory = $true)][string]$Archive, [Parameter(Mandatory = $true)][string]$Installer,
-      [Parameter(Mandatory = $true)][string]$DriverTest)
+      [switch]$HostIntegration)
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
-$startedAt = [DateTime]::UtcNow
 if ($env:GITHUB_ACTIONS -cne 'true' -or $env:GITHUB_REPOSITORY -cne 'matheuspergoli/Apollo' -or -not $IsWindows) {
     throw 'Installer integration is restricted to the disposable Windows runner of this fork.'
 }
 if (Get-Service ApolloService -ErrorAction SilentlyContinue) { throw 'An existing Apollo service prevents an isolated test.' }
 if (Get-CimInstance Win32_Process -Filter "Name='sunshine.exe'") { throw 'An existing host prevents clean qualification.' }
-if (Get-CimInstance Win32_SystemDriver -Filter "Name='ViGEmBus'") { throw 'A pre-existing bus driver prevents clean qualification.' }
+if ($HostIntegration -and (Get-CimInstance Win32_OperatingSystem).ProductType -ne 1) {
+    throw 'Full host installation requires a disposable Windows client OS; Server CI does not qualify that path.'
+}
 if (Get-CimInstance Win32_PnPEntity | Where-Object { @($_.HardwareID) -contains 'ROOT\SudoMaker\SudoVDA' -or @($_.HardwareID) -contains 'SudoVDA' }) {
     throw 'A pre-existing SudoVDA adapter prevents a clean-install qualification.'
 }
@@ -17,6 +18,7 @@ $work = Join-Path $env:RUNNER_TEMP ('apollo-installer-' + [guid]::NewGuid().ToSt
 New-Item -ItemType Directory -Path $work | Out-Null
 $app = Join-Path $work 'Upgrade with spaces'
 $managed = Join-Path $work 'Managed installation'
+$targetVersion = (Get-Content -LiteralPath (Join-Path $PSScriptRoot '../../package.json') -Raw | ConvertFrom-Json).version
 
 function Invoke-Installer([string]$Root, [switch]$NoIntegration) {
     $arguments = '/S '
@@ -32,6 +34,16 @@ function Invoke-Installer([string]$Root, [switch]$NoIntegration) {
         throw 'Installer exceeded its bounded deadline; release qualification is blocked.'
     }
     if ($process.ExitCode -ne 0) { throw "Installer integration failed or requires reboot: $($process.ExitCode)" }
+}
+function Invoke-ServiceHelper([string]$Mode, [switch]$UpdateState) {
+    $arguments = @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File',
+        (Join-Path $managed 'scripts\update-installation.ps1'), '-InstallDir', $managed, '-Mode', $Mode)
+    if ($UpdateState) {
+        $arguments += @('-StatePath', (Join-Path $work 'service-update.json'), '-Version', $targetVersion,
+            '-ManifestPath', (Join-Path $managed 'installation-manifest.json'))
+    }
+    & powershell.exe @arguments
+    if ($LASTEXITCODE -ne 0) { throw "Apollo service helper failed: $Mode" }
 }
 function Get-ServiceHost([string]$Root) {
     $service = Get-CimInstance Win32_Service -Filter "Name='ApolloService'"
@@ -75,7 +87,8 @@ try {
     $cert = [Security.Cryptography.X509Certificates.X509Certificate2]::new((Join-Path $brokenDriver 'sudovda.cer'))
     $trustedBefore = @{}
     foreach ($store in @('Root', 'TrustedPublisher')) { $trustedBefore[$store] = Test-Path "Cert:\LocalMachine\$store\$($cert.Thumbprint)" }
-    $invalid = Start-Process -FilePath $env:ComSpec -ArgumentList ('/D /C ""' + (Join-Path $brokenDriver 'install.bat') + '""') -Wait -PassThru
+    $invalid = Start-Process -FilePath $env:ComSpec -ArgumentList ('/D /C ""' + (Join-Path $brokenDriver 'install.bat') + '""') -PassThru
+    if (-not $invalid.WaitForExit(30000)) { $invalid.Kill(); throw 'Incomplete driver validation did not terminate.' }
     if ($invalid.ExitCode -eq 0) { throw 'An incomplete driver installer incorrectly reported success.' }
     foreach ($store in @('Root', 'TrustedPublisher')) {
         if ((Test-Path "Cert:\LocalMachine\$store\$($cert.Thumbprint)") -ne $trustedBefore[$store]) {
@@ -104,7 +117,7 @@ try {
         if ((Get-FileHash (Join-Path $app $name)).Hash -ne $hashes[$name]) { throw "Upgrade changed fixture data: $name" }
     }
     if (Get-Service ApolloService -ErrorAction SilentlyContinue) { throw 'NoHostIntegration unexpectedly installed a service.' }
-    if ((Get-Item (Join-Path $app 'sunshine.exe')).VersionInfo.ProductVersion -notmatch '^1\.0\.1') {
+    if ((Get-Item (Join-Path $app 'sunshine.exe')).VersionInfo.ProductVersion -ne $targetVersion) {
         throw 'The old executable was not upgraded.'
     }
     Uninstall-TestCopy $app
@@ -113,30 +126,38 @@ try {
     }
     Write-Output 'Real NSIS 1.0.0 upgrade and uninstall preserved all data fixtures byte-for-byte.'
 
-    # The official vendor setup rejects Server. Prepare the exact signed vendor
-    # payload only here, not in the shipped installer or on a user's machine.
-    & (Join-Path $PSScriptRoot 'prepare_vigem_runner.ps1') -Candidate $candidate -Probe './vigem-live-test.exe'
-
+    if (-not $HostIntegration) { Copy-Item -LiteralPath $candidate -Destination $managed -Recurse }
     New-Item -ItemType Directory -Path (Join-Path $managed 'config') -Force | Out-Null
     $config = "port = 50989`nsunshine_name = CI managed host`nsystem_tray = disabled`nenable_discovery = disabled`nupnp = disabled`nheadless_mode = disabled`nignore_encoder_probe_failure = enabled`nnvenc_realtime_hags = disabled`nnvenc_latency_over_power = disabled`nnvenc_opengl_vulkan_on_dxgi = disabled`n"
     [IO.File]::WriteAllText((Join-Path $managed 'config\sunshine.conf'), $config, [Text.UTF8Encoding]::new($false))
-    Invoke-Installer -Root $managed
-    & (Join-Path $managed 'tools\sudovda-status.exe')
-    if ($LASTEXITCODE -ne 0) { throw 'Installed display driver interface is not ready.' }
+    if ($HostIntegration) {
+        Invoke-Installer -Root $managed
+    } else {
+        # Exercise Apollo's shipped service helper directly, not a mock installer
+        # or an extracted vendor driver. NoHostIntegration above tests real NSIS.
+        Invoke-ServiceHelper 'Service'
+    }
     $credentials = @{ username = 'ci-installer'; password = 'CI-only non-production password' }
     $created = Invoke-TestApi 'password' 'POST' @{ newUsername = $credentials.username; newPassword = $credentials.password; confirmNewPassword = $credentials.password; currentUsername = ''; currentPassword = '' }
     if ($created.StatusCode -ne 200) { throw 'The installed service did not accept initial account setup.' }
     $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
     if ((Invoke-TestApi 'login' 'POST' $credentials $session).StatusCode -ne 200) { throw 'Installed-host login failed.' }
     $info = (Invoke-TestApi 'config' 'GET' $null $session).Content | ConvertFrom-Json
-    if ($info.version -ne '1.0.1' -or $info.vdisplayStatus -ne 0) { throw 'The installed host did not initialize the real driver.' }
+    if ($info.version -ne $targetVersion) { throw 'Unexpected installed host version.' }
+    if ($HostIntegration -and $info.vdisplayStatus -ne 0) { throw 'Apollo did not initialize the installed virtual display integration.' }
+    if (-not $HostIntegration -and $info.vdisplayStatus -ne -1) { throw 'Expected Apollo to report FAILED for its unavailable virtual display dependency.' }
 
     Set-Service ApolloService -StartupType Manual
     $dataHashes = @{}
     foreach ($file in Get-ChildItem -LiteralPath (Join-Path $managed 'config') -Recurse -File | Where-Object { $_.Extension -in @('.conf', '.json', '.pem', '.key') }) {
         $dataHashes[$file.FullName] = (Get-FileHash $file.FullName).Hash
     }
-    Invoke-Installer -Root $managed
+    if ($HostIntegration) {
+        Invoke-Installer -Root $managed
+    } else {
+        Invoke-ServiceHelper 'Prepare' -UpdateState
+        Invoke-ServiceHelper 'Finish' -UpdateState
+    }
     if ((Get-Service ApolloService).StartType -ne 'Manual') { throw 'Repair changed the saved service start preference.' }
     foreach ($file in $dataHashes.Keys) {
         if ((Get-FileHash $file).Hash -ne $dataHashes[$file]) { throw 'Managed repair changed existing state or credentials.' }
@@ -157,11 +178,11 @@ try {
         Start-Sleep -Seconds 1
     }
     if (-not $returned) { throw 'Service restart did not return a new responding host.' }
-    Uninstall-TestCopy $managed
-    $liveTest = Start-Process -FilePath ([IO.Path]::GetFullPath($DriverTest)) -NoNewWindow -PassThru
-    if (-not $liveTest.WaitForExit(30000)) { $liveTest.Kill(); throw 'Real driver lifecycle query timed out.' }
-    if ($liveTest.ExitCode -ne 0) { throw 'Real driver create/remove lifecycle test failed.' }
-    Write-Output 'Managed installation, actual driver readiness, preserved account/start mode, service restart and owned display lifecycle passed.'
+    if ($HostIntegration) { Uninstall-TestCopy $managed } else { Invoke-ServiceHelper 'RemoveService' }
+    Write-Output 'Apollo installer data preservation and service/account/start-mode/restart contracts passed.'
+    if (-not $HostIntegration) {
+        Write-Output 'Vendor driver installation and hardware/streaming integration were not exercised by this run.'
+    }
 } catch {
     $failure = $_
     $diagnostics = @('Installer qualification failed: ' + $failure.Exception.Message)
@@ -169,23 +190,6 @@ try {
     $diagnostics += (Get-CimInstance Win32_PnPEntity | Where-Object { @($_.HardwareID) -contains 'ROOT\SudoMaker\SudoVDA' } | Select-Object Name, Status, ConfigManagerErrorCode | ConvertTo-Json)
     $log = Join-Path $managed 'config\sunshine.log'
     if (Test-Path -LiteralPath $log) { $diagnostics += Get-Content -LiteralPath $log -Tail 80 }
-    $temporaryRoots = @([IO.Path]::GetTempPath(), $env:TEMP, $env:TMP, $env:RUNNER_TEMP, (Join-Path $env:SystemRoot 'Temp')) | Select-Object -Unique
-    foreach ($temporaryRoot in $temporaryRoots) {
-        if (-not $temporaryRoot -or -not (Test-Path -LiteralPath $temporaryRoot)) { continue }
-        foreach ($directory in Get-ChildItem -LiteralPath $temporaryRoot -Directory -Filter 'apollo-installer-*' -ErrorAction SilentlyContinue | Where-Object { $_.CreationTimeUtc -ge $startedAt }) {
-            $updateLog = Join-Path $directory.FullName 'update.log'
-            if (Test-Path -LiteralPath $updateLog) { $diagnostics += Get-Content -LiteralPath $updateLog }
-            foreach ($gamepadLog in Get-ChildItem -LiteralPath $directory.FullName -File -Filter 'gamepad*.log') {
-                $diagnostics += ('ViGEmBus diagnostic: ' + $gamepadLog.Name)
-                # MSI writes its property dump after the failing action. Keeping
-                # only the tail loses the actual cause of generic error 1603.
-                $diagnostics += Get-Content -LiteralPath $gamepadLog.FullName
-            }
-        }
-        foreach ($launcherLog in Get-ChildItem -LiteralPath $temporaryRoot -File -Filter '*.apollo-launcher.log' -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTimeUtc -ge $startedAt }) {
-            $diagnostics += Get-Content -LiteralPath $launcherLog.FullName
-        }
-    }
     $diagnostics | Set-Content -LiteralPath 'installer-test.log' -Encoding utf8
     throw $failure
 } finally {

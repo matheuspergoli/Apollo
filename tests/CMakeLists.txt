@@ -86,8 +86,6 @@ foreach(dep ${SUNSHINE_TARGET_DEPENDENCIES})
     add_dependencies(${PROJECT_NAME} ${dep})  # compile these before sunshine
 endforeach()
 
-# Ensure locale files are synchronized before building the test executable
-
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 23)
 target_link_libraries(${PROJECT_NAME}
         ${SUNSHINE_EXTERNAL_LIBRARIES}
