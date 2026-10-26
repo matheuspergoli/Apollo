@@ -488,21 +488,26 @@ try {
 	// This is permitted only in the isolated fork runner guarded above.
 	await page.getByRole("button", { name: "Reiniciar host", exact: true }).click()
 	restartRequested = true
-	const acknowledgementReady = page.waitForResponse(
-		(response) =>
-			response.url().endsWith("/api/restart") && response.request().method() === "POST"
-	)
-	await page
-		.getByRole("alertdialog")
-		.getByRole("button", { name: "Confirmar", exact: true })
-		.click()
-	const acknowledgement = await acknowledgementReady
+	// Read the response immediately: the UI can navigate before click() resolves.
+	const acknowledgementReady = page
+		.waitForResponse(
+			(response) =>
+				response.url().endsWith("/api/restart") && response.request().method() === "POST"
+		)
+		.then(async (response) => ({ status: response.status(), body: await response.json() }))
+	const [acknowledgement] = await Promise.all([
+		acknowledgementReady,
+		page
+			.getByRole("alertdialog")
+			.getByRole("button", { name: "Confirmar", exact: true })
+			.click()
+	])
 	assert.equal(
-		acknowledgement.status(),
+		acknowledgement.status,
 		200,
 		"Restart must acknowledge before closing its HTTP connection"
 	)
-	assert.deepEqual(await acknowledgement.json(), {
+	assert.deepEqual(acknowledgement.body, {
 		status: true,
 		accepted: true,
 		operation: "restart"
