@@ -1,5 +1,11 @@
 # Apollo frontend constraints
 
+- Preserve the approved dashboard design during refinement. Design skills are
+  review guidance, not permission to change layout, typography, colors, copy or
+  interaction. Visible changes require an explicit user request.
+- Apply skill recommendations to this React/Vite/TanStack stack. Do not introduce
+  Next.js, SWR, speculative memoization or new infrastructure to satisfy a generic
+  guideline; require an observed Apollo problem and a relevant regression.
 - Use Apollo branding only; do not add project-specific prefixes to primitives.
 - Use React/TypeScript, TanStack Router/Query, Tailwind utilities and semantic shadcn tokens.
 - Use TanStack Router file-based routes and the official Vite plugin/code splitter.

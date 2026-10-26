@@ -124,3 +124,8 @@ proveniência por componente nem cópias manuais de cada licença no pacote font
 Atualizações de dependência devem ser intencionais, com lockfile e testes no mesmo
 commit. Não mova tags publicadas nem substitua binários de uma release durante
 manutenção do repositório.
+
+Falhas da suíte `dashboard/tests/browser` preservam screenshots e traces em
+`dashboard/test-results`; o CI os publica como diagnóstico temporário, sem retries
+automáticos. Esses testes usam fixtures genéricas. Traces podem conter respostas
+e dados de formulário: não use contas ou uma instalação real nesses ensaios.
