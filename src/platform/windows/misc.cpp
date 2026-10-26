@@ -9,6 +9,7 @@
 #include <iterator>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 
 #ifndef BOOST_PROCESS_VERSION
  #define BOOST_PROCESS_VERSION 1
@@ -31,6 +32,7 @@
 #include <UserEnv.h>
 #include <WinSock2.h>
 #include <Windows.h>
+#include <TlHelp32.h>
 #include <WinUser.h>
 #include <wlanapi.h>
 #include <WS2tcpip.h>
@@ -1253,9 +1255,49 @@ namespace platf {
     }
   }
 
+  static bool supervised_by_apollo_service() {
+    auto manager = OpenSCManagerW(nullptr, nullptr, SC_MANAGER_CONNECT);
+    if (!manager) {
+      throw std::runtime_error("Unable to query service supervision: " + std::to_string(GetLastError()));
+    }
+    auto close_manager = util::fail_guard([manager]() { CloseServiceHandle(manager); });
+    auto service = OpenServiceW(manager, L"ApolloService", SERVICE_QUERY_STATUS);
+    if (!service) {
+      auto error = GetLastError();
+      if (error == ERROR_SERVICE_DOES_NOT_EXIST) {
+        return false;
+      }
+      throw std::runtime_error("Unable to query ApolloService: " + std::to_string(error));
+    }
+    auto close_service = util::fail_guard([service]() { CloseServiceHandle(service); });
+    SERVICE_STATUS_PROCESS status {};
+    DWORD size = 0;
+    if (!QueryServiceStatusEx(service, SC_STATUS_PROCESS_INFO, reinterpret_cast<LPBYTE>(&status), sizeof(status), &size)) {
+      throw std::runtime_error("Unable to query ApolloService PID: " + std::to_string(GetLastError()));
+    }
+    if (!status.dwProcessId) {
+      return false;
+    }
+    auto snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snapshot == INVALID_HANDLE_VALUE) {
+      throw std::runtime_error("Unable to query host parent: " + std::to_string(GetLastError()));
+    }
+    auto close_snapshot = util::fail_guard([snapshot]() { CloseHandle(snapshot); });
+    PROCESSENTRY32W entry {};
+    entry.dwSize = sizeof(entry);
+    if (Process32FirstW(snapshot, &entry)) {
+      do {
+        if (entry.th32ProcessID == GetCurrentProcessId()) {
+          return entry.th32ParentProcessID == status.dwProcessId;
+        }
+      } while (Process32NextW(snapshot, &entry));
+    }
+    throw std::runtime_error("Unable to establish host parent; restart was not started");
+  }
+
   void restart_on_exit() {
-    STARTUPINFOEXW startup_info {};
-    startup_info.StartupInfo.cb = sizeof(startup_info);
+    STARTUPINFOW startup_info {};
+    startup_info.cb = sizeof(startup_info);
 
     WCHAR executable[MAX_PATH];
     if (GetModuleFileNameW(nullptr, executable, ARRAYSIZE(executable)) == 0) {
@@ -1264,8 +1306,13 @@ namespace platf {
       return;
     }
 
-    PROCESS_INFORMATION process_info;
-    if (!CreateProcessW(executable, GetCommandLineW(), nullptr, nullptr, false, CREATE_UNICODE_ENVIRONMENT | EXTENDED_STARTUPINFO_PRESENT, nullptr, nullptr, (LPSTARTUPINFOW) &startup_info, &process_info)) {
+    std::wstring command_line = GetCommandLineW();
+    DWORD flags = CREATE_UNICODE_ENVIRONMENT;
+    if (GetConsoleWindow() == nullptr) {
+      flags |= CREATE_NO_WINDOW;
+    }
+    PROCESS_INFORMATION process_info {};
+    if (!CreateProcessW(executable, command_line.data(), nullptr, nullptr, false, flags, nullptr, nullptr, &startup_info, &process_info)) {
       auto winerr = GetLastError();
       BOOST_LOG(fatal) << "Unable to restart Sunshine: "sv << winerr;
       return;
@@ -1278,9 +1325,13 @@ namespace platf {
   void restart() {
     // If we're running standalone, we have to respawn ourselves via CreateProcess().
     // If we're running from the service, we should just exit and let it respawn us.
-    if (GetConsoleWindow() != nullptr) {
+    // A hidden standalone host has no console either. Only the actual service
+    // parent is responsible for supervision; window visibility is not evidence.
+    if (!supervised_by_apollo_service()) {
       // Avoid racing with the new process by waiting until we're exiting to start it.
-      atexit(restart_on_exit);
+      if (atexit(restart_on_exit) != 0) {
+        throw std::runtime_error("Unable to register standalone host restart");
+      }
     }
 
     // We use an async exit call here because we can't block the HTTP thread or we'll hang shutdown.
