@@ -21,6 +21,11 @@ if ($expected -notmatch '^[a-f0-9]{64}$' -or (Get-FileHash -LiteralPath $install
 }
 $destination = Join-Path $env:RUNNER_TEMP ('apollo-vigem-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $destination | Out-Null
+# This vendor bootstrapper extracts beside its executable, ignoring the requested
+# destination. Keep the verified executable and all outputs in the isolated root.
+$isolatedInstaller = Join-Path $destination 'ViGEmBus_1.21.442_x64_x86_arm64.exe'
+Copy-Item -LiteralPath $installer -Destination $isolatedInstaller
+if ((Get-FileHash -LiteralPath $isolatedInstaller).Hash -ine $expected) { throw 'Copied vendor package hash mismatch.' }
 function Invoke-Bounded([string]$Executable, [string]$Arguments, [string]$WorkingDirectory = $destination) {
     $process = Start-Process -FilePath $Executable -ArgumentList $Arguments -WorkingDirectory $WorkingDirectory -NoNewWindow -PassThru
     if (-not $process.WaitForExit(90000)) { $process.Kill(); throw 'Runner driver preparation timed out.' }
@@ -28,7 +33,7 @@ function Invoke-Bounded([string]$Executable, [string]$Arguments, [string]$Workin
 }
 # Extract the checksum-pinned vendor archive; never patch its MSI conditions.
 $extractionLog = Join-Path $destination 'extraction.log'
-Invoke-Bounded $installer ('/extract "' + (Join-Path $destination 'payload') + '" /exelog "' + $extractionLog + '"')
+Invoke-Bounded $isolatedInstaller ('/extract "' + (Join-Path $destination 'payload') + '" /exelog "' + $extractionLog + '"')
 # The vendor bootstrapper may return before its extraction child has finished.
 # Bound the wait and require actual output, not just its successful exit code.
 for ($attempt = 0; $attempt -lt 30; $attempt++) {
