@@ -172,6 +172,9 @@ try {
             $updateLog = Join-Path $directory.FullName 'update.log'
             if (Test-Path -LiteralPath $updateLog) { $diagnostics += Get-Content -LiteralPath $updateLog }
         }
+        foreach ($launcherLog in Get-ChildItem -LiteralPath $temporaryRoot -File -Filter '*.apollo-launcher.log' -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTimeUtc -ge $startedAt }) {
+            $diagnostics += Get-Content -LiteralPath $launcherLog.FullName
+        }
     }
     $diagnostics | Set-Content -LiteralPath 'installer-test.log' -Encoding utf8
     throw $failure

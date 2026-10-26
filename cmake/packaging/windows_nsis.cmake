@@ -20,6 +20,24 @@ Var ApolloPowerShell
 Var ApolloNoHostIntegration
 Var ApolloRestored
 Var ApolloNeedsReboot
+Var ApolloCommandOutput
+Function ApolloRecordCommandResult
+  ClearErrors
+  GetTempFileName $R7 "$TEMP"
+  IfErrors record_done
+  Rename "$R7" "$R7.apollo-launcher.log"
+  IfErrors record_done
+  StrCpy $R7 "$R7.apollo-launcher.log"
+  System::Call 'advapi32::ConvertStringSecurityDescriptorToSecurityDescriptorW(w "D:P(A;;FA;;;SY)(A;;FA;;;BA)", i 1, *p .r5, p 0) i .r6'
+  StrCmp $6 "0" record_done
+  System::Call 'advapi32::SetFileSecurityW(w "$R7", i 0x80000004, p r5) i .r6'
+  System::Call 'kernel32::LocalFree(p r5)'
+  StrCmp $6 "0" record_done
+  FileOpen $R6 "$R7" w
+  FileWrite $R6 "ExitCode=$0$\r$\n$ApolloCommandOutput$\r$\n"
+  FileClose $R6
+record_done:
+FunctionEnd
 Function ApolloRestorePrevious
   StrCmp $ApolloRestored "1" restore_done
   StrCpy $ApolloRestored "1"
@@ -51,12 +69,14 @@ set(CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS [=[
   File "/oname=$PLUGINSDIR\installation-data.ps1" "@APOLLO_DATA_SCRIPT@"
   File "/oname=$PLUGINSDIR\installation-manifest.json" "@APOLLO_INSTALL_MANIFEST@"
   StrCmp $ApolloNoHostIntegration "1" prepare_portable
-  nsExec::ExecToLog '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\update-installation.ps1" -InstallDir "$INSTDIR" -Mode Prepare -StatePath "$PLUGINSDIR\apollo-update-state.json" -Version "@PROJECT_VERSION@"'
+  nsExec::ExecToStack '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\update-installation.ps1" -InstallDir "$INSTDIR" -Mode Prepare -StatePath "$PLUGINSDIR\apollo-update-state.json" -Version "@PROJECT_VERSION@"'
   Goto prepare_result
 prepare_portable:
-  nsExec::ExecToLog '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\update-installation.ps1" -InstallDir "$INSTDIR" -Mode Prepare -StatePath "$PLUGINSDIR\apollo-update-state.json" -Version "@PROJECT_VERSION@" -NoHostIntegration'
+  nsExec::ExecToStack '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\update-installation.ps1" -InstallDir "$INSTDIR" -Mode Prepare -StatePath "$PLUGINSDIR\apollo-update-state.json" -Version "@PROJECT_VERSION@" -NoHostIntegration'
 prepare_result:
   Pop $0
+  Pop $ApolloCommandOutput
+  Call ApolloRecordCommandResult
   StrCmp $0 "0" prepare_done
   MessageBox MB_OK|MB_ICONSTOP "Nao foi possivel preparar uma atualizacao segura. Os arquivos do programa nao foram substituidos. Consulte os detalhes da instalacao." /SD IDOK
   SetErrorLevel 1
