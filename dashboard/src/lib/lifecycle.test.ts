@@ -17,8 +17,37 @@ it("keeps explicit authentication rejection as an error", async () => {
 })
 
 it("only says a successful request was sent, not that restart completed", async () => {
-	vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 200 })))
+	vi.stubGlobal(
+		"fetch",
+		vi
+			.fn()
+			.mockResolvedValue(Response.json({ status: true, accepted: true, operation: "restart" }))
+	)
 	await expect(requestLifecycle("restart")).resolves.toContain("Solicitação enviada")
+})
+
+it.each([
+	null,
+	{ status: true },
+	{ status: true, accepted: false, operation: "restart" },
+	{ status: true, accepted: true, operation: "quit" }
+])("does not confirm an invalid restart acknowledgement: %j", async (body) => {
+	const fetcher = vi.fn().mockResolvedValue(Response.json(body))
+	vi.stubGlobal("fetch", fetcher)
+	await expect(requestLifecycle("restart")).resolves.toContain("Isso não confirma")
+	expect(fetcher).toHaveBeenCalledTimes(1)
+})
+
+it("does not report success from headers when the acknowledgement body is truncated", async () => {
+	const fetcher = vi.fn().mockResolvedValue(new Response('{"status":'))
+	vi.stubGlobal("fetch", fetcher)
+	await expect(requestLifecycle("restart")).resolves.toContain("Isso não confirma")
+	expect(fetcher).toHaveBeenCalledTimes(1)
+})
+
+it("keeps quit compatible with an empty response", async () => {
+	vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 200 })))
+	await expect(requestLifecycle("quit")).resolves.toContain("Solicitação enviada")
 })
 
 it("calculates configured web ports without changing the hostname or scheme", () => {

@@ -2,7 +2,20 @@ import { ApiError, post } from "./api"
 
 export async function requestLifecycle(command: "restart" | "quit") {
 	try {
-		await post(command, {}, false)
+		const acknowledgement = await post(command, {}, command === "restart")
+		if (
+			command === "restart" &&
+			(!acknowledgement ||
+				typeof acknowledgement !== "object" ||
+				!("status" in acknowledgement) ||
+				acknowledgement.status !== true ||
+				!("accepted" in acknowledgement) ||
+				acknowledgement.accepted !== true ||
+				!("operation" in acknowledgement) ||
+				acknowledgement.operation !== "restart")
+		) {
+			throw new Error("Confirmação de reinício incompleta.")
+		}
 		return "Solicitação enviada. Verifique o console e a disponibilidade do host antes de continuar."
 	} catch (failure) {
 		if (failure instanceof ApiError) throw failure
