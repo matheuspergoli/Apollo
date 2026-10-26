@@ -29,6 +29,11 @@ class RepositoryPolicyTests(unittest.TestCase):
         for line in messages:
             self.assertIn("/SD IDOK", line)
 
+    def test_installer_isolates_windows_powershell_module_discovery(self):
+        source = (ROOT / "cmake/packaging/windows_nsis.cmake").read_text()
+        bootstrap = 'SetEnvironmentVariableW(w "PSModulePath", w "$SYSDIR\\WindowsPowerShell\\v1.0\\Modules")'
+        self.assertEqual(source.count(bootstrap), 2)
+
     def test_external_actions_are_pinned_to_commits(self):
         for path in (ROOT / ".github/workflows").glob("*.yml"):
             workflow = path.read_text(encoding="utf-8")

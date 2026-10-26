@@ -59,6 +59,11 @@ set(CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS [=[
   StrCpy $ApolloPowerShell "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe"
   IfFileExists "$WINDIR\Sysnative\WindowsPowerShell\v1.0\powershell.exe" 0 +2
   StrCpy $ApolloPowerShell "$WINDIR\Sysnative\WindowsPowerShell\v1.0\powershell.exe"
+  # Do not inherit PowerShell 7/user module discovery into Windows PowerShell.
+  System::Call 'kernel32::SetEnvironmentVariableW(w "PSModulePath", w "$SYSDIR\WindowsPowerShell\v1.0\Modules") i .r0'
+  StrCmp $0 "0" 0 +3
+  SetErrorLevel 1
+  Abort "Nao foi possivel preparar o ambiente PowerShell."
   ${GetParameters} $R0
   ClearErrors
   ${GetOptions} $R0 "/NoHostIntegration" $R1
@@ -135,6 +140,10 @@ install_done:
 # Uninstall only this installation's service. Shared drivers and user data are
 # deliberately retained; CPack removes its managed program files, not config/.
 set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS [=[
+  System::Call 'kernel32::SetEnvironmentVariableW(w "PSModulePath", w "$SYSDIR\WindowsPowerShell\v1.0\Modules") i .r0'
+  StrCmp $0 "0" 0 +3
+  SetErrorLevel 1
+  Abort "Nao foi possivel preparar o ambiente PowerShell."
   nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\scripts\update-installation.ps1" -InstallDir "$INSTDIR" -Mode RemoveService'
   Pop $0
   StrCmp $0 "0" +3
