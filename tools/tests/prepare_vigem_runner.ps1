@@ -27,7 +27,8 @@ function Invoke-Bounded([string]$Executable, [string]$Arguments, [string]$Workin
     if ($process.ExitCode -ne 0) { throw "Runner driver operation failed or requires reboot: $($process.ExitCode)" }
 }
 # Extract the checksum-pinned vendor archive; never patch its MSI conditions.
-Invoke-Bounded $installer '/extract payload'
+$extractionLog = Join-Path $destination 'extraction.log'
+Invoke-Bounded $installer ('/extract "' + (Join-Path $destination 'payload') + '" /exelog "' + $extractionLog + '"')
 # The vendor bootstrapper may return before its extraction child has finished.
 # Bound the wait and require actual output, not just its successful exit code.
 for ($attempt = 0; $attempt -lt 30; $attempt++) {
@@ -42,6 +43,7 @@ $packages = @(Get-ChildItem -LiteralPath $destination -Filter 'ViGEmBus.inf' -Re
     [BitConverter]::ToUInt16($bytes, $pe + 4) -eq 0x8664
 })
 if ($packages.Count -ne 1) {
+    if (Test-Path -LiteralPath $extractionLog) { Get-Content -LiteralPath $extractionLog | Out-Host }
     Get-ChildItem -LiteralPath $destination -Recurse -File | Select-Object FullName, Length | Format-Table | Out-Host
     throw 'Expected exactly one extracted vendor x64 driver/tool pair; no driver operation was attempted.'
 }
