@@ -1,9 +1,30 @@
 #include <windows.h>
 #include <xinput.h>
+#include <setupapi.h>
+#include <cfgmgr32.h>
 #include <ViGEm/Client.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+
+static void print_pnp_problems() {
+  auto devices = SetupDiGetClassDevsW(nullptr, nullptr, nullptr, DIGCF_ALLCLASSES | DIGCF_PRESENT);
+  if (devices == INVALID_HANDLE_VALUE) return;
+  SP_DEVINFO_DATA device {};
+  device.cbSize = sizeof(device);
+  for (DWORD i = 0; SetupDiEnumDeviceInfo(devices, i, &device); ++i) {
+    ULONG status = 0;
+    ULONG problem = 0;
+    if (CM_Get_DevNode_Status(&status, &problem, device.DevInst, 0) != CR_SUCCESS || !problem) continue;
+    char id[1024] {};
+    char name[1024] {};
+    SetupDiGetDeviceInstanceIdA(devices, &device, id, sizeof(id), nullptr);
+    SetupDiGetDeviceRegistryPropertyA(devices, &device, SPDRP_DEVICEDESC, nullptr,
+                                    reinterpret_cast<PBYTE>(name), sizeof(name), nullptr);
+    std::printf("PnP problem=%lu; device=%s; description=%s\n", problem, id, name);
+  }
+  SetupDiDestroyDeviceInfoList(devices);
+}
 
 int main(int argc, char **argv) {
   const char *ci = std::getenv("GITHUB_ACTIONS");
@@ -34,6 +55,7 @@ int main(int argc, char **argv) {
     ULONG index = 0;
     VIGEM_ERROR lookup = VIGEM_ERROR_XUSB_USERINDEX_OUT_OF_RANGE;
     DWORD xinput_status = ERROR_DEVICE_NOT_CONNECTED;
+    bool xinput_queried = false;
     bool observed = false;
     if (ready) {
       // Bus attachment can finish before Windows binds its XUSB child driver.
@@ -43,6 +65,7 @@ int main(int argc, char **argv) {
         if (VIGEM_SUCCESS(lookup) && index < 4) {
           XINPUT_STATE state {};
           xinput_status = XInputGetState(index, &state);
+          xinput_queried = true;
           if (xinput_status == ERROR_SUCCESS && (state.Gamepad.wButtons & XINPUT_GAMEPAD_A)) {
             observed = true;
             break;
@@ -51,8 +74,9 @@ int main(int argc, char **argv) {
         Sleep(100);
       }
     }
-    std::printf("vigem_target_x360_get_user_index: 0x%08lx; index=%lu; XInput status=%lu\n",
-                static_cast<unsigned long>(lookup), index, xinput_status);
+    std::printf("vigem_target_x360_get_user_index: 0x%08lx; index=%lu; XInput queried=%d; status=%lu\n",
+                static_cast<unsigned long>(lookup), index, xinput_queried, xinput_status);
+    if (!observed) print_pnp_problems();
     ready = ready && observed;
     auto removal = vigem_target_remove(client, target);
     std::printf("vigem_target_remove: 0x%08lx; XInput observed=%d\n", static_cast<unsigned long>(removal), observed);

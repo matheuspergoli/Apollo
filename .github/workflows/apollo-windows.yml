@@ -39,7 +39,7 @@ jobs:
           install: mingw-w64-ucrt-x86_64-toolchain
       - name: Compile isolated gamepad probe
         shell: msys2 {0}
-        run: g++ -std=c++17 -static -pthread -I third-party/ViGEmClient/include tools/tests/test_vigem_live.cpp third-party/ViGEmClient/src/ViGEmClient.cpp -o vigem-live-test.exe -lsetupapi -lxinput1_4
+        run: g++ -std=c++17 -static -pthread -I third-party/ViGEmClient/include tools/tests/test_vigem_live.cpp third-party/ViGEmClient/src/ViGEmClient.cpp -o vigem-live-test.exe -lsetupapi -lcfgmgr32 -lxinput1_4
       - name: Qualify vendor bus and XInput before the full native build
         run: |
           $root = Join-Path $env:RUNNER_TEMP 'vendor-gamepad-inputs'
@@ -104,7 +104,7 @@ jobs:
         run: g++ -std=c++23 -static -static-libgcc -static-libstdc++ -pthread -I . tools/tests/test_sudovda_live.cpp -o driver-live-test.exe -lsetupapi -lcfgmgr32 -lole32
       - name: Build isolated virtual gamepad lifecycle probe
         shell: msys2 {0}
-        run: g++ -std=c++17 -static -pthread -I third-party/ViGEmClient/include tools/tests/test_vigem_live.cpp third-party/ViGEmClient/src/ViGEmClient.cpp -o vigem-live-test.exe -lsetupapi -lxinput1_4
+        run: g++ -std=c++17 -static -pthread -I third-party/ViGEmClient/include tools/tests/test_vigem_live.cpp third-party/ViGEmClient/src/ViGEmClient.cpp -o vigem-live-test.exe -lsetupapi -lcfgmgr32 -lxinput1_4
       - name: Configure native host and contracts
         shell: msys2 {0}
         env:
