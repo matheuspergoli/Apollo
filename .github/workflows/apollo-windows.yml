@@ -23,7 +23,32 @@ on:
 permissions:
   contents: read
 jobs:
+  gamepad:
+    if: github.repository == 'matheuspergoli/Apollo'
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Checkout pinned gamepad client
+        run: git submodule update --init third-party/ViGEmClient
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e
+        with:
+          msystem: UCRT64
+          install: mingw-w64-ucrt-x86_64-toolchain
+      - name: Compile isolated gamepad probe
+        shell: msys2 {0}
+        run: g++ -std=c++17 -static -pthread -I third-party/ViGEmClient/include tools/tests/test_vigem_live.cpp third-party/ViGEmClient/src/ViGEmClient.cpp -o vigem-live-test.exe -lsetupapi -lxinput1_4
+      - name: Qualify vendor bus and XInput before the full native build
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'vendor-gamepad-inputs'
+          New-Item -ItemType Directory -Path "$root/scripts", "$root/drivers/sudovda" -Force | Out-Null
+          Copy-Item packaging/windows/runtime-contract.json "$root/drivers/sudovda/runtime-contract.json"
+          Invoke-WebRequest 'https://github.com/nefarius/ViGEmBus/releases/download/v1.21.442.0/ViGEmBus_1.21.442_x64_x86_arm64.exe' -OutFile "$root/scripts/vigembus_installer.exe"
+          & ./tools/tests/prepare_vigem_runner.ps1 -Candidate $root -Probe ./vigem-live-test.exe
   windows:
+    needs: gamepad
     if: github.repository == 'matheuspergoli/Apollo'
     runs-on: windows-2022
     timeout-minutes: 60

@@ -56,5 +56,12 @@ $inf = $packages[0]
 $tool = Join-Path $inf.DirectoryName 'nefconw.exe'
 Invoke-Bounded $tool '--create-device-node --hardware-id Nefarius\ViGEmBus\Gen1 --class-name System --class-guid 4D36E97D-E325-11CE-BFC1-08002BE10318'
 Invoke-Bounded $tool ('--install-driver --inf-path "' + $inf.FullName + '"')
-Invoke-Bounded ([IO.Path]::GetFullPath($Probe)) '--ci-vigem-probe'
+try {
+    Invoke-Bounded ([IO.Path]::GetFullPath($Probe)) '--ci-vigem-probe'
+} catch {
+    Get-CimInstance Win32_PnPEntity | Where-Object {
+        $_.Name -match 'ViGEm|Xbox|XUSB' -or @($_.HardwareID) -contains 'Nefarius\ViGEmBus\Gen1'
+    } | Select-Object Name, PNPDeviceID, ConfigManagerErrorCode, Service | ConvertTo-Json | Write-Output
+    throw
+}
 Write-Output 'CI-only ViGEmBus preparation and real virtual controller lifecycle passed. Client Windows vendor-installer coverage is still required.'

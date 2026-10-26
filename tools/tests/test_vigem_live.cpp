@@ -14,19 +14,27 @@ int main(int argc, char **argv) {
   }
   auto client = vigem_alloc();
   if (!client) return 3;
-  if (!VIGEM_SUCCESS(vigem_connect(client))) {
+  auto connection = vigem_connect(client);
+  std::printf("vigem_connect: 0x%08lx\n", static_cast<unsigned long>(connection));
+  if (!VIGEM_SUCCESS(connection)) {
     vigem_free(client);
     return 4;
   }
   auto target = vigem_target_x360_alloc();
-  bool added = target && VIGEM_SUCCESS(vigem_target_add(client, target));
+  auto addition = target ? vigem_target_add(client, target) : VIGEM_ERROR_INVALID_TARGET;
+  std::printf("vigem_target_add: 0x%08lx\n", static_cast<unsigned long>(addition));
+  bool added = VIGEM_SUCCESS(addition);
   bool ready = false;
   if (added) {
     XUSB_REPORT report {};
     report.wButtons = XINPUT_GAMEPAD_A;
-    ready = VIGEM_SUCCESS(vigem_target_x360_update(client, target, report));
+    auto update = vigem_target_x360_update(client, target, report);
+    std::printf("vigem_target_x360_update: 0x%08lx\n", static_cast<unsigned long>(update));
+    ready = VIGEM_SUCCESS(update);
     ULONG index = 0;
-    ready = ready && VIGEM_SUCCESS(vigem_target_x360_get_user_index(client, target, &index)) && index < 4;
+    auto lookup = vigem_target_x360_get_user_index(client, target, &index);
+    std::printf("vigem_target_x360_get_user_index: 0x%08lx; index=%lu\n", static_cast<unsigned long>(lookup), index);
+    ready = ready && VIGEM_SUCCESS(lookup) && index < 4;
     bool observed = false;
     if (ready) {
       for (int attempt = 0; attempt < 50; ++attempt) {
@@ -39,7 +47,9 @@ int main(int argc, char **argv) {
       }
     }
     ready = ready && observed;
-    ready = VIGEM_SUCCESS(vigem_target_remove(client, target)) && ready;
+    auto removal = vigem_target_remove(client, target);
+    std::printf("vigem_target_remove: 0x%08lx; XInput observed=%d\n", static_cast<unsigned long>(removal), observed);
+    ready = VIGEM_SUCCESS(removal) && ready;
   }
   if (target) vigem_target_free(target);
   vigem_disconnect(client);
