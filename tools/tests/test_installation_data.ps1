@@ -1,6 +1,11 @@
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 . (Join-Path $PSScriptRoot '../../src_assets/windows/misc/migration/installation-data.ps1')
+$securityModule = Get-Module Microsoft.PowerShell.Security
+$expectedModule = Join-Path $PSHOME 'Modules\Microsoft.PowerShell.Security\Microsoft.PowerShell.Security.psd1'
+if (-not $securityModule -or $securityModule.Path -ine $expectedModule) {
+    throw 'Backup ACL commands must come from the current PowerShell engine.'
+}
 
 $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('apollo-data-' + [guid]::NewGuid().ToString('N'))
 $app = Join-Path $testRoot 'Application with spaces'

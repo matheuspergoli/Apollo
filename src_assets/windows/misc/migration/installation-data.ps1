@@ -1,3 +1,7 @@
+# The installer can inherit a PowerShell 7 module path while launching Windows
+# PowerShell 5.1. Load ACL commands from this engine, never a caller's module path.
+Import-Module (Join-Path $PSHOME 'Modules\Microsoft.PowerShell.Security\Microsoft.PowerShell.Security.psd1') -ErrorAction Stop
+
 function Get-LocalInstallRoot {
     param([string]$Path)
     $root = [IO.Path]::GetFullPath($Path).TrimEnd('\')
