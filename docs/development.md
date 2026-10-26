@@ -110,6 +110,12 @@ registrados no [AGENTS.md](../AGENTS.md). Não altere um host ativo para testar.
 
 ## Dependências e distribuição
 
+O [glossário](../GLOSSARY.md) define payload público, manifesto de instalação e
+contrato de runtime. A política de caminhos em `tools/release/public_payload.py`
+é compartilhada pelo gerador do manifesto e pelo auditor do ZIP. Os consumidores
+mantêm suas próprias verificações de links, inventário e bytes; compartilhar a
+política não substitui a conferência independente do artefato.
+
 `LICENSE` é a licença do Apollo. `NOTICE` contém atribuições que acompanham o código.
 O build gera um único `NOTICE.txt` para as dependências do frontend, preservando os
 textos instalados e omitindo caminhos locais. Não são necessários documentos de

@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import hashlib
 import shutil
+import stat
 import struct
 import tempfile
 import unittest
@@ -43,7 +44,7 @@ class PackageAuditTests(unittest.TestCase):
         target.write_text(json.dumps(contract))
         self.runtime["drivers/sudovda/runtime-contract.json"] = json.dumps(contract).encode()
 
-    def package(self, extra=None, omit=None):
+    def package(self, extra=None, omit=None, symbolic_links=()):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         path = Path(temporary.name) / "Apollo.zip"
@@ -77,11 +78,20 @@ class PackageAuditTests(unittest.TestCase):
             entries["Apollo/installation-manifest.json"] = json.dumps({
                 "format": "apollo-installed-files", "version": 1,
                 "appVersion": json.loads((self.source / "dashboard/package.json").read_text())["version"],
-                "files": {name.removeprefix("Apollo/"): hashlib.sha256(data).hexdigest() for name, data in entries.items()},
+                "files": {
+                    name.removeprefix("Apollo/"): hashlib.sha256(data).hexdigest()
+                    for name, data in entries.items() if not name.endswith("/")
+                },
             }).encode()
         with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
             for name, data in entries.items():
-                archive.writestr(name, data)
+                if name in symbolic_links:
+                    entry = zipfile.ZipInfo(name)
+                    entry.create_system = 3
+                    entry.external_attr = (stat.S_IFLNK | 0o777) << 16
+                    archive.writestr(entry, data)
+                else:
+                    archive.writestr(name, data)
         return path
 
     def test_package_and_windows_svg_line_endings(self):
@@ -95,6 +105,8 @@ class PackageAuditTests(unittest.TestCase):
     def test_rejects_private_legacy_and_unsafe_entries(self):
         unsafe = [
             "Apollo/config/credentials.json",
+            "Apollo/config/unknown.bin",
+            "Apollo/Config/data.bin",
             "Apollo/key.pem",
             "Apollo/assets/web/locale/en.json",
             "../escape",
@@ -103,6 +115,20 @@ class PackageAuditTests(unittest.TestCase):
         for name in unsafe:
             with self.subTest(name=name), self.assertRaises(ValueError):
                 MODULE.audit(self.package({name: b"invalid"}), self.source)
+
+    def test_rejects_symbolic_link_even_when_manifest_matches_its_bytes(self):
+        for name in ["Apollo/assets/link", "Apollo/assets/link/", "Apollo/"]:
+            with self.subTest(name=name), self.assertRaisesRegex(ValueError, "Symbolic link"):
+                MODULE.audit(self.package({name: b"elsewhere"}, symbolic_links={name}), self.source)
+
+    def test_rejects_even_an_empty_private_directory_entry(self):
+        with self.assertRaisesRegex(ValueError, "Private host state"):
+            MODULE.audit(self.package({"Apollo/config/": b""}), self.source)
+
+    def test_rejects_noncanonical_or_foreign_archive_paths(self):
+        for name in ["Apollo/assets/./extra.txt", "Apollo/assets//extra.txt", "Foreign/extra.txt"]:
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                MODULE.audit(self.package({name: b"fixture"}), self.source)
 
     def test_rejects_missing_page(self):
         with self.assertRaises(KeyError):
@@ -139,10 +165,13 @@ class PackageAuditTests(unittest.TestCase):
             MODULE.audit(self.package({"Apollo/sunshine.exe": bytes(binary)}), self.source)
 
     def test_rejects_incomplete_installed_file_manifest(self):
-        manifest = {"format": "apollo-installed-files", "version": 1,
-                    "appVersion": json.loads((self.source / "dashboard/package.json").read_text())["version"], "files": {}}
+        manifest = {
+            "format": "apollo-installed-files", "version": 1,
+            "appVersion": json.loads((self.source / "dashboard/package.json").read_text())["version"], "files": {},
+        }
         with self.assertRaisesRegex(ValueError, "does not cover the complete package"):
-            MODULE.audit(self.package({"Apollo/installation-manifest.json": json.dumps(manifest).encode()}), self.source)
+            archive = self.package({"Apollo/installation-manifest.json": json.dumps(manifest).encode()})
+            MODULE.audit(archive, self.source)
 
 
 if __name__ == "__main__":

@@ -5,8 +5,11 @@ import argparse
 import hashlib
 import json
 from pathlib import Path, PurePosixPath
+import stat
 import struct
 import zipfile
+
+from public_payload import validate_public_path
 
 
 def audit(archive: Path, source: Path) -> dict:
@@ -15,17 +18,20 @@ def audit(archive: Path, source: Path) -> dict:
         names = package.namelist()
         if len(names) != len(set(names)):
             raise ValueError("Duplicate archive entries")
-        for name in names:
-            path = PurePosixPath(name)
-            if path.is_absolute() or ".." in path.parts or "\\" in name or ":" in name:
-                raise ValueError(f"Unsafe archive path: {name}")
+        for entry in package.infolist():
+            name = entry.filename
+            if stat.S_ISLNK(entry.external_attr >> 16):
+                raise ValueError(f"Symbolic link in package: {name}")
+            if name == "Apollo/" and entry.is_dir():
+                continue
+            if not name.startswith("Apollo/"):
+                raise ValueError(f"Unexpected archive root: {name}")
+            relative = name.removeprefix("Apollo/")
+            validate_public_path(relative.removesuffix("/") if entry.is_dir() else relative)
             lower = name.lower()
             legacy_tokens = ("apollo-preview", ".vue", "bootstrap", "i18next", "/locale/", "/locales/")
             if any(token in lower for token in legacy_tokens):
                 raise ValueError(f"Legacy web asset: {name}")
-            private_files = {"sunshine.conf", "sunshine_state.json", "credentials.json", "sunshine.log"}
-            if path.name.lower() in private_files or path.suffix.lower() in {".pem", ".key"}:
-                raise ValueError(f"Private host state in package: {name}")
         hosts = [name for name in names if PurePosixPath(name).name.lower() == "sunshine.exe"]
         if hosts != ["Apollo/sunshine.exe"]:
             raise ValueError("Expected exactly one packaged Apollo host")

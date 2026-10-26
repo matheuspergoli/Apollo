@@ -5,19 +5,18 @@ import hashlib
 import json
 from pathlib import Path
 
+from public_payload import validate_public_path
+
 
 def create(root: Path, version: str) -> dict:
     files = {}
     for path in sorted(root.rglob("*")):
         if path.is_symlink():
             raise ValueError("Installation payload must not contain links")
-        if not path.is_file() or path.name == "installation-manifest.json":
-            continue
         relative = path.relative_to(root).as_posix()
-        private_names = {"sunshine.conf", "sunshine_state.json", "credentials.json", "sunshine.log"}
-        if ("config" in relative.lower().split("/") or path.suffix.lower() in {".key", ".pem"}
-                or path.name.lower() in private_names):
-            raise ValueError("Private data cannot enter an installation manifest")
+        validate_public_path(relative)
+        if not path.is_file() or relative == "installation-manifest.json":
+            continue
         files[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
     if "sunshine.exe" not in files:
         raise ValueError("Staged host executable is missing")
