@@ -173,7 +173,9 @@ try {
             if (Test-Path -LiteralPath $updateLog) { $diagnostics += Get-Content -LiteralPath $updateLog }
             foreach ($gamepadLog in Get-ChildItem -LiteralPath $directory.FullName -File -Filter 'gamepad*.log') {
                 $diagnostics += ('ViGEmBus diagnostic: ' + $gamepadLog.Name)
-                $diagnostics += Get-Content -LiteralPath $gamepadLog.FullName -Tail 150
+                # MSI writes its property dump after the failing action. Keeping
+                # only the tail loses the actual cause of generic error 1603.
+                $diagnostics += Get-Content -LiteralPath $gamepadLog.FullName
             }
         }
         foreach ($launcherLog in Get-ChildItem -LiteralPath $temporaryRoot -File -Filter '*.apollo-launcher.log' -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTimeUtc -ge $startedAt }) {
