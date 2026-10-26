@@ -32,20 +32,27 @@ int main(int argc, char **argv) {
     std::printf("vigem_target_x360_update: 0x%08lx\n", static_cast<unsigned long>(update));
     ready = VIGEM_SUCCESS(update);
     ULONG index = 0;
-    auto lookup = vigem_target_x360_get_user_index(client, target, &index);
-    std::printf("vigem_target_x360_get_user_index: 0x%08lx; index=%lu\n", static_cast<unsigned long>(lookup), index);
-    ready = ready && VIGEM_SUCCESS(lookup) && index < 4;
+    VIGEM_ERROR lookup = VIGEM_ERROR_XUSB_USERINDEX_OUT_OF_RANGE;
+    DWORD xinput_status = ERROR_DEVICE_NOT_CONNECTED;
     bool observed = false;
     if (ready) {
-      for (int attempt = 0; attempt < 50; ++attempt) {
-        XINPUT_STATE state {};
-        if (XInputGetState(index, &state) == ERROR_SUCCESS && (state.Gamepad.wButtons & XINPUT_GAMEPAD_A)) {
-          observed = true;
-          break;
+      // Bus attachment can finish before Windows binds its XUSB child driver.
+      // Require both the assigned player index and the actual report to arrive.
+      for (int attempt = 0; attempt < 100; ++attempt) {
+        lookup = vigem_target_x360_get_user_index(client, target, &index);
+        if (VIGEM_SUCCESS(lookup) && index < 4) {
+          XINPUT_STATE state {};
+          xinput_status = XInputGetState(index, &state);
+          if (xinput_status == ERROR_SUCCESS && (state.Gamepad.wButtons & XINPUT_GAMEPAD_A)) {
+            observed = true;
+            break;
+          }
         }
         Sleep(100);
       }
     }
+    std::printf("vigem_target_x360_get_user_index: 0x%08lx; index=%lu; XInput status=%lu\n",
+                static_cast<unsigned long>(lookup), index, xinput_status);
     ready = ready && observed;
     auto removal = vigem_target_remove(client, target);
     std::printf("vigem_target_remove: 0x%08lx; XInput observed=%d\n", static_cast<unsigned long>(removal), observed);
