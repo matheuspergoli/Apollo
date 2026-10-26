@@ -62,6 +62,11 @@ As adaptações locais das primitivas mantêm rótulos pt-BR, associação de la
 fieldset semântico, foco dos diálogos e comportamento de navegação móvel. Biome
 continua habilitado também nesses arquivos.
 
+O dashboard preserva o design aprovado. O link nativo **Pular para o conteúdo**
+fica oculto até receber foco e leva o teclado ao conteúdo abaixo do cabeçalho.
+O destino não adiciona uma parada ao percurso normal de Tab. Mudanças visuais além desse atalho
+exigem autorização explícita; guidelines de design não autorizam um redesenho.
+
 ## Regressões
 
 | Camada | Responsabilidade |

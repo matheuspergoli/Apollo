@@ -99,6 +99,12 @@ export function AppShell() {
 	return (
 		<HostActionsProvider>
 			<SidebarProvider>
+				<a
+					href="#main-content"
+					className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:max-w-[calc(100vw-1rem)] focus:bg-background focus:px-4 focus:py-2 focus:text-foreground focus:underline focus:outline-2 focus:outline-ring focus:outline-offset-2"
+				>
+					Pular para o conteúdo
+				</a>
 				<HostNavigation />
 				<SidebarInset>
 					<header
@@ -118,7 +124,11 @@ export function AppShell() {
 							<ThemeSelect compact />
 						</div>
 					</header>
-					<div className="mx-auto w-full max-w-7xl flex-1 space-y-6 p-4 md:p-8">
+					<div
+						id="main-content"
+						tabIndex={-1}
+						className="mx-auto w-full max-w-7xl flex-1 scroll-mt-20 space-y-6 p-4 focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2 md:p-8"
+					>
 						<HostActionNotice />
 						<Outlet />
 					</div>
