@@ -1,4 +1,4 @@
-# Apollo 1.0.1
+# Apollo 1.0.2
 
 Host de streaming para [Artemis](https://github.com/ClassicOldSong/moonlight-android),
 com painel React em português, display virtual no Windows e gerenciamento de
@@ -13,9 +13,9 @@ e no Sunshine. Créditos e licenças originais permanecem preservados.
 Use os arquivos desta distribuição em
 [Releases](https://github.com/matheuspergoli/Apollo/releases).
 
-Use a **1.0.1** para corrigir os binários SudoVDA ausentes na 1.0.0. Atualize na
+Use a **1.0.2**, que mantém a correção dos binários SudoVDA ausentes na 1.0.0. Atualize na
 mesma pasta, com backup privado dos dados, sem desinstalar primeiro a versão antiga.
-Veja as [notas da versão](docs/releases/v1.0.1.md).
+Veja as [notas da versão](docs/releases/v1.0.2.md).
 
 - **Windows x64 — ZIP:** extração manual; não instala serviços nem drivers por si só.
 - **Windows x64 — instalador:** instalação convencional, com integração de serviço,

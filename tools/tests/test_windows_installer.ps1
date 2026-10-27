@@ -16,7 +16,6 @@ if (Get-CimInstance Win32_PnPEntity | Where-Object { @($_.HardwareID) -contains 
 }
 $work = Join-Path $env:RUNNER_TEMP ('apollo-installer-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $work | Out-Null
-$app = Join-Path $work 'Upgrade with spaces'
 $managed = Join-Path $work 'Managed installation'
 $targetVersion = (Get-Content -LiteralPath (Join-Path $PSScriptRoot '../../package.json') -Raw | ConvertFrom-Json).version
 
@@ -97,34 +96,43 @@ try {
     }
     Write-Output 'Incomplete driver payload was rejected without changing certificate trust.'
 
-    $oldZip = Join-Path $work 'Apollo-1.0.0.zip'
-    Invoke-WebRequest -Uri 'https://github.com/matheuspergoli/Apollo/releases/download/v1.0.0/Apollo-1.0.0-Windows-x64.zip' -OutFile $oldZip
-    if ((Get-FileHash $oldZip).Hash -ine 'cac2d5bd17fe14489b07acd96fc7f7568641dccbc3cb09d914af5fd8aa5b6f54') {
-        throw 'The released 1.0.0 fixture differs from its pinned artifact.'
+    $previousReleases = @(
+        @{ Version = '1.0.0'; Sha256 = 'cac2d5bd17fe14489b07acd96fc7f7568641dccbc3cb09d914af5fd8aa5b6f54' },
+        @{ Version = '1.0.1'; Sha256 = 'f2dd3fb9242867e8816b1a8e990df51f4a14a3fa766a5eebfb20799816dea1d0' }
+    )
+    foreach ($release in $previousReleases) {
+        $version = $release.Version
+        $oldZip = Join-Path $work "Apollo-$version.zip"
+        Invoke-WebRequest -Uri "https://github.com/matheuspergoli/Apollo/releases/download/v$version/Apollo-$version-Windows-x64.zip" -OutFile $oldZip
+        if ((Get-FileHash $oldZip).Hash -ine $release.Sha256) {
+            throw "The released $version fixture differs from its pinned artifact."
+        }
+        $old = Join-Path $work "old-$version"
+        Expand-Archive -LiteralPath $oldZip -DestinationPath $old
+        $app = Join-Path $work "Upgrade $version with spaces"
+        Move-Item -LiteralPath (Join-Path $old 'Apollo') -Destination $app
+        New-Item -ItemType Directory -Path (Join-Path $app 'config\credentials') -Force | Out-Null
+        $fixtures = @('config\sunshine.conf', 'config\apps.json', 'config\sunshine_state.json', 'config\credentials\server.key', 'config\unknown.bin')
+        $hashes = @{}
+        foreach ($name in $fixtures) {
+            $file = Join-Path $app $name
+            [IO.File]::WriteAllBytes($file, [byte[]](0..255))
+            $hashes[$name] = (Get-FileHash $file).Hash
+        }
+        Invoke-Installer -Root $app -NoIntegration
+        foreach ($name in $fixtures) {
+            if ((Get-FileHash (Join-Path $app $name)).Hash -ne $hashes[$name]) { throw "Upgrade changed fixture data: $name" }
+        }
+        if (Get-Service ApolloService -ErrorAction SilentlyContinue) { throw 'NoHostIntegration unexpectedly installed a service.' }
+        if ((Get-Item (Join-Path $app 'sunshine.exe')).VersionInfo.ProductVersion -ne $targetVersion) {
+            throw 'The old executable was not upgraded.'
+        }
+        Uninstall-TestCopy $app
+        foreach ($name in $fixtures) {
+            if ((Get-FileHash (Join-Path $app $name)).Hash -ne $hashes[$name]) { throw 'Uninstall removed existing data.' }
+        }
+        Write-Output "Real NSIS $version upgrade and uninstall preserved all data fixtures byte-for-byte."
     }
-    Expand-Archive -LiteralPath $oldZip -DestinationPath (Join-Path $work 'old')
-    Move-Item -LiteralPath (Join-Path $work 'old\Apollo') -Destination $app
-    New-Item -ItemType Directory -Path (Join-Path $app 'config\credentials') -Force | Out-Null
-    $fixtures = @('config\sunshine.conf', 'config\apps.json', 'config\sunshine_state.json', 'config\credentials\server.key', 'config\unknown.bin')
-    $hashes = @{}
-    foreach ($name in $fixtures) {
-        $file = Join-Path $app $name
-        [IO.File]::WriteAllBytes($file, [byte[]](0..255))
-        $hashes[$name] = (Get-FileHash $file).Hash
-    }
-    Invoke-Installer -Root $app -NoIntegration
-    foreach ($name in $fixtures) {
-        if ((Get-FileHash (Join-Path $app $name)).Hash -ne $hashes[$name]) { throw "Upgrade changed fixture data: $name" }
-    }
-    if (Get-Service ApolloService -ErrorAction SilentlyContinue) { throw 'NoHostIntegration unexpectedly installed a service.' }
-    if ((Get-Item (Join-Path $app 'sunshine.exe')).VersionInfo.ProductVersion -ne $targetVersion) {
-        throw 'The old executable was not upgraded.'
-    }
-    Uninstall-TestCopy $app
-    foreach ($name in $fixtures) {
-        if ((Get-FileHash (Join-Path $app $name)).Hash -ne $hashes[$name]) { throw 'Uninstall removed existing data.' }
-    }
-    Write-Output 'Real NSIS 1.0.0 upgrade and uninstall preserved all data fixtures byte-for-byte.'
 
     if (-not $HostIntegration) { Copy-Item -LiteralPath $candidate -Destination $managed -Recurse }
     New-Item -ItemType Directory -Path (Join-Path $managed 'config') -Force | Out-Null
