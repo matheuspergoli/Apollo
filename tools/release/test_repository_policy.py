@@ -48,6 +48,13 @@ class RepositoryPolicyTests(unittest.TestCase):
             for name in ["package-lock.json", "yarn.lock"]:
                 self.assertFalse((directory / name).exists(), str(directory / name))
 
+    def test_browser_image_is_pinned_and_matches_playwright(self):
+        package = json.loads((ROOT / "dashboard/package.json").read_text(encoding="utf-8"))
+        workflow = (ROOT / ".github/workflows/dashboard.yml").read_text(encoding="utf-8")
+        image = re.search(r"image:\s+mcr\.microsoft\.com/playwright:v([\d.]+)-noble@sha256:([a-f0-9]{64})", workflow)
+        self.assertIsNotNone(image, "Browser CI must use a digest-pinned official Playwright image")
+        self.assertEqual(image.group(1), package["devDependencies"]["@playwright/test"])
+
     def test_maintained_documentation_links_resolve(self):
         files = [
             "README.md",

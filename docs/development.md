@@ -33,7 +33,12 @@ pnpm verify        # sequência completa do frontend
 
 Antes do primeiro teste de navegador, execute
 `pnpm --dir dashboard exec playwright install --with-deps chromium`.
-Dependências de sistema podem exigir permissões; o CI as instala no runner isolado.
+Na instalação local, dependências de sistema podem exigir permissões.
+O job de frontend usa a imagem oficial Playwright, com versão correspondente ao
+pacote fixado e digest imutável. Navegadores e bibliotecas de sistema vêm nessa
+imagem; o CI instala somente as dependências pnpm do projeto. Ao atualizar
+Playwright, revise juntos a versão do pacote e a imagem, sem mudar os testes para
+compensar incompatibilidades do ambiente.
 
 Ferramentas de distribuição têm testes independentes:
 
