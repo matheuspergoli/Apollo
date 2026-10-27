@@ -132,6 +132,9 @@ resolução/FPS solicitados, display/driver virtual, HDR, estado de HAGS, limite
 FPS do aplicativo, carga GPU/VRAM, cena, aquecimento, duração e tipo de rede.
 Preserve a configuração funcional; registrar HAGS não autoriza alterá-lo.
 
+A identidade e os resultados funcionais da referência 1.0.2 estão no
+[roadmap](roadmap.md#baseline-funcional-publicada). Eles não são medições de streaming.
+
 Escolha o primeiro cenário com base no que funciona no ambiente autorizado.
 Windows 11/NVIDIA é um recorte inicial, não uma fixture presa a um computador.
 Rede local, Wi-Fi e acesso externo são cenários separados. Não combinar resultados
@@ -161,6 +164,46 @@ Não medir latência até a apresentação do cliente a partir de um timer do ho
 Uma melhoria de 10% pode ser um critério de um experimento futuro, mas não é um
 gate universal: orçamento, ruído, valor absoluto e confiabilidade vêm primeiro.
 Uma correção de integridade não precisa demonstrar ganho de FPS para ser válida.
+
+### Primeira campanha A/A: protocolo pronto, execução pendente
+
+Não trocar DDX/WGC, encoder, codec, preset, FPS, HDR, prioridade ou HAGS nesta fase.
+Confirmar primeiro a versão instalada e a correspondência com o pacote de referência.
+Usar o cliente e a cena já funcionais, com um único cenário de rede e carga.
+
+Antes da coleta, preencher privadamente um plano curto:
+
+| Campo | O que definir |
+| --- | --- |
+| `scenario_id` | Identificador genérico; cena, carga, rede e configuração fixas |
+| `run_id` | A1, A2, A3; inicialmente três repetições da mesma referência |
+| Aquecimento / duração | Tempos escolhidos antes dos runs e mantidos iguais; suficientes para a falha de interesse |
+| Log | Nível da referência, mantido em todos os runs |
+| Fonte e unidade | Host, cliente ou observação manual; não misturar suas durações |
+| Critério de interrupção | Erro de encoder, alvo indevido, instabilidade ou necessidade de recuperação local |
+
+Registrar início/fim, erro presente/ausente, FPS solicitado e sinais que a versão
+do Artemis realmente disponibilizar, identificando sua origem. Observação de
+travadas deve ser marcada como observação, não como contador objetivo do pipeline.
+Quando uma métrica não estiver disponível, marcar **N/D**, sem preencher com zero.
+
+Os timers `Frame processing latency`, FEC e envio de `videoBroadcastThread` usam
+nível debug e agregam min/max/média por janela de aproximadamente 20 segundos.
+Não são amostras brutas de cada frame. Não habilitar debug silenciosamente para
+“completar” a baseline: isso é outra condição de coleta, com volume/overhead próprios.
+Se for autorizado um cenário debug, documentá-lo separadamente, verificar a emissão
+dos sinais e comparar somente runs equivalentes. Ausência de linha em Info não
+comprova ausência de trabalho ou de falha.
+
+O resultado inicial será a variação A/A e a disponibilidade dos sinais, não uma
+conclusão DDX versus WGC. Não há dados brutos suficientes nesses agregados para
+reconstruir p95/p99, contagem de frames substituídos ou idade por estágio.
+Não criar um parser que invente esses dados a partir das médias.
+
+Após a campanha, concluir G02 com contexto sanitizado, dispersão e limitações no
+PR/roadmap. Dados privados e logs brutos ficam fora do repositório. Só então escolher
+a primeira comparação A/B ou a menor instrumentação necessária para responder à
+pergunta que a referência não conseguiu esclarecer.
 
 ### Escalonamento de risco
 
