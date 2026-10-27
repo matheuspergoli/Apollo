@@ -60,6 +60,10 @@ INPUT = ../README.md \
         building.md \
         contributing.md \
         development.md \
+        architecture.md \
+        roadmap.md \
+        adr/0001-host-first-and-evidence.md \
+        ../GLOSSARY.md \
         ../third-party/doxyconfig/docs/source_code.md \
         ../src
 

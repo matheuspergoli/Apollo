@@ -82,7 +82,7 @@ exigem autorização explícita; guidelines de design não autorizam um redesenh
 | Contratos C++/React (`tests/ui-contracts/`) | inventário e comportamento do parser nativo |
 | HTTPS Windows | integração real de autenticação, configuração, PNG e reinício em runner isolado |
 | Distribuição (`tools/release/`) | metadados, ausência de estado privado, arquivos web e igualdade ZIP/instalador |
-| Instalador Windows | NSIS real com `/NoHostIntegration`, atualização da 1.0.0 e desinstalação preservando dados |
+| Instalador Windows | NSIS real com `/NoHostIntegration`, atualização desde 1.0.0/1.0.1 e desinstalação preservando dados |
 | Serviço Windows | helpers distribuídos do Apollo, preservação da conta e preferência de inicialização, reinício com novo processo respondendo |
 
 Ao corrigir um defeito, acrescente uma regressão no nível em que ele ocorreu.
@@ -117,6 +117,74 @@ deve ser diagnosticada antes de alterar código; não acrescente tentativas
 especulativas, dependências de sistema ou flags exclusivas de teste ao produto.
 Diagnósticos temporários não viram documentação permanente. Os critérios estão
 registrados no [AGENTS.md](../AGENTS.md). Não altere um host ativo para testar.
+
+## Baseline e medição do host
+
+A [arquitetura](architecture.md) separa os sinais existentes das propostas de
+instrumentação. O [roadmap](roadmap.md) registra perguntas e resultados; esta seção
+define o método, não um relatório de máquina ou um benchmark já executado.
+
+### Referência reproduzível
+
+Fixe a release/commit e o hash do pacote. Registre somente o contexto técnico
+necessário: build do Windows, GPU/driver, backend de captura, encoder/codec/preset,
+resolução/FPS solicitados, display/driver virtual, HDR, estado de HAGS, limite de
+FPS do aplicativo, carga GPU/VRAM, cena, aquecimento, duração e tipo de rede.
+Preserve a configuração funcional; registrar HAGS não autoriza alterá-lo.
+
+Escolha o primeiro cenário com base no que funciona no ambiente autorizado.
+Windows 11/NVIDIA é um recorte inicial, não uma fixture presa a um computador.
+Rede local, Wi-Fi e acesso externo são cenários separados. Não combinar resultados
+de hardware, cena, cliente ou rede distintos como se fossem uma mesma população.
+
+Resultados brutos ficam em armazenamento privado, fora do repositório e do pacote.
+PRs podem conter resultados agregados e sanitizados, metodologia e referência dos
+artefatos, sem nomes pessoais, endereços, credenciais ou configuração privada.
+
+### Comparação
+
+1. Faça uma repetição **A/A** para conhecer a variação da própria referência.
+2. Altere uma variável e intercale A/B quando possível, evitando confundir ordem,
+   aquecimento, compilação de shaders ou carga de fundo com efeito da mudança.
+3. Use inicialmente 3–5 repetições comparáveis, com duração suficiente para o
+   sintoma e para a quantidade de amostras dos percentis. Isso não é garantia
+   estatística; reporte dispersão e não descarte runs ruins sem critério prévio.
+4. Defina antes da comparação a pergunta, a população de frames, a janela, os
+   limites de overhead e as condições de aprovação/rejeição.
+5. Registre min/max/média e, quando houver amostras adequadas, p50/p95/p99, erros,
+   perdas/substituições/repetições e amostras de diagnóstico ausentes. Dado não
+   medido é ausente, não zero. Não derive percentis de médias agregadas.
+6. Compare telemetria ligada/desligada antes de usá-la para justificar performance.
+   Tempos CPU, espera GPU, envio local e estatísticas do cliente têm escopos distintos.
+
+Não medir latência até a apresentação do cliente a partir de um timer do host.
+Uma melhoria de 10% pode ser um critério de um experimento futuro, mas não é um
+gate universal: orçamento, ruído, valor absoluto e confiabilidade vêm primeiro.
+Uma correção de integridade não precisa demonstrar ganho de FPS para ser válida.
+
+### Escalonamento de risco
+
+Comece com leitura e observação. Saturação de VRAM, HDR, hotplug, troca de backend,
+alteração de prioridade, suspensão e retomada exigem autorização e recuperação
+local adequadas; não execute essa matriz automaticamente no host em uso.
+
+Teste separadamente término normal, desconexão abrupta, falha de preparação,
+mudança manual concorrente e reinício do host ao modificar recuperação de display.
+Helpers novos exigem ainda término inesperado, sessão bloqueada, troca de usuário
+e suspensão/retomada. Nenhum desses cenários é comprovado por uma resposta HTTP
+ou por um driver apenas aparecer instalado.
+
+### Promoção de uma mudança
+
+Rejeite ganhos que dependam de timeouts, tela preta, alvo físico indevido, regressão
+de HDR, dados perdidos ou retomada insegura. Compare o caso favorável e as cargas
+em que a implementação pode piorar. Experimentos que alteram comportamento ficam
+desativados por padrão e têm alternativa estável; não acrescentar flags sem função.
+
+A evidência de hardware complementa os testes dos contratos do Apollo. Não substitui
+CI, auditoria de pacote, testes de atualização ou revisão de segurança. Da mesma
+forma, CI não certifica desempenho. Registre conclusão e limitações no PR e atualize
+o ID correspondente no roadmap, inclusive quando a decisão for não implementar.
 
 ## Dependências e distribuição
 
