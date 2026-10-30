@@ -8,6 +8,24 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class RepositoryPolicyTests(unittest.TestCase):
+    def test_frame_send_sample_is_after_all_fec_blocks_and_before_failure_handler(self):
+        # Structural regression: the full broadcast path needs a streaming session.
+        # Do not extract a parallel sender solely to test this sampling placement.
+        source = (ROOT / "src/stream.cpp").read_text(encoding="utf-8")
+        source = re.sub(r'//[^\n]*|/\*[\s\S]*?\*/|"(?:\\.|[^"\\])*"', '', source)
+        start = source.index("void videoBroadcastThread(")
+        body = source[start:source.index("void audioBroadcastThread(", start)]
+        sample = "frame_network_latency_logger.second_point_now_and_log();"
+        self.assertEqual(body.count(sample), 1)
+        block = body.index("{", body.index("std::for_each(fec_blocks_begin"))
+        depth = 1
+        end = block + 1
+        while depth:
+            depth += (body[end] == "{") - (body[end] == "}")
+            end += 1
+        self.assertGreater(body.index(sample), end)
+        self.assertLess(body.index(sample), body.index("catch (const std::exception"))
+
     def test_runtime_contract_cannot_omit_virtual_display_inputs(self):
         contract = json.loads((ROOT / "packaging/windows/runtime-contract.json").read_text())
         for name in ["SudoVDA.dll", "nefconc.exe", "SudoVDA.inf", "sudovda.cat", "sudovda.cer"]:

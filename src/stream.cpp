@@ -1336,7 +1336,7 @@ namespace stream {
 
     logging::time_delta_periodic_logger frame_send_batch_latency_logger(debug, "Network: each send_batch() latency");
     logging::time_delta_periodic_logger frame_fec_latency_logger(debug, "Network: each FEC block latency");
-    logging::time_delta_periodic_logger frame_network_latency_logger(debug, "Network: frame's overall network latency");
+    logging::time_delta_periodic_logger frame_network_latency_logger(debug, "Network: frame packetization and local send duration");
 
     crypto::aes_t iv(12);
 
@@ -1626,8 +1626,6 @@ namespace stream {
                                          std::chrono::duration_cast<std::chrono::nanoseconds>(1ms) *
                                            ratecontrol_frame_packets_sent / ratecontrol_packets_in_1ms;
 
-          frame_network_latency_logger.second_point_now_and_log();
-
           BOOST_LOG(verbose) << "Sent Frame seq ["sv << packet->frame_index() << "] pts ["sv << timestamp
                              << "] shards ["sv << shards.size() << "/"sv << shards.percentage << "%]"sv
                              << (frame_is_dupe ? " Dupe" : "")
@@ -1639,6 +1637,8 @@ namespace stream {
         });
 
         session->video.lowseq = lowseq;
+        // One sample per completed frame, not cumulative samples per FEC block.
+        frame_network_latency_logger.second_point_now_and_log();
       } catch (const std::exception &e) {
         BOOST_LOG(error) << "Broadcast video failed "sv << e.what();
         std::this_thread::sleep_for(100ms);
