@@ -1,4 +1,7 @@
 add_executable(apollo_ui_contracts ../integration/test_config_consistency.cpp ../unit/test_virtual_display_policy.cpp)
+if(WIN32)
+    target_sources(apollo_ui_contracts PRIVATE ../unit/test_nvenc_event_wait.cpp)
+endif()
 target_link_libraries(apollo_ui_contracts PRIVATE gtest_main nlohmann_json::nlohmann_json)
 target_compile_features(apollo_ui_contracts PRIVATE cxx_std_23)
 

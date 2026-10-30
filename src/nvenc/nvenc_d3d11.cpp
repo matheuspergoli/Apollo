@@ -7,6 +7,7 @@
 
 #ifdef _WIN32
   #include "nvenc_d3d11.h"
+  #include "nvenc_event_wait.h"
 
 namespace nvenc {
 
@@ -62,7 +63,21 @@ namespace nvenc {
   }
 
   bool nvenc_d3d11::wait_for_async_event(uint32_t timeout_ms) {
-    return WaitForSingleObject(async_event_handle, timeout_ms) == WAIT_OBJECT_0;
+    const auto result = wait_for_completion_event(async_event_handle, timeout_ms);
+    switch (result.status) {
+      case event_wait_status::completed:
+        return true;
+      case event_wait_status::timed_out:
+        BOOST_LOG(error) << "NvEnc: completion event wait timed out after " << timeout_ms << " ms";
+        break;
+      case event_wait_status::failed:
+        BOOST_LOG(error) << "NvEnc: completion event wait failed with Windows error " << result.error;
+        break;
+      case event_wait_status::unexpected:
+        BOOST_LOG(error) << "NvEnc: completion event wait returned unexpected status " << result.native_status;
+        break;
+    }
+    return false;
   }
 
 }  // namespace nvenc
