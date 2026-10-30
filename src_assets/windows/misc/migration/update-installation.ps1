@@ -17,7 +17,8 @@ $serviceBinary = Join-Path $root 'tools\sunshinesvc.exe'
 $hostBinary = Join-Path $root 'sunshine.exe'
 
 function Get-OwnedApolloService {
-    $service = Get-CimInstance Win32_Service -Filter "Name='ApolloService'"
+    param([int]$OperationTimeoutSec = 60)
+    $service = Get-CimInstance Win32_Service -Filter "Name='ApolloService'" -OperationTimeoutSec $OperationTimeoutSec
     if (-not $service) { return $null }
     $command = $service.PathName.Trim()
     if ($command -ne ('"' + $serviceBinary + '"') -and $command -ne $serviceBinary) {
@@ -27,23 +28,42 @@ function Get-OwnedApolloService {
 }
 
 function Get-OwnedHostProcesses {
-    @(Get-CimInstance Win32_Process -Filter "Name='sunshine.exe'" | Where-Object {
+    param([int]$OperationTimeoutSec = 60)
+    @(Get-CimInstance Win32_Process -Filter "Name='sunshine.exe'" -OperationTimeoutSec $OperationTimeoutSec | Where-Object {
         if (-not $_.ExecutablePath) { throw 'Cannot establish the path of a running host; close it before updating.' }
         $_.ExecutablePath -ieq $hostBinary
     })
 }
 
 function Stop-OwnedApolloService {
-    $service = Get-OwnedApolloService
+    param([TimeSpan]$Timeout = [TimeSpan]::FromSeconds(60))
+    if ($Timeout -le [TimeSpan]::Zero) { throw 'Service stop timeout must be positive.' }
+    $clock = [Diagnostics.Stopwatch]::StartNew()
+    $service = Get-OwnedApolloService -OperationTimeoutSec ([int][Math]::Ceiling($Timeout.TotalSeconds))
     if ($service -and $service.State -ne 'Stopped') {
-        Stop-Service -Name ApolloService -ErrorAction Stop
-        (Get-Service ApolloService).WaitForStatus('Stopped', [TimeSpan]::FromSeconds(60))
+        $remaining = $Timeout - $clock.Elapsed
+        if ($remaining -le [TimeSpan]::Zero) { throw 'Timed out before requesting the owned service to stop.' }
+        # Request only this service to stop; do not let Stop-Service wait before
+        # our deadline starts or stop dependent services from other installations.
+        $result = Invoke-CimMethod -InputObject $service -MethodName StopService -OperationTimeoutSec ([int][Math]::Ceiling($remaining.TotalSeconds))
+        if ($result.ReturnValue -notin @(0, 6)) { throw "Owned service stop request failed: $($result.ReturnValue)" }
+        Write-Output 'Waiting for the owned Apollo service and host to stop within the update deadline.'
     }
-    for ($attempt = 0; $attempt -lt 60; $attempt++) {
-        if (@(Get-OwnedHostProcesses).Count -eq 0) { return }
-        Start-Sleep -Seconds 1
+    while ($clock.Elapsed -lt $Timeout) {
+        $seconds = [Math]::Max(1, [int][Math]::Ceiling(($Timeout - $clock.Elapsed).TotalSeconds))
+        $service = Get-OwnedApolloService -OperationTimeoutSec $seconds
+        if (-not $service -or $service.State -eq 'Stopped') {
+            if ($clock.Elapsed -ge $Timeout) { break }
+            $seconds = [Math]::Max(1, [int][Math]::Ceiling(($Timeout - $clock.Elapsed).TotalSeconds))
+            if (@(Get-OwnedHostProcesses -OperationTimeoutSec $seconds).Count -eq 0) {
+                if ($clock.Elapsed -lt $Timeout) { return }
+                break
+            }
+        }
+        $remaining = ($Timeout - $clock.Elapsed).TotalMilliseconds
+        if ($remaining -gt 0) { Start-Sleep -Milliseconds ([int][Math]::Min(1000, $remaining)) }
     }
-    throw 'The host is still using this installation. Close it before updating; no forced termination was attempted.'
+    throw 'Timed out waiting for the owned service or host to stop. Program files were not released; no forced termination was attempted.'
 }
 
 function Start-OwnedApolloService {
@@ -111,6 +131,9 @@ function Assert-InstalledProgram {
     $info = (Get-Item -LiteralPath $hostBinary).VersionInfo
     if ($info.ProductName -ne 'Apollo' -or $info.ProductVersion -ne $manifest.appVersion) { throw 'Installed executable version differs from the installer.' }
 }
+
+# Dot-sourcing exposes the same lifecycle functions without executing a CLI action.
+if ($MyInvocation.InvocationName -eq '.') { return }
 
 try {
     if ($Mode -eq 'Verify') { Assert-InstalledProgram; exit 0 }
