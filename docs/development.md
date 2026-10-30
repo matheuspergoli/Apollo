@@ -129,8 +129,12 @@ política não substitui a conferência independente do artefato.
 Os caminhos de distribuição também devem ser inequívocos no Windows: aliases com
 ponto/espaço final, nomes de dispositivo, caracteres proibidos e colisões de caixa
 são rejeitados, não normalizados para gravar em outro destino. A comparação do
-instalador exige o mesmo conjunto de arquivos de programa do ZIP; metadados do
-extrator fora dessa raiz não são arquivos do programa.
+instalador exige o mesmo conjunto de arquivos de programa do ZIP. O namespace de
+controle `$PLUGINSDIR` do NSIS pode aparecer na mesma raiz de extração do 7-Zip:
+somente nomes conhecidos são classificados como controles, e as cópias embutidas
+dos scripts/manifesto devem coincidir com os arquivos públicos. `Uninstall.exe` é
+um controle gerado, ausente no ZIP, cuja estrutura PE é verificada. Arquivos extras
+do programa e controles desconhecidos continuam sendo rejeitados.
 
 O atualizador usa um único orçamento para solicitar a parada do serviço proprietário
 e aguardar serviço/host. Não força término nem para dependências de outra instalação.

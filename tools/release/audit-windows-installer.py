@@ -8,12 +8,60 @@ import os
 from pathlib import Path, PurePosixPath
 import shutil
 import stat
+import struct
 import subprocess
 import sys
 import tempfile
 import zipfile
 
 from public_payload import validate_public_path
+
+
+NSIS_CONTROL_NAMES = frozenset({
+    "InstallOptions.dll", "StartMenu.dll", "System.dll", "UserInfo.dll", "nsExec.dll",
+    "NSIS.InstallOptions.ini", "ioSpecial.ini", "modern-header.bmp", "modern-wizard.bmp",
+})
+EMBEDDED_PROGRAM_COPIES = {
+    "update-installation.ps1": "scripts/update-installation.ps1",
+    "installation-data.ps1": "scripts/installation-data.ps1",
+    "installation-manifest.json": "installation-manifest.json",
+}
+
+
+def nsis_control_paths(root: Path, extracted: Path, expected_files: set) -> set:
+    """Classify 7-Zip's NSIS control namespace, not arbitrary program extras."""
+    recognized, copies = set(), set()
+    for base in {root, extracted.resolve()}:
+        plugins = base / "$PLUGINSDIR"
+        if plugins.is_dir():
+            for path in plugins.rglob("*"):
+                name = path.relative_to(plugins).as_posix()
+                if (not path.is_file()
+                        or (name not in NSIS_CONTROL_NAMES and name not in EMBEDDED_PROGRAM_COPIES)):
+                    raise ValueError(f"Unexpected NSIS control entry: {name}")
+                data = path.read_bytes()
+                if not data:
+                    raise ValueError(f"Empty NSIS control entry: {name}")
+                if name in EMBEDDED_PROGRAM_COPIES:
+                    public = EMBEDDED_PROGRAM_COPIES[name]
+                    if public not in expected_files or data != (root / public).read_bytes():
+                        raise ValueError(f"Embedded installer copy differs from program payload: {name}")
+                    copies.add(public)
+                if path.is_relative_to(root):
+                    recognized.add(path.relative_to(root).as_posix())
+        uninstaller = base / "Uninstall.exe"
+        if uninstaller.exists():
+            data = uninstaller.read_bytes()
+            offset = struct.unpack_from("<I", data, 60)[0] if len(data) >= 64 else len(data)
+            if (len(data) < 64 or data[:2] != b"MZ" or offset < 64 or offset > len(data) - 6
+                    or data[offset:offset + 4] != b"PE\0\0"):
+                raise ValueError("Invalid NSIS uninstaller control file")
+            if uninstaller.is_relative_to(root):
+                recognized.add("Uninstall.exe")
+    missing = (set(EMBEDDED_PROGRAM_COPIES.values()) & expected_files) - copies
+    if missing:
+        raise ValueError("Missing embedded installer copies: " + ", ".join(sorted(missing)))
+    return recognized
 
 
 def compare_payload(extracted: Path, archive: Path) -> int:
@@ -70,7 +118,10 @@ def compare_payload(extracted: Path, archive: Path) -> int:
                     f"first differing byte {offset}; lengths {len(actual)}/{len(expected)}"
                 )
             count += 1
-    extras = set(actual_files) - expected_files
+    controls = nsis_control_paths(root, extracted, expected_files)
+    if controls & expected_files:
+        raise ValueError("NSIS controls must not be part of the public ZIP payload")
+    extras = set(actual_files) - expected_files - controls
     if extras:
         raise ValueError("Unexpected installer program files: " + ", ".join(sorted(extras)))
     if count == 0:

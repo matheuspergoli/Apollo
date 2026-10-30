@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import struct
 import tempfile
 import unittest
 import zipfile
@@ -71,7 +72,7 @@ class ReleaseMetadataTests(unittest.TestCase):
             (root / "sunshine.exe").write_bytes(b"fixture")
             plugins = extracted / "$PLUGINSDIR"
             plugins.mkdir()
-            (plugins / "metadata.bin").write_bytes(b"extractor metadata fixture")
+            (plugins / "System.dll").write_bytes(b"extractor metadata fixture")
             archive = extracted / "Apollo.zip"
             with zipfile.ZipFile(archive, "w") as package:
                 package.writestr("Apollo/sunshine.exe", b"fixture")
@@ -79,6 +80,73 @@ class ReleaseMetadataTests(unittest.TestCase):
             (root / "extra.ps1").write_text("fixture, never executed")
             with self.assertRaisesRegex(ValueError, "Unexpected installer program files"):
                 MODULE.compare_payload(extracted, archive)
+
+    def test_nsis_control_namespace_and_embedded_copies_are_verified(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "extracted"
+            root.mkdir()
+            files = {"sunshine.exe": b"fixture", "scripts/update-installation.ps1": b"update fixture",
+                     "scripts/installation-data.ps1": b"data fixture", "installation-manifest.json": b"manifest"}
+            archive = root.parent / "Apollo.zip"
+            with zipfile.ZipFile(archive, "w") as package:
+                for name, data in files.items():
+                    target = root / name
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(data)
+                    package.writestr("Apollo/" + name, data)
+            plugins = root / "$PLUGINSDIR"
+            plugins.mkdir()
+            for name in ["update-installation.ps1", "installation-data.ps1", "installation-manifest.json"]:
+                public = name if name == "installation-manifest.json" else "scripts/" + name
+                (plugins / name).write_bytes(files[public])
+            (plugins / "System.dll").write_bytes(b"NSIS plugin fixture")
+            (plugins / "ioSpecial.ini").write_bytes(b"NSIS control fixture")
+            self.assertEqual(MODULE.compare_payload(root, archive), len(files))
+            (plugins / "installation-data.ps1").unlink()
+            with self.assertRaisesRegex(ValueError, "Missing embedded installer copies"):
+                MODULE.compare_payload(root, archive)
+            (plugins / "installation-data.ps1").write_bytes(files["scripts/installation-data.ps1"])
+            (plugins / "update-installation.ps1").write_bytes(b"tampered")
+            with self.assertRaisesRegex(ValueError, "Embedded installer copy differs"):
+                MODULE.compare_payload(root, archive)
+            (plugins / "update-installation.ps1").write_bytes(files["scripts/update-installation.ps1"])
+            (plugins / "extra.ps1").write_bytes(b"unknown control file")
+            with self.assertRaisesRegex(ValueError, "Unexpected NSIS control"):
+                MODULE.compare_payload(root, archive)
+
+    def test_uninstaller_exception_requires_pe_structure(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "program"
+            root.mkdir()
+            (root / "sunshine.exe").write_bytes(b"fixture")
+            archive = root.parent / "Apollo.zip"
+            with zipfile.ZipFile(archive, "w") as package:
+                package.writestr("Apollo/sunshine.exe", b"fixture")
+            uninstaller = root / "Uninstall.exe"
+            uninstaller.write_bytes(b"not a generated PE")
+            with self.assertRaisesRegex(ValueError, "Invalid NSIS uninstaller"):
+                MODULE.compare_payload(root, archive)
+            data = bytearray(80)
+            data[:2] = b"MZ"
+            struct.pack_into("<I", data, 60, 64)
+            data[64:68] = b"PE\0\0"
+            uninstaller.write_bytes(data)
+            self.assertEqual(MODULE.compare_payload(root, archive), 1)
+
+    def test_nsis_control_namespace_cannot_be_declared_as_public_zip_files(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "program"
+            root.mkdir()
+            (root / "sunshine.exe").write_bytes(b"fixture")
+            plugins = root / "$PLUGINSDIR"
+            plugins.mkdir()
+            (plugins / "System.dll").write_bytes(b"control fixture")
+            archive = root.parent / "Apollo.zip"
+            with zipfile.ZipFile(archive, "w") as package:
+                package.writestr("Apollo/sunshine.exe", b"fixture")
+                package.writestr("Apollo/$PLUGINSDIR/System.dll", b"control fixture")
+            with self.assertRaisesRegex(ValueError, "NSIS controls must not be part"):
+                MODULE.compare_payload(root, archive)
 
 
 if __name__ == "__main__":
