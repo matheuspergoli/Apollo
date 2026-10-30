@@ -86,6 +86,7 @@ class RepositoryPolicyTests(unittest.TestCase):
             "docs/releases/v1.0.0.md",
             "docs/releases/v1.0.1.md",
             "docs/releases/v1.0.2.md",
+            "docs/releases/v1.0.3.md",
             ".github/CONTRIBUTING.md",
         ]
         for filename in files:

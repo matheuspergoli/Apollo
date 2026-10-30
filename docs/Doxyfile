@@ -46,6 +46,7 @@ INPUT = ../README.md \
         releases/v1.0.0.md \
         releases/v1.0.1.md \
         releases/v1.0.2.md \
+        releases/v1.0.3.md \
         ../DOCKER_README.md \
         third_party_packages.md \
         gamestream_migration.md \
