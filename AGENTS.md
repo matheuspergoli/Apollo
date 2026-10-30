@@ -54,18 +54,3 @@
 - Freeze release binaries before manual acceptance. Publish those exact hashes;
   documentation-only follow-ups must not silently replace or retag the tested build.
   Investigate warnings in context; do not suppress them merely to make logs look clean.
-
-## Host evolution
-
-- Read docs/architecture.md, docs/roadmap.md and the relevant docs/adr decision
-  before changing native capture, telemetry or session/display recovery. Distinguish
-  existing behavior, external reports, hypotheses and accepted decisions.
-- Keep Artemis/protocol compatibility and the approved dashboard. Windows is the
-  active research focus; do not hardcode a personal GPU/profile or regress existing
-  AMD/Intel/Linux paths. "Golden" is a study name, not a branding/version change.
-- Measure host-owned stages before optimizing. Do not label CPU submission, local
-  send time or encode indices as GPU completion, network transit or client latency.
-  Diagnostics must be bounded, non-blocking for media work and privacy-reviewed.
-- Preserve fail-closed virtual-display behavior. Recovery needs proven ownership,
-  cancellation and finite budgets; never turn uncertainty into physical capture,
-  indefinite restoration or automatic system-wide tuning.

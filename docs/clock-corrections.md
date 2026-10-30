@@ -27,7 +27,7 @@ results saturate before integer casts. Invalid frequencies return zero.
 As regressões exercitam frequências distintas de QPC, deltas negativos, limites
 inteiros e timestamps de longa duração; não dependem de um modelo de computador.
 
-Regression command with GCC C++17, -Wall -Wextra -Werror and UBSan:
+19 assertions passed with GCC C++17, -Wall -Wextra -Werror and UBSan:
 
 ```
 g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=undefined \
@@ -48,8 +48,9 @@ Isso não equivale a validar outra toolchain, como MSVC.
 - Vibepollo 4b2942efdf23e905c9d419a14ab5df00d1ddddb6,
   src/platform/windows/wgc_capture_policy.h:95–112, used as a research lead.
 
-The implementation follows the documented time-unit relationships. No driver,
-refresh, NVENC preset, network or client behavior was changed.
+Implementation here was written independently from the documented unit
+relationships. Context7 was unavailable; Microsoft documentation was fetched
+directly. No driver, refresh, NVENC preset, network or client behavior was changed.
 
 ## Limites da validação
 

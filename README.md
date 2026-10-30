@@ -71,8 +71,6 @@ de ponta a ponta e esta versão não promete ganhos de desempenho não medidos.
 
 - [Instalação e uso](docs/getting_started.md)
 - [Desenvolvimento e testes](docs/development.md)
-- [Arquitetura e limites do host](docs/architecture.md)
-- [Roadmap e evidências](docs/roadmap.md)
 - [Painel e formatos JSON](dashboard/README.md)
 - [Compilação](docs/building.md)
 - [Configuração nativa](docs/configuration.md)
