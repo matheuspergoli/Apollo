@@ -63,6 +63,23 @@ class ReleaseMetadataTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 MODULE.compare_payload(root, archive)
 
+    def test_installer_rejects_extra_program_files_but_not_plugin_metadata(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            extracted = Path(temporary)
+            root = extracted / "program"
+            root.mkdir()
+            (root / "sunshine.exe").write_bytes(b"fixture")
+            plugins = extracted / "$PLUGINSDIR"
+            plugins.mkdir()
+            (plugins / "metadata.bin").write_bytes(b"extractor metadata fixture")
+            archive = extracted / "Apollo.zip"
+            with zipfile.ZipFile(archive, "w") as package:
+                package.writestr("Apollo/sunshine.exe", b"fixture")
+            self.assertEqual(MODULE.compare_payload(extracted, archive), 1)
+            (root / "extra.ps1").write_text("fixture, never executed")
+            with self.assertRaisesRegex(ValueError, "Unexpected installer program files"):
+                MODULE.compare_payload(extracted, archive)
+
 
 if __name__ == "__main__":
     unittest.main()

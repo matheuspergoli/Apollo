@@ -7,13 +7,18 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
 import zipfile
 
+from public_payload import validate_public_path
+
 
 def compare_payload(extracted: Path, archive: Path) -> int:
+    if extracted.is_symlink() or any(path.is_symlink() for path in extracted.rglob("*")):
+        raise ValueError("Installer extraction must not contain links")
     hosts = list(extracted.rglob("sunshine.exe"))
     if len(hosts) != 1:
         raise ValueError("Expected exactly one extracted host executable")
@@ -21,14 +26,37 @@ def compare_payload(extracted: Path, archive: Path) -> int:
     if not root.is_relative_to(extracted.resolve()):
         raise ValueError("Installer payload escaped extraction directory")
     count = 0
+    actual_files = {}
+    actual_paths = set()
+    for path in root.rglob("*"):
+        relative = path.relative_to(root).as_posix()
+        key = validate_public_path(relative)
+        if key in actual_paths:
+            raise ValueError(f"Windows installer path collision: {relative}")
+        actual_paths.add(key)
+        if path.is_file():
+            actual_files[relative] = path
+        elif not path.is_dir():
+            raise ValueError(f"Non-regular installer payload: {relative}")
+    expected_files = set()
+    zip_paths = set()
     with zipfile.ZipFile(archive) as package:
         for entry in package.infolist():
+            if stat.S_ISLNK(entry.external_attr >> 16):
+                raise ValueError("ZIP payload must not contain links")
+            if entry.filename == "Apollo/" and entry.is_dir():
+                continue
+            if not entry.filename.startswith("Apollo/"):
+                raise ValueError("Unexpected ZIP payload path")
+            relative = entry.filename.removeprefix("Apollo/")
+            key = validate_public_path(relative.removesuffix("/") if entry.is_dir() else relative)
+            if key in zip_paths:
+                raise ValueError(f"Windows ZIP path collision: {entry.filename}")
+            zip_paths.add(key)
             if entry.is_dir():
                 continue
-            path = PurePosixPath(entry.filename)
-            if path.parts[0] != "Apollo" or ".." in path.parts or "\\" in entry.filename or ":" in entry.filename:
-                raise ValueError("Unexpected ZIP payload path")
-            target = root.joinpath(*path.parts[1:]).resolve()
+            expected_files.add(relative)
+            target = root.joinpath(*PurePosixPath(relative).parts).resolve()
             if not target.is_relative_to(root) or not target.is_file():
                 raise ValueError(f"Missing or unsafe installer payload: {entry.filename}")
             actual, expected = target.read_bytes(), package.read(entry)
@@ -42,6 +70,9 @@ def compare_payload(extracted: Path, archive: Path) -> int:
                     f"first differing byte {offset}; lengths {len(actual)}/{len(expected)}"
                 )
             count += 1
+    extras = set(actual_files) - expected_files
+    if extras:
+        raise ValueError("Unexpected installer program files: " + ", ".join(sorted(extras)))
     if count == 0:
         raise ValueError("Empty installer payload")
     return count
