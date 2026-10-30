@@ -18,6 +18,7 @@ def audit(archive: Path, source: Path) -> dict:
         names = package.namelist()
         if len(names) != len(set(names)):
             raise ValueError("Duplicate archive entries")
+        paths = set()
         for entry in package.infolist():
             name = entry.filename
             if stat.S_ISLNK(entry.external_attr >> 16):
@@ -27,7 +28,10 @@ def audit(archive: Path, source: Path) -> dict:
             if not name.startswith("Apollo/"):
                 raise ValueError(f"Unexpected archive root: {name}")
             relative = name.removeprefix("Apollo/")
-            validate_public_path(relative.removesuffix("/") if entry.is_dir() else relative)
+            key = validate_public_path(relative.removesuffix("/") if entry.is_dir() else relative)
+            if key in paths:
+                raise ValueError(f"Windows payload path collision: {name}")
+            paths.add(key)
             lower = name.lower()
             legacy_tokens = ("apollo-preview", ".vue", "bootstrap", "i18next", "/locale/", "/locales/")
             if any(token in lower for token in legacy_tokens):

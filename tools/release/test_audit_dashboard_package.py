@@ -130,6 +130,18 @@ class PackageAuditTests(unittest.TestCase):
             with self.subTest(name=name), self.assertRaises(ValueError):
                 MODULE.audit(self.package({name: b"fixture"}), self.source)
 
+    def test_rejects_windows_aliases_and_device_names(self):
+        for relative in ["config./unknown.bin", "config /unknown.bin", "assets/CON.txt", "assets/LPT1",
+                         "assets/name?.txt", "assets/control\x01.txt", "assets/server.pem "]:
+            with self.subTest(relative=relative), self.assertRaises(ValueError):
+                MODULE.audit(self.package({"Apollo/" + relative: b"fixture"}), self.source)
+
+    def test_rejects_case_collisions_and_file_directory_aliases(self):
+        for names in [("Apollo/assets/Case.txt", "Apollo/assets/case.txt"),
+                      ("Apollo/assets/file", "Apollo/assets/FILE/")]:
+            with self.subTest(names=names), self.assertRaises(ValueError):
+                MODULE.audit(self.package(dict.fromkeys(names, b"fixture")), self.source)
+
     def test_rejects_missing_page(self):
         with self.assertRaises(KeyError):
             MODULE.audit(self.package(omit="Apollo/assets/web/login.html"), self.source)

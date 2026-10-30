@@ -10,11 +10,15 @@ from public_payload import validate_public_path
 
 def create(root: Path, version: str) -> dict:
     files = {}
+    paths = set()
     for path in sorted(root.rglob("*")):
         if path.is_symlink():
             raise ValueError("Installation payload must not contain links")
         relative = path.relative_to(root).as_posix()
-        validate_public_path(relative)
+        key = validate_public_path(relative)
+        if key in paths:
+            raise ValueError(f"Windows payload path collision: {relative}")
+        paths.add(key)
         if not path.is_file() or relative == "installation-manifest.json":
             continue
         files[relative] = hashlib.sha256(path.read_bytes()).hexdigest()

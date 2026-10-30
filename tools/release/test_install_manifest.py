@@ -48,6 +48,18 @@ class InstallManifestTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 MODULE.create(root, "1.0.1")
 
+    def test_public_path_policy_rejects_windows_aliases(self):
+        from public_payload import validate_public_path
+        for name in ["config./data.bin", "assets/NUL.txt", "assets/file ", "assets/file."]:
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                validate_public_path(name)
+
+    def test_collision_keys_keep_legal_similar_names_distinct(self):
+        from public_payload import validate_public_path
+        self.assertEqual(validate_public_path("assets/Case.txt"), validate_public_path("ASSETS/case.txt"))
+        for name in ["assets/config.html", "assets/console.txt", "assets/COM10.txt"]:
+            self.assertEqual(validate_public_path(name), name.casefold())
+
 
 if __name__ == "__main__":
     unittest.main()
