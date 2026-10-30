@@ -71,11 +71,13 @@ jobs:
         run: |
           g++ -std=c++17 -Wall -Wextra -Werror -I . tools/tests/test_clock.cpp -o clock-test.exe
           ./clock-test.exe
-      - name: Driver policy and data preservation regressions
+      - name: Payload policy, data preservation and bounded service stop regressions
         run: |
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools/tests/test_driver_policy.ps1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools/tests/test_installation_data.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools/tests/test_service_stop.ps1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Configure native host and contracts
         shell: msys2 {0}
@@ -86,14 +88,17 @@ jobs:
           git diff --ignore-cr-at-eol --quiet --ignore-submodules=all
           export BUILD_VERSION="$(node -p "require('./dashboard/package.json').version")"
           cmake -S . -B build-windows -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_DOCS=OFF -DBUILD_TESTS=OFF -DBUILD_UI_CONTRACT_TESTS=ON
-      - name: Build complete native host and React assets
+      - name: Build native contracts before the full host
         shell: msys2 {0}
-        run: cmake --build build-windows --parallel 4
-      - name: Native configuration and virtual-display policy contracts
+        run: cmake --build build-windows --target apollo_ui_contracts --parallel 4
+      - name: Native configuration, virtual-display and encoder wait contracts
         shell: msys2 {0}
         run: |
           cd build-windows/tests/ui-contracts
           ./apollo_ui_contracts.exe
+      - name: Build complete native host and React assets
+        shell: msys2 {0}
+        run: cmake --build build-windows --parallel 4
       - name: Package Windows ZIP and installer
         shell: msys2 {0}
         run: |

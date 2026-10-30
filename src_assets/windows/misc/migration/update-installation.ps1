@@ -218,7 +218,14 @@ try {
     # If preparation stopped the old service but could not create its backup,
     # restore availability without copying or deleting application data.
     if ($Mode -eq 'Prepare' -and (Get-Variable wasRunning -ErrorAction SilentlyContinue) -and $wasRunning) {
-        try { Start-OwnedApolloService } catch { Write-Warning 'The previous service requires manual recovery.' }
+        try {
+            $previous = Get-OwnedApolloService
+            if ($previous -and $previous.State -eq 'Stopped' -and @(Get-OwnedHostProcesses).Count -eq 0) {
+                Start-OwnedApolloService
+            } else {
+                Write-Warning 'The previous host is still running or stopping; no duplicate host was started.'
+            }
+        } catch { Write-Warning 'The previous service requires manual recovery.' }
     }
     Write-Error $_ -ErrorAction Continue
     exit 1

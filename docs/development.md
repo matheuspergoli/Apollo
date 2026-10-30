@@ -126,6 +126,22 @@ contrato de runtime. A política de caminhos em `tools/release/public_payload.py
 mantêm suas próprias verificações de links, inventário e bytes; compartilhar a
 política não substitui a conferência independente do artefato.
 
+Os caminhos de distribuição também devem ser inequívocos no Windows: aliases com
+ponto/espaço final, nomes de dispositivo, caracteres proibidos e colisões de caixa
+são rejeitados, não normalizados para gravar em outro destino. A comparação do
+instalador exige o mesmo conjunto de arquivos de programa do ZIP; metadados do
+extrator fora dessa raiz não são arquivos do programa.
+
+O atualizador usa um único orçamento para solicitar a parada do serviço proprietário
+e aguardar serviço/host. Não força término nem para dependências de outra instalação.
+Regressões de timeout usam stand-ins e nunca controlam o serviço de uma máquina ativa.
+
+Diagnóstico NVENC distingue timeout, falha Win32 e retorno inesperado da espera,
+sem alterar os 100 ms ou a recuperação. Os testes Windows usam eventos locais, não
+um encoder ou driver. O timer de packetização/envio local coleta uma amostra após
+todos os blocos FEC de um frame; não mede trânsito pela rede. Sua posição possui
+uma regressão estrutural, complementada pelo build nativo, não um benchmark de rede.
+
 `LICENSE` é a licença do Apollo. `NOTICE` contém atribuições que acompanham o código.
 O build gera um único `NOTICE.txt` para as dependências do frontend, preservando os
 textos instalados e omitindo caminhos locais. Não são necessários documentos de
