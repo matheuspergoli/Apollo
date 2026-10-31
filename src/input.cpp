@@ -23,6 +23,7 @@ extern "C" {
 #include "config.h"
 #include "globals.h"
 #include "input.h"
+#include "input_packet.h"
 #include "logging.h"
 #include "platform/common.h"
 #include "thread_pool.h"
@@ -1577,6 +1578,13 @@ namespace input {
    * @param input_data The input message.
    */
   void passthrough(std::shared_ptr<input_t> &input, std::vector<std::uint8_t> &&input_data, const crypto::PERM& permission) {
+    // Reject malformed bytes before permission checks can read the header and
+    // before the queue exposes them to typed dispatch or batching.
+    if (!validate_input_packet(input_data)) {
+      BOOST_LOG(debug) << "Dropping malformed input packet with actual size ["sv << input_data.size() << ']';
+      return;
+    }
+
     // No input permissions at all
     if (!(permission & crypto::PERM::_all_inputs)) {
       return;
