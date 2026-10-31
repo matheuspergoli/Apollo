@@ -8,6 +8,27 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class RepositoryPolicyTests(unittest.TestCase):
+    def test_input_validation_precedes_typed_permission_access_and_queue(self):
+        # Wiring regression complements the executable wire-format tests. Running
+        # dispatch itself would inject OS input and needs an isolated native host.
+        source = (ROOT / "src/input.cpp").read_text(encoding="utf-8")
+        start = source.index("void passthrough(std::shared_ptr<input_t> &input, std::vector")
+        body = source[start:source.index("void reset(", start)]
+        validation = body.index("if (!validate_input_packet(input_data))")
+        rejection = body.index("return;", validation)
+        self.assertLess(rejection, body.index("input_data.data()"))
+        self.assertLess(rejection, body.index("input->input_queue.push_back"))
+        self.assertLess(rejection, body.index("crypto::PERM::_all_inputs"))
+
+    def test_dxgi_adapter_owner_is_scoped_to_the_enumeration_iteration(self):
+        # Structural lifetime regression: do not construct a parallel DXGI client
+        # or initialize capture merely to check the production loop's owner scope.
+        source = (ROOT / "src/platform/windows/display_base.cpp").read_text(encoding="utf-8")
+        body = source[source.index("std::vector<std::string> display_names("):]
+        body = re.sub(r'//[^\n]*|/\*[\s\S]*?\*/', '', body)
+        self.assertRegex(body, r"dxgi::adapter_t::pointer adapter_p;\s*for\s*\([^\n]*EnumAdapters1\(x, &adapter_p\)[^\n]*\)\s*\{\s*dxgi::adapter_t adapter\s*\{adapter_p\};")
+        self.assertNotIn("dxgi::adapter_t adapter;", body)
+
     def test_frame_send_sample_is_after_all_fec_blocks_and_before_failure_handler(self):
         # Structural regression: the full broadcast path needs a streaming session.
         # Do not extract a parallel sender solely to test this sampling placement.

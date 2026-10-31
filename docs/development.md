@@ -91,6 +91,22 @@ ou um status HTTP. Exemplos e fixtures devem ser genéricos e não conter dados 
 
 ### Responsabilidade e limites
 
+Os contratos nativos incluem os testes de `input_packet.h` com os headers de
+protocolo fixados: todos os eventos tratados pelo Apollo, cada truncamento,
+tamanhos declarados incompatíveis, limites Unicode, eventos desconhecidos e bytes
+desalinhados. O validador é o mesmo usado antes de permissões, fila e batching.
+Eventos desconhecidos estruturalmente válidos e bytes excedentes do transporte
+mantêm o comportamento anterior; isso não concede permissões de entrada.
+`test_config_bool.cpp` executa o parser de produção sem inicializar o host e
+protege as grafias aceitas, caixa mista, bytes altos e a regra legada de conter `1`.
+
+As regressões estruturais em `test_repository_policy.py` complementam os testes
+executáveis: exigem validação antes dos acessos tipados/fila e ownership COM dentro
+de cada iteração da enumeração DXGI. Não simulam uma sessão de controle nem
+comprovam comportamento de captura/driver. O build Windows verifica a integração
+nativa; injeção de entrada, permissões durante streaming e enumeração física de
+monitores ainda precisam de ambiente Windows isolado e autorizado.
+
 Testamos o comportamento do Apollo, não os detalhes internos de bibliotecas ou
 instaladores de terceiros. Hashes, presença de arquivos, validação antes de alterar
 o sistema e tratamento de dependências indisponíveis são contratos do Apollo.
