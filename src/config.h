@@ -16,6 +16,8 @@
 #include "nvenc/nvenc_config.h"
 
 namespace config {
+  bool to_bool(std::string &boolean);
+
   // track modified config options
   inline std::unordered_map<std::string, std::string> modified_config_settings;
 
