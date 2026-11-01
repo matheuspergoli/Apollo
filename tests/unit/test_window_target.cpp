@@ -9,8 +9,7 @@ namespace {
 }
 
 TEST(WindowTarget, RejectsEmptyAndEmbeddedNullIdentitiesBeforeQueryingWindows) {
-  for (bool by_path : {false, true}) {
-    const auto resolve = by_path ? wm::refresh_target : wm::bind_target;
+  for (const auto resolve : {wm::bind_target, wm::refresh_target, wm::origin_for_source, wm::refresh_origin}) {
     auto result = resolve({});
     EXPECT_FALSE(result.target);
     EXPECT_EQ(result.error, static_cast<unsigned long>(ERROR_INVALID_PARAMETER));
@@ -27,7 +26,7 @@ TEST(WindowTarget, UnknownIdentityNeverFallsBackToAPhysicalOrPrimaryMonitor) {
   // Only queries the runner. No assumption that this environment has a usable
   // interactive display; both absent identity and unavailable desktop must fail
   // without selecting another monitor. This does not qualify a virtual driver.
-  for (const auto resolve : {wm::bind_target, wm::refresh_target}) {
+  for (const auto resolve : {wm::bind_target, wm::refresh_target, wm::origin_for_source, wm::refresh_origin}) {
     const auto result = resolve(L"apollo-test-nonexistent-window-target-identity");
     EXPECT_FALSE(result.target);
     EXPECT_NE(result.error, static_cast<unsigned long>(ERROR_SUCCESS));

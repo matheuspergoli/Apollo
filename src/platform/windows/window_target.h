@@ -30,4 +30,10 @@ namespace window_management::win32 {
   // Refresh the work area using the bound monitor device path. A disappeared or
   // cloned/ambiguous target is an error; there is no nearest/primary fallback.
   target_result refresh_target(std::wstring_view monitor_device_path);
+
+  // Restoration origins may legitimately be cloned physical outputs sharing
+  // one logical desktop. Select a deterministic member only as its identity;
+  // do not turn that physical source into an authorized streaming target.
+  target_result origin_for_source(std::wstring_view source);
+  target_result refresh_origin(std::wstring_view monitor_device_path);
 }  // namespace window_management::win32

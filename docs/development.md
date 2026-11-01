@@ -125,6 +125,34 @@ tentativas limitadas. Os contratos Windows verificam rejeição de identidades
 inválidas e ausência de fallback para identidades desconhecidas, não qualificam
 o driver nem comprovam a topologia de uma instalação real.
 
+Origens de restauração têm uma consulta distinta: um desktop lógico físico pode
+ter vários targets em clone. Esse caso não autoriza usá-lo como destino virtual;
+o resolvedor conserva um device path determinístico para a origem e consulta a
+área lógica compartilhada, sem mudar caminhos ou modos.
+
+`src/platform/windows/window_desktop.*` restringe inspeção/movimentação ao SID do
+usuário interativo, à sessão de console ativa e ao desktop Default recebendo
+entrada. Exclui janelas elevadas, integridade acima de medium, UIAccess,
+processos protegidos, shell e auxiliares. O token SYSTEM do wrapper não amplia
+essa política. Não há troca de desktop, ajuste de privilégios ou tentativa de
+controlar UAC/Secure Desktop.
+
+O executor mantém contexto DPI por thread e pequenas janelas próprias invisíveis
+para consultar DPI com `GetDpiForWindow`. Não usa `GetDpiForMonitor` em contexto
+per-monitor-aware nem muda o DPI global do host. Solicitações de posicionamento
+revalidam identidade, estado, destino e responsividade; são assíncronas e não
+significam movimentação concluída. O consumidor deve confirmar o resultado antes
+de registrar ownership/restauração. Aplicações podem negar, ajustar ou atrasar a
+operação; não se promete cancelamento atômico de uma solicitação já entregue ao
+Windows nem suporte universal a aplicações não responsivas.
+
+Os contratos de `test_window_desktop.cpp` criam somente janelas próprias. A falta
+de sessão interativa/CCD é registrada como não testada, não contornada por drivers
+ou alterações no runner. Com token elevado, os testes exercitam recusa, não
+comprovam movimentação de janelas ordinárias; essa distinção fica nas propriedades
+de resultado. DPI entre monitores, maximização em background e funcionamento com
+aplicativos reais continuam exigindo validação Windows adequada.
+
 Os contratos nativos incluem os testes de `input_packet.h` com os headers de
 protocolo fixados: todos os eventos tratados pelo Apollo, cada truncamento,
 tamanhos declarados incompatíveis, limites Unicode, eventos desconhecidos e bytes

@@ -104,7 +104,7 @@ namespace window_management::win32 {
       return {static_cast<std::int32_t>(rect.left), static_cast<std::int32_t>(rect.top), static_cast<std::int32_t>(rect.right), static_cast<std::int32_t>(rect.bottom)};
     }
 
-    target_result resolve(std::wstring_view requested, bool by_path) {
+    target_result resolve(std::wstring_view requested, bool by_path, bool allow_clones) {
       if (requested.empty() || requested.size() > 32767 || requested.find(L'\0') != std::wstring_view::npos) {
         return {{}, ERROR_INVALID_PARAMETER};
       }
@@ -122,7 +122,13 @@ namespace window_management::win32 {
       for (const auto &path : paths) {
         if (same(by_path ? path.device_path : path.source_name, requested)) {
           if (selected) {
-            return {{}, ERROR_DUP_NAME};
+            if (!allow_clones || by_path || !same_source(path, *selected)) {
+              return {{}, ERROR_DUP_NAME};
+            }
+            if (path.device_path < selected->device_path) {
+              selected = &path;
+            }
+            continue;
           }
           selected = &path;
         }
@@ -131,7 +137,7 @@ namespace window_management::win32 {
         return {{}, ERROR_NOT_FOUND};
       }
       for (const auto &path : paths) {
-        if (&path != selected && same_source(path, *selected)) {
+        if (!allow_clones && &path != selected && same_source(path, *selected)) {
           // Multiple physical targets may share one logical desktop in clone
           // mode. Do not confuse such a source with a uniquely bound virtual.
           return {{}, ERROR_DUP_NAME};
@@ -154,10 +160,18 @@ namespace window_management::win32 {
   }  // namespace
 
   target_result bind_target(std::wstring_view streaming_source) {
-    return resolve(streaming_source, false);
+    return resolve(streaming_source, false, false);
   }
 
   target_result refresh_target(std::wstring_view monitor_device_path) {
-    return resolve(monitor_device_path, true);
+    return resolve(monitor_device_path, true, false);
+  }
+
+  target_result origin_for_source(std::wstring_view source) {
+    return resolve(source, false, true);
+  }
+
+  target_result refresh_origin(std::wstring_view monitor_device_path) {
+    return resolve(monitor_device_path, true, true);
   }
 }  // namespace window_management::win32
