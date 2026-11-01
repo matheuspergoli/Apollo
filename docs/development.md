@@ -91,6 +91,22 @@ ou um status HTTP. Exemplos e fixtures devem ser genéricos e não conter dados 
 
 ### Responsabilidade e limites
 
+A política de gerenciamento de janelas em `src/window_management_policy.*` não
+executa chamadas do sistema nem configura displays. Sua interface separa
+coordenadas de tela e workspace, verifica a autorização da sessão/aplicativo e
+calcula posicionamento limitado à área útil. A restauração exige identidade
+completa da janela, geração correspondente, monitor de origem disponível e estado
+atual igual ao efetivamente observado depois da movimentação. A ausência desses
+dados não autoriza uma tentativa de recuperação.
+
+`test_window_management_policy.cpp` executa essa mesma implementação nos contratos
+nativos: geometrias negativas, taskbar superior/lateral, diferenças de DPI,
+idempotência, janelas minimizadas/maximizadas, exclusões e rejeição de estado
+obsoleto. Eventos de localização não autorizam movimentação. No modo Smart,
+foreground/show exigem evidência recente de entrada remota, que é uma correlação,
+não uma identificação infalível da origem da interação. Esses testes de política
+não validam chamadas Win32, hooks, foco ou sessões reais de streaming.
+
 Os contratos nativos incluem os testes de `input_packet.h` com os headers de
 protocolo fixados: todos os eventos tratados pelo Apollo, cada truncamento,
 tamanhos declarados incompatíveis, limites Unicode, eventos desconhecidos e bytes
