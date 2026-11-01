@@ -116,6 +116,15 @@ Mudanças posteriores ao estado confirmado invalidam a restauração, mesmo que 
 janela volte depois à posição esperada. O consumidor deve revalidar janela,
 destino e autorização antes de executar trabalho coletado da fila.
 
+O resolvedor Windows em `src/platform/windows/window_target.*` usa somente
+consultas: associa o nome exato recebido da criação do virtual ao device path do
+monitor e atualiza sua área útil por essa identidade. Não usa monitor principal
+ou proximidade como fallback. Rejeita associação ambígua em clone, destino
+ausente e contexto DPI inadequado; a corrida de dimensionamento de buffers tem
+tentativas limitadas. Os contratos Windows verificam rejeição de identidades
+inválidas e ausência de fallback para identidades desconhecidas, não qualificam
+o driver nem comprovam a topologia de uma instalação real.
+
 Os contratos nativos incluem os testes de `input_packet.h` com os headers de
 protocolo fixados: todos os eventos tratados pelo Apollo, cada truncamento,
 tamanhos declarados incompatíveis, limites Unicode, eventos desconhecidos e bytes

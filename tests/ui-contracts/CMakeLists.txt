@@ -5,6 +5,8 @@ target_sources(apollo_ui_contracts PRIVATE ../unit/test_window_session_state.cpp
 target_include_directories(apollo_ui_contracts PRIVATE "${CMAKE_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}/third-party")
 if(WIN32)
     target_sources(apollo_ui_contracts PRIVATE ../unit/test_nvenc_event_wait.cpp)
+    target_sources(apollo_ui_contracts PRIVATE ../unit/test_window_target.cpp ../../src/platform/windows/window_target.cpp)
+    target_link_libraries(apollo_ui_contracts PRIVATE user32)
 endif()
 target_link_libraries(apollo_ui_contracts PRIVATE gtest_main nlohmann_json::nlohmann_json)
 target_compile_features(apollo_ui_contracts PRIVATE cxx_std_23)
