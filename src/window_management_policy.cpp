@@ -133,6 +133,7 @@ namespace window_management {
            identity.handle != 0 && identity.process_id != 0 && identity.thread_id != 0 &&
            identity.process_created != 0 && identity.incarnation != 0 &&
            current_identity == identity && !record.user_override &&
-           current == record.applied && valid(record.original.normal) && valid(record.applied.normal) && origin_available;
+           current == record.applied && valid(record.original.normal) && valid(record.applied.normal) &&
+           !record.origin_device_id.empty() && origin_available;
   }
 }  // namespace window_management

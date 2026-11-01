@@ -107,6 +107,15 @@ foreground/show exigem evidência recente de entrada remota, que é uma correla�
 não uma identificação infalível da origem da interação. Esses testes de política
 não validam chamadas Win32, hooks, foco ou sessões reais de streaming.
 
+`src/window_session_state.*` mantém a geração ativa, a coalescência de eventos e
+o registro de movimentações em um único executor. Há limites de 256 eventos
+pendentes e 512 registros; capacidade deve ser confirmada antes de mover uma
+janela. Eventos repetidos não adiam indefinidamente o primeiro prazo. Encerrar a
+geração invalida trabalho pendente; destruir uma janela retira sua identidade.
+Mudanças posteriores ao estado confirmado invalidam a restauração, mesmo que a
+janela volte depois à posição esperada. O consumidor deve revalidar janela,
+destino e autorização antes de executar trabalho coletado da fila.
+
 Os contratos nativos incluem os testes de `input_packet.h` com os headers de
 protocolo fixados: todos os eventos tratados pelo Apollo, cada truncamento,
 tamanhos declarados incompatíveis, limites Unicode, eventos desconhecidos e bytes
