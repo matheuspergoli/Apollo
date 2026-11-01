@@ -4,6 +4,7 @@
   #include <algorithm>
   #include <array>
   #include <gtest/gtest.h>
+  #include <iostream>
   #include <thread>
   #include <windows.h>
   #include <wtsapi32.h>
@@ -52,10 +53,13 @@ namespace {
       UINT32 paths = 0;
       UINT32 modes = 0;
       const auto status = GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, &paths, &modes);
-      if (status == ERROR_ACCESS_DENIED || status == ERROR_NOT_SUPPORTED || !paths) {
+      if (status == ERROR_ACCESS_DENIED || status == ERROR_NOT_SUPPORTED) {
         GTEST_SKIP() << "Active CCD paths are unavailable; placement is untested in this environment.";
       }
       ASSERT_EQ(status, ERROR_SUCCESS);
+      if (!paths) {
+        GTEST_SKIP() << "No active CCD path exists; placement is untested in this environment.";
+      }
       const auto origin = native::origin_for_source(monitor.szDevice);
       ASSERT_TRUE(origin.target) << origin.error;
       destination = *origin.target;
@@ -202,9 +206,11 @@ TEST_F(WindowDesktopTest, OrdinaryFixtureMovesWithoutFocusOrSizeChangeAndElevate
   const auto request = desktop->submit(*result.window, desired, destination, true);
   if (result.window->traits.elevated) {
     RecordProperty("placement_coverage", "elevated-token-refusal-only");
+    std::cout << "[ WSM COVERAGE ] Elevated fixture: testing refusal, not ordinary-window movement.\n";
     EXPECT_EQ(request.status, native::placement_status::rejected);
   } else {
     RecordProperty("placement_coverage", "ordinary-window-placement");
+    std::cout << "[ WSM COVERAGE ] Ordinary fixture: testing native placement without activation.\n";
     ASSERT_EQ(request.status, native::placement_status::submitted) << request.error;
   }
   const auto after = inspect();
@@ -225,9 +231,11 @@ TEST_F(WindowDesktopTest, MaximizedFixtureRetainsStateAndElevatedFixtureIsNotMov
   const auto request = desktop->submit(*result.window, desired, destination, true);
   if (result.window->traits.elevated) {
     RecordProperty("placement_coverage", "elevated-token-refusal-only");
+    std::cout << "[ WSM COVERAGE ] Elevated fixture: testing refusal, not maximized-window movement.\n";
     EXPECT_EQ(request.status, native::placement_status::rejected);
   } else {
     RecordProperty("placement_coverage", "foreground-maximized-window-placement");
+    std::cout << "[ WSM COVERAGE ] Ordinary maximized fixture: testing state preservation.\n";
     ASSERT_EQ(request.status, native::placement_status::submitted) << request.error;
   }
   const auto after = inspect();

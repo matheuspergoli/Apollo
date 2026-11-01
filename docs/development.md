@@ -150,7 +150,9 @@ Os contratos de `test_window_desktop.cpp` criam somente janelas próprias. A fal
 de sessão interativa/CCD é registrada como não testada, não contornada por drivers
 ou alterações no runner. Com token elevado, os testes exercitam recusa, não
 comprovam movimentação de janelas ordinárias; essa distinção fica nas propriedades
-de resultado. DPI entre monitores, maximização em background e funcionamento com
+de resultado e na saída textual do teste. Erros inesperados de consulta CCD
+falham o teste, não são classificados como ambiente ausente. DPI entre monitores,
+maximização em background e funcionamento com
 aplicativos reais continuam exigindo validação Windows adequada.
 
 Os contratos nativos incluem os testes de `input_packet.h` com os headers de
