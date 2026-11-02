@@ -16,6 +16,7 @@ try {
         [IO.File]::WriteAllBytes((Join-Path $app $path), [byte[]](0..255))
     }
     [IO.File]::WriteAllText((Join-Path $app 'sunshine.exe'), 'snapshot fixture, never executed')
+    [IO.File]::WriteAllText((Join-Path $app 'config\sunshine.log'), 'previous host log')
     $beforeAcl = (Get-Acl -LiteralPath (Join-Path $app 'config')).Sddl
     $snapshot = New-InstallationSnapshot $app
     Test-InstallationSnapshot -Snapshot $snapshot -InstallDir $app
@@ -40,6 +41,30 @@ try {
     Assert-InstallationDataPreserved $snapshot
     if ([IO.File]::ReadAllText((Join-Path $app 'sunshine.exe')) -ne 'snapshot fixture, never executed') {
         throw 'Previous executable bytes were not restored'
+    }
+
+    # A failed candidate's evidence must survive restoration of the previous log.
+    $statePath = Join-Path $testRoot 'update-state.json'
+    Write-InstallJson -Path $statePath -Value ([pscustomobject]@{ Snapshot = $snapshot })
+    . (Join-Path $PSScriptRoot '../../src_assets/windows/misc/migration/update-installation.ps1') -InstallDir $app -Mode Finish -StatePath $statePath
+    $script:startupObservation = [pscustomobject]@{ ExpectedPort = 47990; ServiceProcessId = 501 }
+    [IO.File]::WriteAllText((Join-Path $app 'config\sunshine.log'), 'candidate startup failure fixture')
+    Save-InstallationFailure -Failure 'startup not confirmed fixture' | Out-Null
+    $diagnostic = @(Get-ChildItem -LiteralPath $snapshot.Backup -Directory -Filter 'failure-Finish-*')
+    if ($diagnostic.Count -ne 1) { throw 'Expected a separate failure evidence directory.' }
+    Restore-InstallationSnapshot -Snapshot $snapshot -InstallDir $app
+    if ([IO.File]::ReadAllText((Join-Path $app 'config\sunshine.log')) -ne 'previous host log') { throw 'Previous log was not restored.' }
+    if ((Get-Content -LiteralPath (Join-Path $diagnostic[0].FullName 'host.log') -Raw).Trim() -ne 'candidate startup failure fixture') {
+        throw 'Rollback erased candidate failure evidence.'
+    }
+    $report = Get-Content -LiteralPath (Join-Path $diagnostic[0].FullName 'failure.json') -Raw | ConvertFrom-Json
+    if ($report.Mode -ne 'Finish' -or $report.Startup.ServiceProcessId -ne 501) { throw 'Failure report lost stage or startup identity.' }
+    foreach ($file in Get-ChildItem -LiteralPath $diagnostic[0].FullName -File) {
+        foreach ($rule in (Get-Acl -LiteralPath $file.FullName).Access) {
+            if ($rule.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value -notin $allowed) {
+                throw 'Failure evidence must remain private.'
+            }
+        }
     }
 
     $entry = $snapshot.Files[0]

@@ -390,6 +390,19 @@ O atualizador usa um único orçamento para solicitar a parada do serviço propr
 e aguardar serviço/host. Não força término nem para dependências de outra instalação.
 Regressões de timeout usam stand-ins e nunca controlam o serviço de uma máquina ativa.
 
+A confirmação de inicialização usa o PID atualizado do serviço, exatamente um
+processo filho pertencente à instalação e um listener na porta de configuração
+pertencente a esse filho. Um listener de outro processo não confirma a instalação.
+O orçamento de inicialização é medido por relógio monotônico; consultas CIM recebem
+o tempo restante e as pausas não reiniciam o orçamento. Chamadas síncronas do Windows
+podem exceder o tempo solicitado; isso não constitui garantia de prazo de tempo real.
+Os testes cobrem confirmação imediata, identidades divergentes e orçamento esgotado.
+Falhas com snapshot válido preservam o erro, a última observação de inicialização e
+as últimas linhas do log padrão em uma subpasta privada do backup, antes de restaurar
+arquivos anteriores. Logs personalizados não são procurados automaticamente.
+A restauração dos arquivos e a confirmação do serviço anterior são etapas distintas;
+uma falha na segunda não significa, por si só, perda dos arquivos restaurados.
+
 Diagnóstico NVENC distingue timeout, falha Win32 e retorno inesperado da espera,
 sem alterar os 100 ms ou a recuperação. Os testes Windows usam eventos locais, não
 um encoder ou driver. O timer de packetização/envio local coleta uma amostra após

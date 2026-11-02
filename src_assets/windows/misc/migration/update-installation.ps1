@@ -67,11 +67,14 @@ function Stop-OwnedApolloService {
 }
 
 function Start-OwnedApolloService {
-    $service = Get-OwnedApolloService
+    param([TimeSpan]$Timeout = [TimeSpan]::FromSeconds(90))
+    $script:startupObservation = $null
+    if ($Timeout -le [TimeSpan]::Zero) { throw 'Service startup timeout must be positive.' }
+    $clock = [Diagnostics.Stopwatch]::StartNew()
+    $service = Get-OwnedApolloService -OperationTimeoutSec ([int][Math]::Ceiling($Timeout.TotalSeconds))
     if (-not $service) { throw 'ApolloService is absent.' }
     if ($service.StartMode -eq 'Disabled') { throw 'ApolloService is disabled; refusing to override this preference.' }
     Start-Service ApolloService -ErrorAction Stop
-    (Get-Service ApolloService).WaitForStatus('Running', [TimeSpan]::FromSeconds(30))
     $webPort = 47990
     $configPath = Join-Path $root 'config\sunshine.conf'
     if (Test-Path -LiteralPath $configPath) {
@@ -83,19 +86,57 @@ function Start-OwnedApolloService {
             }
         }
     }
-    for ($attempt = 0; $attempt -lt 90; $attempt++) {
-        $hosts = @(Get-OwnedHostProcesses | Where-Object { $_.ParentProcessId -eq $service.ProcessId })
-        # Refresh the SCM PID after starting a previously stopped service.
-        $service = Get-OwnedApolloService
-        if ($hosts.Count -eq 1) {
-            $listeners = @(Get-NetTCPConnection -State Listen -ErrorAction Stop | Where-Object {
-                $_.OwningProcess -eq $hosts[0].ProcessId -and $_.LocalPort -eq $webPort
-            })
-            if ($listeners.Count -gt 0) { return }
+    Write-Output "Waiting for the owned Apollo host to listen on TCP port $webPort (startup budget: $($Timeout.TotalSeconds)s)."
+    while ($clock.Elapsed -lt $Timeout) {
+        $seconds = [Math]::Max(1, [int][Math]::Ceiling(($Timeout - $clock.Elapsed).TotalSeconds))
+        # Always obtain the current supervisor PID before selecting its children.
+        $service = Get-OwnedApolloService -OperationTimeoutSec $seconds
+        if (-not $service) { throw 'ApolloService disappeared during startup.' }
+        if ($clock.Elapsed -ge $Timeout) { break }
+        $seconds = [Math]::Max(1, [int][Math]::Ceiling(($Timeout - $clock.Elapsed).TotalSeconds))
+        $hosts = @(Get-OwnedHostProcesses -OperationTimeoutSec $seconds)
+        $children = @($hosts | Where-Object { $_.ParentProcessId -eq $service.ProcessId })
+        $script:startupObservation = [pscustomobject]@{
+            ElapsedSeconds = [Math]::Round($clock.Elapsed.TotalSeconds, 3)
+            ServiceState = $service.State; ServiceProcessId = $service.ProcessId; ExpectedPort = $webPort
+            Hosts = @($hosts | Select-Object ProcessId, ParentProcessId, ExecutablePath)
+            Listeners = @()
         }
-        Start-Sleep -Seconds 1
+        if ($clock.Elapsed -ge $Timeout) { break }
+        if ($service.State -eq 'Running' -and $service.ProcessId -ne 0 -and $children.Count -eq 1) {
+            $seconds = [Math]::Max(1, [int][Math]::Ceiling(($Timeout - $clock.Elapsed).TotalSeconds))
+            # Query only the expected endpoint, with the remaining CIM budget,
+            # rather than enumerating every TCP listener on each attempt.
+            $listeners = @(Get-CimInstance -Namespace root/StandardCimv2 -ClassName MSFT_NetTCPConnection -Filter "State=2 AND LocalPort=$webPort" -OperationTimeoutSec $seconds)
+            $script:startupObservation.Listeners = @($listeners | Select-Object OwningProcess, LocalAddress, LocalPort)
+            if ($clock.Elapsed -lt $Timeout -and @($listeners | Where-Object { $_.OwningProcess -eq $children[0].ProcessId }).Count -gt 0) { return }
+        }
+        $remaining = ($Timeout - $clock.Elapsed).TotalMilliseconds
+        if ($remaining -gt 0) { Start-Sleep -Milliseconds ([int][Math]::Min(1000, $remaining)) }
     }
-    throw 'The service started but its host did not open a listening endpoint. Installation is not confirmed.'
+    throw "Apollo startup was not confirmed on TCP port $webPort within the startup budget. Last observation: $(ConvertTo-Json -InputObject $script:startupObservation -Compress -Depth 5)"
+}
+
+function Save-InstallationFailure {
+    param([object]$Failure)
+    if (-not $StatePath -or -not (Test-Path -LiteralPath $StatePath)) { return }
+    $saved = Get-Content -LiteralPath $StatePath -Raw | ConvertFrom-Json
+    Test-InstallationSnapshot -Snapshot $saved.Snapshot -InstallDir $root
+    $directory = Join-Path $saved.Snapshot.Backup ('failure-' + $Mode + '-' + [guid]::NewGuid().ToString('N'))
+    New-PrivateInstallDirectory $directory
+    $observation = if (Get-Variable startupObservation -Scope Script -ErrorAction SilentlyContinue) { $script:startupObservation } else { $null }
+    Write-InstallJson -Path (Join-Path $directory 'failure.json') -Value ([pscustomobject]@{
+        Mode = $Mode; Error = $Failure.ToString(); Startup = $observation
+    })
+    # Preserve the candidate's log before rollback replaces it with the old log.
+    # Never copy configuration, credentials or pairing files into diagnostics.
+    $log = Join-Path $root 'config\sunshine.log'
+    if (Test-Path -LiteralPath $log -PathType Leaf) {
+        try {
+            Get-Content -LiteralPath $log -Tail 200 | Set-Content -LiteralPath (Join-Path $directory 'host.log') -Encoding UTF8
+        } catch { Write-Warning 'The host log could not be captured; the installation error was retained.' }
+    }
+    Write-Output "Installation failure details preserved in $directory"
 }
 
 function Install-OwnedApolloService {
@@ -180,6 +221,7 @@ try {
         if ($Mode -eq 'Restore') {
             if (-not $state.NoHostIntegration) { Stop-OwnedApolloService }
             Restore-InstallationSnapshot -Snapshot $state.Snapshot -InstallDir $root
+            Write-Output 'Previous files restored from the verified private backup; service recovery is checked separately.'
             if (-not $state.HadService -and -not $state.NoHostIntegration) {
                 $created = Get-OwnedApolloService
                 if ($created) {
@@ -215,6 +257,8 @@ try {
     }
     exit 0
 } catch {
+    $failure = $_
+    try { Save-InstallationFailure -Failure $failure } catch { Write-Warning 'Could not retain installation failure diagnostics; the original error follows.' }
     # If preparation stopped the old service but could not create its backup,
     # restore availability without copying or deleting application data.
     if ($Mode -eq 'Prepare' -and (Get-Variable wasRunning -ErrorAction SilentlyContinue) -and $wasRunning) {
@@ -227,6 +271,6 @@ try {
             }
         } catch { Write-Warning 'The previous service requires manual recovery.' }
     }
-    Write-Error $_ -ErrorAction Continue
+    Write-Error $failure -ErrorAction Continue
     exit 1
 }

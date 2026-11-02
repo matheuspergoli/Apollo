@@ -24,6 +24,7 @@ Function ApolloRestorePrevious
   StrCmp $ApolloRestored "1" restore_done
   StrCpy $ApolloRestored "1"
   IfFileExists "$PLUGINSDIR\apollo-update-state.json" 0 restore_done
+  DetailPrint "Restaurando a instalacao anterior; os detalhes da falha sao preservados no backup privado."
   nsExec::ExecToLog '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\update-installation.ps1" -InstallDir "$INSTDIR" -Mode Restore -StatePath "$PLUGINSDIR\apollo-update-state.json"'
   Pop $0
   DetailPrint "Resultado da restauracao dos arquivos anteriores: $0. Backup privado em $INSTDIR.backups. Drivers compartilhados nao foram removidos."
@@ -55,6 +56,7 @@ set(CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS [=[
   File "/oname=$PLUGINSDIR\update-installation.ps1" "@APOLLO_UPDATE_SCRIPT@"
   File "/oname=$PLUGINSDIR\installation-data.ps1" "@APOLLO_DATA_SCRIPT@"
   File "/oname=$PLUGINSDIR\installation-manifest.json" "@APOLLO_INSTALL_MANIFEST@"
+  DetailPrint "Preparando atualizacao: parando somente o Apollo desta instalacao e verificando o backup privado."
   StrCmp $ApolloNoHostIntegration "1" prepare_portable
   nsExec::ExecToLog '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\update-installation.ps1" -InstallDir "$INSTDIR" -Mode Prepare -StatePath "$PLUGINSDIR\apollo-update-state.json" -Version "@PROJECT_VERSION@"'
   Goto prepare_result
@@ -71,11 +73,13 @@ prepare_done:
 string(CONFIGURE "${CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS}" CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS @ONLY)
 
 set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS [=[
+  DetailPrint "Verificando os arquivos instalados."
   nsExec::ExecToLog '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\update-installation.ps1" -InstallDir "$INSTDIR" -Mode Verify -ManifestPath "$PLUGINSDIR\installation-manifest.json"'
   Pop $0
   StrCmp $0 "0" +2
   Goto install_failed
   StrCmp $ApolloNoHostIntegration "1" finish_portable
+  DetailPrint "Verificando o driver de video virtual; uma versao compativel sera preservada."
   nsExec::ExecToLog '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\drivers\sudovda\install-driver.ps1"'
   Pop $0
   StrCmp $0 "3010" driver_reboot
@@ -84,6 +88,7 @@ driver_reboot:
   StrCpy $ApolloNeedsReboot "1"
   SetRebootFlag true
 install_gamepad:
+  DetailPrint "Verificando o driver de controle; uma versao compativel sera preservada."
   nsExec::ExecToLog '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$INSTDIR\scripts\install-gamepad.ps1"'
   Pop $0
   StrCmp $0 "3010" gamepad_reboot
@@ -92,10 +97,12 @@ gamepad_reboot:
   StrCpy $ApolloNeedsReboot "1"
   SetRebootFlag true
 install_rules:
+  DetailPrint "Configurando as regras de firewall do Apollo."
   nsExec::ExecToLog '"$SYSDIR\cmd.exe" /D /C ""$INSTDIR\scripts\add-firewall-rule.bat""'
   Pop $0
   StrCmp $0 "0" finish_managed install_failed
 finish_managed:
+  DetailPrint "Verificando a preservacao dos dados e a inicializacao do Apollo."
   StrCmp $ApolloNeedsReboot "1" finish_deferred
   nsExec::ExecToLog '"$ApolloPowerShell" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\update-installation.ps1" -InstallDir "$INSTDIR" -Mode Finish -StatePath "$PLUGINSDIR\apollo-update-state.json" -ManifestPath "$PLUGINSDIR\installation-manifest.json"'
   Goto finish_result
