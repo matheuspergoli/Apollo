@@ -485,8 +485,12 @@ namespace platf::dxgi {
         for (int y = 0; adapter_tmp->EnumOutputs(y, &output_p) != DXGI_ERROR_NOT_FOUND; ++y) {
           dxgi::output_t output_tmp {output_p};
 
-          DXGI_OUTPUT_DESC desc;
-          output_tmp->GetDesc(&desc);
+          DXGI_OUTPUT_DESC desc {};
+          const auto description_status = output_tmp->GetDesc(&desc);
+          if (FAILED(description_status)) {
+            BOOST_LOG(warning) << "Failed to read DXGI output description [0x"sv << util::hex(description_status).to_string_view() << ']';
+            continue;
+          }
 
           if (!output_name.empty() && desc.DeviceName != output_name) {
             continue;
