@@ -1,5 +1,6 @@
 import { type Download, expect, test } from "@playwright/test"
 import { strFromU8, unzipSync } from "fflate"
+import { assertHostStyles } from "../../scripts/browser-contract.mjs"
 import { mockHost } from "../fixtures/mock-api"
 
 function file(application: Record<string, unknown>) {
@@ -76,6 +77,51 @@ test("partial application import preserves local UUID, unknown fields and other 
 		cmd: "rascunho local",
 		custom_app_flag: "keep"
 	})
+})
+
+test("settings and diagnostics navigation preserves clickable app import reviews without writing the library", async ({
+	page
+}) => {
+	const host = await mockHost(page)
+	const uuid = "12345678-abcd-4321-9876-1234567890ab"
+	host.apps[0].uuid = uuid
+	await page.goto("/config?section=window-session")
+	await assertHostStyles(page)
+	await page.getByRole("combobox", { name: "Aplicativo da sessão Desktop" }).click()
+	await page.getByRole("option", { name: `Test Game (${uuid})`, exact: true }).click()
+	await page.getByRole("button", { name: "Revisar e salvar", exact: true }).click()
+	await page.getByRole("button", { name: "Salvar arquivo", exact: true }).click()
+	await expect(page.getByText("Arquivo salvo", { exact: true })).toBeVisible()
+	await page.goto("/troubleshooting")
+	await assertHostStyles(page)
+	await expect(page.getByRole("heading", { name: "Diagnóstico", exact: true })).toBeVisible()
+	await page.goto("/apps")
+	await assertHostStyles(page)
+	await page.getByRole("button", { name: "Editar", exact: true }).click()
+	await page
+		.getByLabel("Arquivo JSON do aplicativo", { exact: true })
+		.setInputFiles(file({ name: "Importado após navegação" }))
+	const review = page.getByRole("dialog", {
+		name: "Revisar importação de aplicativo",
+		exact: true
+	})
+	await review.getByRole("button", { name: "Aplicar ao rascunho", exact: true }).click()
+	await expect(review).toBeHidden()
+	await expect(page.locator("#app-name")).toHaveValue("Importado após navegação")
+	expect(host.apps[0]).toMatchObject({ uuid, name: "Test Game", custom_app_flag: "keep" })
+	expect(
+		host.calls.filter((call) => call.path === "apps" && call.method === "POST")
+	).toHaveLength(0)
+})
+
+test("missing CSS is identified before treating an unstyled modal as a working page", async ({
+	page
+}) => {
+	const host = await mockHost(page)
+	await page.route("**/assets/*.css", (route) => route.abort("failed"))
+	await page.goto("/apps")
+	await expect(assertHostStyles(page)).rejects.toThrow("Host stylesheet did not load")
+	expect(host.calls.some((call) => call.method === "POST")).toBe(false)
 })
 
 test("identity-changing or incorrectly typed imports never alter the editor or call the API", async ({

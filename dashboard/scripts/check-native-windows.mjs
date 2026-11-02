@@ -5,6 +5,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises"
 import https from "node:https"
 import { dirname, resolve } from "node:path"
 import { chromium } from "@playwright/test"
+import { assertHostStyles } from "./browser-contract.mjs"
 import { assertGlobalArchive } from "./configuration-contract.ts"
 
 if (
@@ -48,6 +49,11 @@ let browser
 let page
 let restartRequested = false
 const browserFailures = []
+
+async function navigate(path) {
+	await page.goto(base + path)
+	await assertHostStyles(page)
+}
 
 function http(path, { method = "GET", data, cookie } = {}) {
 	return new Promise((resolveResult, reject) => {
@@ -300,16 +306,16 @@ try {
 		["/password", "Acesso e senha"],
 		["/troubleshooting", "Diagnóstico"]
 	]) {
-		await page.goto(base + path)
+		await navigate(path)
 		await page.getByRole("heading", { name: heading, exact: true }).waitFor()
 	}
-	await page.goto(`${base}/config`)
+	await navigate("/config")
 	await page.locator("#sunshine_name").fill("Teste nativo ç")
 	await page.getByRole("button", { name: "Revisar e salvar" }).click()
 	await page.getByRole("button", { name: "Salvar arquivo", exact: true }).click()
 	await page.getByRole("status").filter({ hasText: "Arquivo salvo" }).waitFor()
 	assert.match(await readFile(config, "utf8"), /sunshine_name = Teste nativo ç/)
-	await page.goto(`${base}/config?section=nv`)
+	await navigate("/config?section=nv")
 	await page.getByLabel("Arquivo JSON da seção", { exact: true }).setInputFiles({
 		name: "nv-native.json",
 		mimeType: "application/json",
@@ -385,7 +391,7 @@ try {
 		globalConfiguration.sections.vaapi,
 		"Linux encoder configuration must remain exportable"
 	)
-	await page.goto(`${base}/apps`)
+	await navigate("/apps")
 	await page.getByRole("button", { name: "Novo aplicativo", exact: true }).click()
 	const createFile = page.getByLabel("Arquivo JSON do aplicativo", { exact: true })
 	await createFile.setInputFiles({
@@ -420,7 +426,7 @@ try {
 		).json.status,
 		true
 	)
-	await page.goto(`${base}/config?section=window-session`)
+	await navigate("/config?section=window-session")
 	await page.getByRole("combobox", { name: "Aplicativo da sessão Desktop" }).click()
 	await page
 		.getByRole("option", { name: `Aplicativo CI ç (${entry.uuid})`, exact: true })
@@ -436,7 +442,7 @@ try {
 	assert.match(windowConfiguration, /nvenc_preset = 4/)
 	assert.match(windowConfiguration, /sunshine_name = Teste global ç/)
 	assert.equal(await page.getByRole("button", { name: "Recuperar janelas agora" }).count(), 0)
-	await page.goto(`${base}/troubleshooting`)
+	await navigate("/troubleshooting")
 	await page
 		.getByRole("region", { name: "Estado do gerenciamento de janelas" })
 		.getByText(/Geração 0\./)
@@ -445,8 +451,9 @@ try {
 	const inactiveWindows = (await http("/api/window-management", { cookie })).json
 	assert.equal(inactiveWindows.manual_available, false)
 	assert.equal(inactiveWindows.moved, 0, "Saving a selection must not move any window")
-	await page.goto(`${base}/apps`)
-	await page.reload()
+	// This is already a fresh document after the settings/diagnostics visits.
+	// Do not reload it immediately while route assets may still be loading.
+	await navigate("/apps")
 	await page
 		.locator('[data-slot="card"]')
 		.filter({

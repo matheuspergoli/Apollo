@@ -39,6 +39,15 @@ Windows executa essas verificações antes das dependências/compilação nativa
 executa HTTPS antes do ciclo de instalador/serviço. Nenhuma dessas antecipações
 substitui o restante da qualificação.
 
+O contrato de navegador em `dashboard/scripts/browser-contract.mjs` verifica,
+após uma navegação completa, que a folha de estilo local foi carregada e que os
+tokens de tema estão aplicados. O ensaio HTTPS nativo usa a mesma verificação
+exercitada pelos testes rápidos, inclusive com falha de CSS injetada. Um heading
+renderizado ou um botão habilitado não comprova que a interface está utilizável
+sem estilos. Uma falha de recurso continua falhando o ensaio: não se contorna uma
+camada modal com clique forçado, alteração do fornecedor ou repetição automática
+de ações. O mock de transporte não qualifica TLS nem o servidor nativo.
+
 Antes do primeiro teste de navegador, execute
 `pnpm --dir dashboard exec playwright install --with-deps chromium`.
 Na instalação local, dependências de sistema podem exigir permissões.
