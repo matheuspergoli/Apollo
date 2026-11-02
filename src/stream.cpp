@@ -1000,7 +1000,7 @@ namespace stream {
         std::copy(payload.end() - 16, payload.end(), std::begin(iv));
       }
 
-      input::passthrough(session->input, std::move(plaintext), session->permission.load(), session->window_generation);
+      input::passthrough(session->input, std::move(plaintext), session->permission.load(), session->window_generation, reinterpret_cast<std::uintptr_t>(session));
     });
 
     server->map(packetTypes[IDX_EXEC_SERVER_CMD], [server](session_t *session, const std::string_view &payload) {
@@ -1114,7 +1114,7 @@ namespace stream {
       // IDX_INPUT_DATA callback will attempt to decrypt unencrypted data, therefore we need pass it directly
       if (type == packetTypes[IDX_INPUT_DATA]) {
         plaintext.erase(std::begin(plaintext), std::begin(plaintext) + 4);
-        input::passthrough(session->input, std::move(plaintext), session->permission.load(), session->window_generation);
+        input::passthrough(session->input, std::move(plaintext), session->permission.load(), session->window_generation, reinterpret_cast<std::uintptr_t>(session));
       } else {
         server->call(type, session, next_payload, true);
       }

@@ -5,6 +5,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises"
 import https from "node:https"
 import { dirname, resolve } from "node:path"
 import { chromium } from "@playwright/test"
+import { assertGlobalArchive } from "./configuration-contract.ts"
 
 if (
 	process.platform !== "win32" ||
@@ -341,6 +342,7 @@ try {
 	assert(globalDownloadPath, "Global configuration ZIP was not downloaded")
 	const { unzipSync, strFromU8 } = await import("fflate")
 	const globalFiles = unzipSync(await readFile(globalDownloadPath))
+	assertGlobalArchive(globalFiles, "saved")
 	const globalConfiguration = JSON.parse(
 		strFromU8(globalFiles["apollo-configuracao/configuracao.json"])
 	)
@@ -348,7 +350,6 @@ try {
 	assert.equal(globalConfiguration.sections.general.sunshine_name, "Teste global ç")
 	assert.equal(globalConfiguration.sections.nv.nvenc_preset, 4)
 	assert.equal(globalConfiguration.sections.network.port, 50989)
-	assert.equal(Object.keys(globalConfiguration.sections).length, 11)
 	assert(
 		!Object.hasOwn(globalConfiguration.sections, "vt"),
 		"Removed encoder section must not be exported"
@@ -392,6 +393,26 @@ try {
 		).json.status,
 		true
 	)
+	await page.goto(`${base}/config?section=window-session`)
+	await page.getByRole("combobox", { name: "Aplicativo da sessão Desktop" }).click()
+	await page
+		.getByRole("option", { name: `Aplicativo CI ç (${entry.uuid})`, exact: true })
+		.click()
+	await page.getByRole("switch", { name: "Restaurar posições ao encerrar" }).click()
+	await page.getByRole("button", { name: "Revisar e salvar", exact: true }).click()
+	await page.getByRole("button", { name: "Salvar arquivo", exact: true }).click()
+	await page.getByRole("status").filter({ hasText: "Arquivo salvo" }).waitFor()
+	const windowConfiguration = await readFile(config, "utf8")
+	assert(windowConfiguration.includes(`wsm_application_uuid = ${entry.uuid}`))
+	assert.match(windowConfiguration, /wsm_restore_positions = disabled/)
+	assert.match(windowConfiguration, /port = 50989/)
+	assert.match(windowConfiguration, /nvenc_preset = 4/)
+	assert.match(windowConfiguration, /sunshine_name = Teste global ç/)
+	assert(await page.getByRole("button", { name: "Recuperar janelas agora" }).isDisabled())
+	const inactiveWindows = (await http("/api/window-management", { cookie })).json
+	assert.equal(inactiveWindows.manual_available, false)
+	assert.equal(inactiveWindows.moved, 0, "Saving a selection must not move any window")
+	await page.goto(`${base}/apps`)
 	await page.reload()
 	await page
 		.locator('[data-slot="card"]')

@@ -7,19 +7,24 @@ namespace window_management {
   struct runtime_state::activity_evidence {
     using clock = session_controller::clock;
 
-    explicit activity_evidence(std::uint64_t value):
-        generation(value) {}
+    activity_evidence(std::uint64_t value, std::uintptr_t stream):
+        generation(value),
+        owner(stream) {}
 
     const std::uint64_t generation;
+    const std::uintptr_t owner;
     std::atomic<clock::duration::rep> last {0};
-    std::atomic<bool> admitted {false};
 
     bool recent(std::uint64_t requested_generation) const {
       const auto timestamp = last.load();
       const auto now = clock::now().time_since_epoch();
-      return admitted.load() && requested_generation == generation && timestamp && now >= clock::duration {timestamp} &&
+      return requested_generation == generation && timestamp && now >= clock::duration {timestamp} &&
              now - clock::duration {timestamp} <= std::chrono::seconds {2};
     }
+  };
+
+  struct runtime_state::activity_channel {
+    std::atomic<std::shared_ptr<activity_evidence>> current;
   };
 
   runtime_state::runtime_state(worker_factory factory):
@@ -32,8 +37,7 @@ namespace window_management {
     retiring_ = true;
     const auto current = evidence_.exchange({});
     if (current) {
-      current->admitted.store(false);
-      current->last.store(0);
+      current->current.store({});
     }
     if (!worker_) {
       return true;
@@ -60,9 +64,14 @@ namespace window_management {
     worker_->captured(owns ? streams_.begin()->second.capture_source : std::string {});
     const auto current = evidence_.load();
     if (current) {
-      current->admitted.store(permitted);
       if (!permitted) {
-        current->last.store(0);
+        current->current.store({});
+      } else {
+        const auto owner = streams_.begin()->first;
+        const auto previous = current->current.load();
+        if (!previous || previous->owner != owner) {
+          current->current.store(std::make_shared<activity_evidence>(generation_, owner));
+        }
       }
     }
   }
@@ -95,9 +104,10 @@ namespace window_management {
       context.application_uuid = application_uuid;
       context.target_device_id = device_id;
       context.virtual_target = true;
-      auto activity = std::make_shared<activity_evidence>(context.generation);
+      auto activity = std::make_shared<activity_channel>();
       worker_ = factory_(options, context, [activity](std::uint64_t generation) {
-        return activity->recent(generation);
+        const auto current = activity->current.load();
+        return current && current->recent(generation);
       });
       if (!worker_) {
         snapshot_ = {true, false, runtime_phase::failed, 0, {}, "worker_start_failed"};
@@ -115,7 +125,7 @@ namespace window_management {
         std::lock_guard lock(mutex_);
         const auto activity = evidence_.exchange({});
         if (activity) {
-          activity->admitted.store(false);
+          activity->current.store({});
         }
         if (worker_) {
           worker_->admission(false, false, false);
@@ -193,9 +203,13 @@ namespace window_management {
     }
   }
 
-  void runtime_state::remote_activity(std::uint64_t generation) noexcept {
-    const auto current = evidence_.load();
-    if (current && generation && current->generation == generation && current->admitted.load()) {
+  void runtime_state::remote_activity(std::uint64_t generation, std::uintptr_t stream) noexcept {
+    const auto channel = evidence_.load();
+    const auto current = channel ? channel->current.load() : nullptr;
+    // Evidence storage is replaced on every ownership/permission interruption.
+    // A late packet may finish writing its retired storage but cannot warm the
+    // surviving stream or a re-authorized owner, even within the same generation.
+    if (current && generation && current->generation == generation && stream && current->owner == stream) {
       current->last.store(activity_evidence::clock::now().time_since_epoch().count());
     }
   }

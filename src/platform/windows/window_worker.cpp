@@ -64,7 +64,7 @@ namespace window_management::win32 {
     runtime_status snapshot;
     std::array<raw_event, session_state::event_limit> events {};
     std::size_t event_count = 0;
-    bool overflow = false;
+    std::atomic<bool> overflow {false};
     bool desktop_interrupted = false;
     inline static thread_local impl *current = nullptr;
 
@@ -137,6 +137,7 @@ namespace window_management::win32 {
       bool initialized = false;
       bool ending = false;
       bool suspended = false;
+      std::wstring bound_target_path;
       while (true) {
         bool ready_for_work = false;
         const auto now = clock::now();
@@ -197,6 +198,7 @@ namespace window_management::win32 {
               publish(runtime_phase::failed, "session_not_authorized");
               break;
             }
+            bound_target_path = expected.target->monitor_device_path;
             const std::array<std::pair<DWORD, DWORD>, 5> ranges {{{EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND}, {EVENT_SYSTEM_MOVESIZESTART, EVENT_SYSTEM_MOVESIZESTART}, {EVENT_SYSTEM_DESKTOPSWITCH, EVENT_SYSTEM_DESKTOPSWITCH}, {EVENT_OBJECT_CREATE, EVENT_OBJECT_SHOW}, {EVENT_OBJECT_LOCATIONCHANGE, EVENT_OBJECT_LOCATIONCHANGE}}};
             bool installed = true;
             unsigned long hook_error = 0;
@@ -270,8 +272,10 @@ namespace window_management::win32 {
             // A reinitialized capture must still refer to the bound virtual.
             if (!ending) {
               const auto actual = bind_target(wide(captured));
-              const auto expected = bind_target(wide(display_device::map_output_name(context.target_device_id)));
-              if (!actual.target || !expected.target || actual.target->monitor_device_path != expected.target->monitor_device_path) {
+              // The session's CCD identity is immutable. Its controller resolves
+              // the current GDI source by that path; do not rebind through global
+              // display-management state on every batch or adopt a replacement.
+              if (!actual.target || actual.target->monitor_device_path != bound_target_path) {
                 controller->begin_stop(now, now, false);
               } else {
                 verified_capture = revision;
@@ -413,6 +417,12 @@ namespace window_management::win32 {
 
   runtime_status window_worker::status() const {
     std::lock_guard lock(impl_->mutex);
-    return impl_->snapshot;
+    auto result = impl_->snapshot;
+    // Controller limits and the raw hook queue are distinct. Include the latched
+    // raw overflow without counting it again on every status read.
+    result.statistics.overflow += impl_->overflow.load() ? 1 : 0;
+    result.manual_available &= impl_->flags.load() == 7 && !impl_->stop_requested.load() &&
+                               !impl_->overflow.load() && !impl_->admission_interrupted.load() && !impl_->capture_interrupted.load();
+    return result;
   }
 }  // namespace window_management::win32

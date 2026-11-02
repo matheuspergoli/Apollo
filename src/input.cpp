@@ -1578,7 +1578,7 @@ namespace input {
    * @param input The input context pointer.
    * @param input_data The input message.
    */
-  void passthrough(std::shared_ptr<input_t> &input, std::vector<std::uint8_t> &&input_data, const crypto::PERM &permission, std::uint64_t window_generation) {
+  void passthrough(std::shared_ptr<input_t> &input, std::vector<std::uint8_t> &&input_data, const crypto::PERM &permission, std::uint64_t window_generation, std::uintptr_t window_stream) {
     // Reject malformed bytes before permission checks can read the header and
     // before the queue exposes them to typed dispatch or batching.
     if (!validate_input_packet(input_data)) {
@@ -1646,7 +1646,7 @@ namespace input {
     }
 
     if (window_generation && desktop_input_activity(input_data)) {
-      window_management::remote_activity(window_generation);
+      window_management::remote_activity(window_generation, window_stream);
     }
     {
       std::lock_guard<std::mutex> lg(input->input_queue_lock);

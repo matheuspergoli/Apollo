@@ -1,5 +1,6 @@
 import { strFromU8, unzipSync } from "fflate"
 import { describe, expect, it } from "vitest"
+import { assertGlobalArchive } from "../../../scripts/configuration-contract"
 import {
 	globalArchive,
 	globalConfigurationLimit,
@@ -29,6 +30,7 @@ describe("global configuration files", () => {
 		const files = unzipSync(
 			new Uint8Array(await (await globalArchive(configuration)).arrayBuffer())
 		)
+		assertGlobalArchive(files, "defaults")
 		expect(Object.keys(files)).toHaveLength(14)
 		expect(JSON.parse(strFromU8(files["apollo-configuracao/configuracao.json"]))).toEqual(
 			configuration
@@ -40,7 +42,7 @@ describe("global configuration files", () => {
 		expect(globalDocumentation(configuration)).toContain("os padrões das 12 seções")
 	})
 
-	it("exports saved known fields with canonical types, not unknown secrets or response metadata", () => {
+	it("exports saved known fields with canonical types, not unknown secrets or response metadata", async () => {
 		const source = snapshot({
 			sunshine_name: "Host ç",
 			port: "50989",
@@ -53,6 +55,10 @@ describe("global configuration files", () => {
 		})
 		const before = JSON.stringify(source)
 		const configuration = savedConfiguration(source)
+		assertGlobalArchive(
+			unzipSync(new Uint8Array(await (await globalArchive(configuration)).arrayBuffer())),
+			"saved"
+		)
 		const parsed = parseGlobalConfiguration(JSON.stringify(configuration))
 		expect(parsed.values).toMatchObject({
 			sunshine_name: "Host ç",
@@ -66,6 +72,38 @@ describe("global configuration files", () => {
 		expect(parsed.values).not.toHaveProperty("status")
 		expect(JSON.stringify(source)).toBe(before)
 		expect(globalDocumentation(configuration)).toContain("não inclui o rascunho não salvo")
+	})
+
+	it("rejects missing sections, fields, documentation and extra private files in the native archive contract", async () => {
+		const configuration = globalTemplate("windows")
+		const files = unzipSync(
+			new Uint8Array(await (await globalArchive(configuration)).arrayBuffer())
+		)
+		const withoutSection = structuredClone(configuration)
+		delete withoutSection.sections["window-session"]
+		const withoutField = structuredClone(configuration)
+		delete withoutField.sections["window-session"].wsm_application_uuid
+		for (const value of [withoutSection, withoutField])
+			expect(() =>
+				assertGlobalArchive(
+					{
+						...files,
+						"apollo-configuracao/configuracao.json": new TextEncoder().encode(
+							JSON.stringify(value)
+						)
+					},
+					"defaults"
+				)
+			).toThrow()
+		const withoutDocumentation = { ...files }
+		delete withoutDocumentation["apollo-configuracao/secoes/window-session.md"]
+		expect(() => assertGlobalArchive(withoutDocumentation, "defaults")).toThrow()
+		expect(() =>
+			assertGlobalArchive(
+				{ ...files, "apollo-configuracao/credentials.json": new Uint8Array() },
+				"defaults"
+			)
+		).toThrow()
 	})
 
 	it("returns only provided fields so omitted sections and unknown host keys can be preserved", () => {

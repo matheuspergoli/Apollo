@@ -31,6 +31,14 @@ pnpm test:browser  # build e regressões Playwright
 pnpm verify        # sequência completa do frontend
 ```
 
+Para retorno rápido sem iniciar um host nativo, execute `pnpm check`,
+`pnpm typecheck` e `pnpm test`. Os testes do exportador e o ensaio HTTPS Windows
+usam o mesmo contrato de inventário de seções, campos e documentos do ZIP,
+derivado do schema; ele rejeita omissões e arquivos privados extras. O workflow
+Windows executa essas verificações antes das dependências/compilação nativas e
+executa HTTPS antes do ciclo de instalador/serviço. Nenhuma dessas antecipações
+substitui o restante da qualificação.
+
 Antes do primeiro teste de navegador, execute
 `pnpm --dir dashboard exec playwright install --with-deps chromium`.
 Na instalação local, dependências de sistema podem exigir permissões.
@@ -132,6 +140,12 @@ antiga não afetam a nova, entrada recente não é herdada, streams adicionais
 retiram autorização e um executor que não encerrou impede sua substituição.
 Isso não comprova a entrega dos eventos de ciclo de vida por uma sessão real.
 
+A evidência de entrada é vinculada também ao stream proprietário, não só à
+geração compartilhada. Perda de exclusividade/permissão troca seu armazenamento;
+um pacote tardio pode terminar de escrever no estado aposentado, mas não concede
+evidência ao stream sobrevivente nem ao proprietário reautorizado. Isso não muda
+o protocolo de entrada nem atribui evidência a pacotes recusados.
+
 O adaptador `src/platform/windows/window_worker.*` mantém hooks e message loop
 na mesma thread, com fila fixa e processamento limitado. O callback não inspeciona
 nem move janelas; perda de evidência por overflow invalida o gerenciamento.
@@ -209,6 +223,12 @@ de resultado e na saída textual do teste. Erros inesperados de consulta CCD
 falham o teste, não são classificados como ambiente ausente. DPI entre monitores,
 maximização em background e funcionamento com
 aplicativos reais continuam exigindo validação Windows adequada.
+
+O caso maximizado em segundo plano verifica também preservação de foco e de
+Z-order quando a fixture é elegível. `SW_SHOWNA` mantém o estado corrente sem
+ativação; não se reaproveita o comando ativador `SW_SHOWMAXIMIZED` nem se usa
+`SW_SHOWNOACTIVATE`, que pode restaurar o estado normal. Com token elevado,
+esse teste continua relatando apenas recusa, não qualificação de movimentação.
 
 Os contratos nativos incluem os testes de `input_packet.h` com os headers de
 protocolo fixados: todos os eventos tratados pelo Apollo, cada truncamento,

@@ -53,6 +53,13 @@ jobs:
           node-version: '24'
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
+      - name: Fast dashboard domain and export contracts before native dependencies
+        shell: bash
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm check
+          pnpm typecheck
+          pnpm test
       - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
         with:
           msystem: UCRT64
@@ -118,11 +125,11 @@ jobs:
         run: |
           python tools/release/audit-dashboard-package.py build-windows/cpack_artifacts/Apollo.zip
           python tools/release/audit-windows-installer.py build-windows/cpack_artifacts/Apollo.exe build-windows/cpack_artifacts/Apollo.zip
-      - name: Installer data preservation and Apollo service lifecycle (no driver installation)
-        run: pwsh -NoProfile -NonInteractive -File tools/tests/test_windows_installer.ps1 -Archive build-windows/cpack_artifacts/Apollo.zip -Installer build-windows/cpack_artifacts/Apollo.exe
       - name: Native HTTPS and React integration on the isolated runner
         working-directory: dashboard
         run: node scripts/check-native-windows.mjs ../build-windows/cpack_artifacts/Apollo.zip
+      - name: Installer data preservation and Apollo service lifecycle (no driver installation)
+        run: pwsh -NoProfile -NonInteractive -File tools/tests/test_windows_installer.ps1 -Archive build-windows/cpack_artifacts/Apollo.zip -Installer build-windows/cpack_artifacts/Apollo.exe
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: apollo-windows-release

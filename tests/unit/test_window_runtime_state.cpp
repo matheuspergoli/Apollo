@@ -165,21 +165,21 @@ TEST_F(WindowRuntimeTest, OwnerDisconnectRetiresBeforeAnyFutureSessionCanBeAdmit
 TEST_F(WindowRuntimeTest, InputEvidenceRequiresAdmissionAndIsNotInheritedAcrossGenerations) {
   const auto old_generation = prepare();
   const auto old_worker = workers.back();
-  runtime.remote_activity(old_generation);
+  runtime.remote_activity(old_generation, 11);
   EXPECT_FALSE(old_worker->activity(old_generation));
   runtime.stream_started(old_generation, 11, true);
-  runtime.remote_activity(old_generation);
+  runtime.remote_activity(old_generation, 11);
   EXPECT_TRUE(old_worker->activity(old_generation));
   runtime.permissions_changed(11, false);
-  runtime.remote_activity(old_generation);
+  runtime.remote_activity(old_generation, 11);
   EXPECT_FALSE(old_worker->activity(old_generation));
   runtime.stream_stopped(old_generation, 11);
   const auto generation = prepare();
   const auto worker = workers.back();
   runtime.stream_started(generation, 22, true);
-  runtime.remote_activity(old_generation);
+  runtime.remote_activity(old_generation, 11);
   EXPECT_FALSE(worker->activity(generation));
-  runtime.remote_activity(generation);
+  runtime.remote_activity(generation, 22);
   EXPECT_TRUE(worker->activity(generation));
   EXPECT_FALSE(old_worker->activity(old_generation));
   EXPECT_FALSE(worker->activity(old_generation));
@@ -204,6 +204,38 @@ TEST_F(WindowRuntimeTest, DisabledPreparationCannotReuseAnAlreadyAuthorizedWorke
   EXPECT_FALSE(workers.front()->admitted);
   EXPECT_EQ(workers.front()->stop_calls, 1);
   EXPECT_FALSE(runtime.recover_windows());
+}
+
+TEST_F(WindowRuntimeTest, DepartedStreamCannotGrantActivityToTheSurvivingOwnerInTheSameGeneration) {
+  const auto generation = prepare();
+  const auto worker = workers.back();
+  runtime.stream_started(generation, 11, true);
+  runtime.remote_activity(generation, 11);
+  EXPECT_TRUE(worker->activity(generation));
+  runtime.stream_started(generation, 22, true);
+  EXPECT_FALSE(worker->activity(generation));
+  runtime.stream_stopped(generation, 11);
+  EXPECT_TRUE(worker->admitted);
+  runtime.remote_activity(generation, 11);
+  EXPECT_FALSE(worker->activity(generation));
+  runtime.remote_activity(generation, 22);
+  EXPECT_TRUE(worker->activity(generation));
+}
+
+TEST_F(WindowRuntimeTest, ReauthorizingTheSameStreamDoesNotResurrectOldActivityEvidence) {
+  const auto generation = prepare();
+  const auto worker = workers.back();
+  runtime.stream_started(generation, 11, true);
+  runtime.remote_activity(generation, 11);
+  EXPECT_TRUE(worker->activity(generation));
+  runtime.permissions_changed(11, false);
+  runtime.permissions_changed(11, true);
+  EXPECT_FALSE(worker->activity(generation));
+  runtime.remote_activity(generation, 0);
+  runtime.remote_activity(generation, 22);
+  EXPECT_FALSE(worker->activity(generation));
+  runtime.remote_activity(generation, 11);
+  EXPECT_TRUE(worker->activity(generation));
 }
 
 TEST(WindowRuntimeState, UnsupportedPlatformDoesNotStartOrAuthorizeAnything) {

@@ -106,7 +106,7 @@ export function WindowManagementStatus() {
 								["Restauradas", state.restored],
 								["Ignoradas", state.skipped],
 								["Falhas", state.failed],
-								["Excesso de eventos", state.overflow],
+								["Limites excedidos", state.overflow],
 								["Último erro Win32", state.last_error]
 							].map(([label, count]) => (
 								<div key={label}>

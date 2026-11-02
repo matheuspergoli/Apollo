@@ -271,4 +271,41 @@ TEST_F(WindowDesktopTest, MaximizedFixtureRetainsStateAndElevatedFixtureIsNotMov
   EXPECT_EQ(after.window->position.normal, result.window->traits.elevated ? result.window->position.normal : desired.normal);
   EXPECT_EQ(GetForegroundWindow(), before_focus);
 }
+
+TEST_F(WindowDesktopTest, BackgroundMaximizedFixtureDoesNotActivateOrChangeZOrder) {
+  ShowWindow(window, SW_SHOWMAXIMIZED);
+  const auto result = inspect();
+  ASSERT_TRUE(result.window) << result.error;
+  ASSERT_EQ(result.window->position.state, wm::show_state::maximized);
+  auto foreground = CreateWindowExW(0, L"STATIC", L"Apollo foreground contract fixture", WS_OVERLAPPEDWINDOW, destination.work.left + 30, destination.work.top + 30, 200, 150, nullptr, nullptr, GetModuleHandleW(nullptr), nullptr);
+  ASSERT_NE(foreground, nullptr);
+  auxiliary.push_back(foreground);
+  ShowWindow(foreground, SW_SHOWNORMAL);
+  // Establish background state using only our own fixture windows. Do not force
+  // foreground ownership away from another process to set up the regression.
+  ASSERT_EQ(GetActiveWindow(), foreground);
+  const auto before_focus = GetForegroundWindow();
+  ASSERT_NE(before_focus, window);
+  const auto previous = GetWindow(window, GW_HWNDPREV);
+  auto desired = result.window->position;
+  desired.normal.left += 10;
+  desired.normal.right += 10;
+  const auto request = desktop->submit(*result.window, desired, destination, true);
+  if (result.window->traits.elevated) {
+    RecordProperty("placement_coverage", "elevated-token-refusal-only");
+    std::cout << "[ WSM COVERAGE ] Elevated background fixture: testing refusal, not background-maximized movement.\n";
+    EXPECT_EQ(request.status, native::placement_status::rejected);
+  } else {
+    RecordProperty("placement_coverage", "background-maximized-window-placement");
+    std::cout << "[ WSM COVERAGE ] Ordinary background-maximized fixture: testing placement without activation.\n";
+    ASSERT_EQ(request.status, native::placement_status::submitted) << request.error;
+  }
+  const auto after = inspect();
+  ASSERT_TRUE(after.window) << after.error;
+  EXPECT_EQ(after.window->position, result.window->traits.elevated ? result.window->position : desired);
+  EXPECT_TRUE(IsZoomed(window));
+  EXPECT_EQ(GetForegroundWindow(), before_focus);
+  EXPECT_EQ(GetActiveWindow(), foreground);
+  EXPECT_EQ(GetWindow(window, GW_HWNDPREV), previous);
+}
 #endif

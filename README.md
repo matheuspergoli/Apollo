@@ -1,4 +1,4 @@
-# Apollo 1.0.4
+# Apollo 1.0.5 — candidato
 
 Host de streaming para [Artemis](https://github.com/ClassicOldSong/moonlight-android),
 com painel React em português, display virtual no Windows e gerenciamento de
@@ -13,7 +13,11 @@ e no Sunshine. Créditos e licenças originais permanecem preservados.
 Use os arquivos desta distribuição em
 [Releases](https://github.com/matheuspergoli/Apollo/releases).
 
-Use a **1.0.4**, que mantém a correção dos binários SudoVDA ausentes na 1.0.0. Atualize na
+A **1.0.5** deste código está em validação e ainda não foi publicada. Veja as
+[mudanças do candidato](docs/releases/v1.0.5.md).
+
+A versão estável publicada continua sendo a **1.0.4**, que mantém a correção dos
+binários SudoVDA ausentes na 1.0.0. Atualize na
 mesma pasta, com backup privado dos dados, sem desinstalar primeiro a versão antiga.
 Veja as [notas da versão](docs/releases/v1.0.4.md).
 
@@ -44,8 +48,10 @@ compara seu conteúdo ao ZIP sem executar a instalação; o usuário decide quan
 
 - Visão geral com informações do host, configurações salvas e aplicativo atual.
 - Biblioteca de aplicativos com capas PNG e leitura periódica de estado.
-- Configuração completa: **99 campos em 11 seções de Windows/Linux**. No Windows,
-  aparecem **10 seções**; a seção adicional VA-API pertence ao Linux.
+- Configuração completa: **104 campos em 12 seções de Windows/Linux**. No Windows,
+  aparecem **11 seções**; a seção adicional VA-API pertence ao Linux.
+- Gerenciamento de janelas de sessão no Windows: seleção explícita de aplicativo,
+  modos Smart/Automático, recuperação manual, estado e restauração limitada.
 - Templates, exportação de valores salvos e importação revisada por seção ou global.
 - Arquivos individuais de aplicativo e permissões, sem transferir identidade/pareamento.
 - Reinício confirmado, protegido contra rascunhos e operações pendentes.

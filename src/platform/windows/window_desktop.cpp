@@ -458,6 +458,10 @@ namespace window_management::win32 {
         return {placement_status::failed, ERROR_INVALID_DATA};
       }
       native.rcNormalPosition = {workspace->left, workspace->top, workspace->right, workspace->bottom};
+      // Reusing SW_SHOWMAXIMIZED can activate a background window. SW_SHOWNA
+      // preserves its current show state without activation; SW_SHOWNOACTIVATE
+      // is not equivalent, because that command can restore normal state.
+      native.showCmd = SW_SHOWNA;
       native.flags |= WPF_ASYNCWINDOWPLACEMENT;
       if (!impl_->available() || !impl_->admitted(restoration)) {
         return {placement_status::rejected, ERROR_ACCESS_DENIED};

@@ -55,8 +55,8 @@ namespace window_management {
     state().capture_ready(generation, stream, source_name);
   }
 
-  void remote_activity(std::uint64_t generation) noexcept {
-    state().remote_activity(generation);
+  void remote_activity(std::uint64_t generation, std::uintptr_t stream) noexcept {
+    state().remote_activity(generation, stream);
   }
 
   void stop(std::uint64_t generation) noexcept {
