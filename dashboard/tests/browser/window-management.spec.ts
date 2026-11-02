@@ -5,9 +5,18 @@ test("explicit UUID selection saves without operating windows or changing displa
 	page
 }) => {
 	const host = await mockHost(page)
+	host.apps.push({ uuid: "12345678-abcd-4321-9876-1234567890ab", name: "Desktop de exemplo" })
+	let statusReads = 0
+	await page.route("**/api/window-management", (route) => {
+		statusReads += 1
+		return route.fulfill({ status: 503 })
+	})
 	await page.goto("/config?section=window-session")
 	const recovery = page.getByRole("button", { name: "Recuperar janelas agora" })
-	await expect(recovery).toBeDisabled()
+	await expect(recovery).toHaveCount(0)
+	await expect(
+		page.getByRole("region", { name: "Estado do gerenciamento de janelas" })
+	).toHaveCount(0)
 	const selection = page.getByRole("combobox", { name: "Aplicativo da sessão Desktop" })
 	await selection.focus()
 	await page.keyboard.press("Enter")
@@ -24,7 +33,12 @@ test("explicit UUID selection saves without operating windows or changing displa
 	expect(host.calls.filter((call) => call.path === "window-management/recover")).toHaveLength(
 		0
 	)
-	await expect(recovery).toBeDisabled()
+	await expect(recovery).toHaveCount(0)
+	expect(host.calls.filter((call) => call.path === "window-management")).toHaveLength(0)
+	expect(statusReads).toBe(0)
+	await expect(
+		page.getByRole("main").getByRole("link", { name: "Diagnóstico", exact: true })
+	).toHaveAttribute("href", "/troubleshooting")
 })
 
 test("manual request is explicit and does not invent successful movements", async ({
@@ -38,7 +52,7 @@ test("manual request is explicit and does not invent successful movements", asyn
 		manual_available: true,
 		moved: 2
 	}
-	await page.goto("/config?section=window-session")
+	await page.goto("/troubleshooting")
 	const state = page.getByRole("region", { name: "Estado do gerenciamento de janelas" })
 	await expect(state).toContainText("Ativo")
 	await state.getByRole("button", { name: "Recuperar janelas agora" }).click()
@@ -56,9 +70,23 @@ test("manual request is explicit and does not invent successful movements", asyn
 	await state.getByRole("button", { name: "Atualizar estado" }).click()
 	await expect(state).toContainText("Pausado")
 	await expect(state.getByRole("button", { name: "Recuperar janelas agora" })).toBeDisabled()
+	await expect(state.getByText("Recuperação solicitada", { exact: true })).toHaveCount(0)
+	host.windowStatus = {
+		...host.windowStatus,
+		generation: 2,
+		phase: "active",
+		reason: "active",
+		manual_available: true
+	}
+	await state.getByRole("button", { name: "Atualizar estado" }).click()
+	await expect(state.getByRole("button", { name: "Recuperar janelas agora" })).toBeEnabled()
+	await expect(state.getByText("Recuperação solicitada", { exact: true })).toHaveCount(0)
+	expect(host.calls.filter((call) => call.path === "window-management/recover")).toHaveLength(
+		1
+	)
 })
 
-test("failed status cannot leave a stale recovery action enabled and preserves the draft", async ({
+test("failed diagnostic status cannot leave a stale recovery action enabled or write settings", async ({
 	page
 }) => {
 	const host = await mockHost(page)
@@ -68,14 +96,12 @@ test("failed status cannot leave a stale recovery action enabled and preserves t
 		reason: "active",
 		manual_available: true
 	}
-	await page.goto("/config?section=window-session")
-	await page.getByRole("switch", { name: "Restaurar posições ao encerrar" }).click()
+	await page.goto("/troubleshooting")
+	await expect(page.getByRole("button", { name: "Recuperar janelas agora" })).toBeEnabled()
 	await page.route("**/api/window-management", (route) => route.fulfill({ status: 503 }))
 	await page.getByRole("button", { name: "Atualizar estado" }).click()
 	await expect(page.getByRole("button", { name: "Recuperar janelas agora" })).toBeDisabled()
-	await expect(
-		page.getByRole("switch", { name: "Restaurar posições ao encerrar" })
-	).not.toBeChecked()
+	expect(host.calls.filter((call) => call.method === "POST")).toHaveLength(0)
 	expect(host.calls.filter((call) => call.path === "window-management/recover")).toHaveLength(
 		0
 	)
@@ -98,16 +124,28 @@ test("diagnostics explain the operation without attributing an inspection code t
 			inspection_failures: 1,
 			confirmation_timeouts: 3,
 			last_operation: "inspect",
-			last_reason: "inspection_failed"
+			last_reason: "inspection_failed",
+			last_stage: "normal_geometry",
+			unconfirmed_operation: "confirm_move",
+			unconfirmed_reason: "confirmation_timeout",
+			unconfirmed_observation: "destination_mismatch",
+			unconfirmed_state: "maximized",
+			unconfirmed_checks: 2
 		}
 	}
-	await page.goto("/config?section=window-session")
+	await page.goto("/troubleshooting")
 	const state = page.getByRole("region", { name: "Estado do gerenciamento de janelas" })
 	await expect(state).toContainText("Geração 2")
 	const summary = state.getByText("Diagnósticos das operações", { exact: true })
 	await summary.focus()
 	await page.keyboard.press("Enter")
 	await expect(state.getByText(/Inspeção de janela:.*Código Win32 13/)).toBeVisible()
+	await expect(
+		state.getByText(/Última operação sem confirmação:.*monitor diferente/)
+	).toBeVisible()
+	await expect(state.getByText(/Última operação sem confirmação:/)).not.toContainText(
+		"Código Win32 13"
+	)
 	await expect(state).toContainText("Categorias podem se sobrepor")
 	await expect(state.getByRole("button", { name: "Recuperar janelas agora" })).toBeDisabled()
 	expect(host.calls.filter((call) => call.path === "window-management/recover")).toHaveLength(
@@ -125,7 +163,7 @@ test("returning to active after interruption recommends recovery but never repla
 		reason: "session_not_exclusive",
 		recovery_required: true
 	}
-	await page.goto("/config?section=window-session")
+	await page.goto("/troubleshooting")
 	const state = page.getByRole("region", { name: "Estado do gerenciamento de janelas" })
 	await expect(
 		state.getByText("Recuperação manual recomendada", { exact: true })
@@ -176,7 +214,7 @@ test("rejected recovery is reported without a success claim or automatic replay"
 			json: { status: false, message: "A sessão perdeu a permissão de entrada." }
 		})
 	})
-	await page.goto("/config?section=window-session")
+	await page.goto("/troubleshooting")
 	await page.getByRole("button", { name: "Recuperar janelas agora" }).click()
 	await expect(page.getByText("A sessão perdeu a permissão de entrada.")).toBeVisible()
 	await expect(page.getByText("Recuperação solicitada", { exact: true })).toHaveCount(0)
@@ -203,6 +241,8 @@ for (const colorScheme of ["light", "dark"] as const) {
 		await expect(
 			page.getByRole("combobox", { name: "Aplicativo da sessão Desktop" })
 		).toBeEnabled()
+		await expect(page.getByRole("button", { name: "Recuperar janelas agora" })).toHaveCount(0)
+		await page.goto("/troubleshooting")
 		await expect(page.getByRole("button", { name: "Recuperar janelas agora" })).toBeDisabled()
 		await page.getByText("Diagnósticos das operações", { exact: true }).click()
 		await expect(

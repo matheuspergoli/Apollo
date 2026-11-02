@@ -73,9 +73,21 @@ export async function mockHost(page: Page): Promise<MockHost> {
 				restoration_skips: 0,
 				shutdown_unfinished: 0,
 				target_failures: 0,
+				timeouts_unobserved: 0,
+				timeouts_state: 0,
+				timeouts_position: 0,
+				timeouts_destination: 0,
 				last_operation: "none",
 				last_reason: "none",
-				last_observation: "none"
+				last_observation: "none",
+				last_stage: "none",
+				unconfirmed_operation: "none",
+				unconfirmed_reason: "none",
+				unconfirmed_observation: "none",
+				unconfirmed_state: "none",
+				unconfirmed_stage: "none",
+				unconfirmed_checks: 0,
+				unconfirmed_error: 0
 			},
 			applications: [
 				{ uuid: "12345678-abcd-4321-9876-1234567890ab", name: "Desktop de exemplo" }

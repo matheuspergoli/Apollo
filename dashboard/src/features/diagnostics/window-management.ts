@@ -29,13 +29,25 @@ export const diagnosticLabels = {
 	confirmation_rejections: "Confirmações recusadas",
 	restoration_skips: "Restaurações não submetidas",
 	shutdown_unfinished: "Pendências no prazo de encerramento",
-	target_failures: "Falhas de destino"
+	target_failures: "Falhas de destino",
+	timeouts_unobserved: "Expiradas sem conferência",
+	timeouts_state: "Expiradas com estado divergente",
+	timeouts_position: "Expiradas com geometria divergente",
+	timeouts_destination: "Expiradas com monitor divergente"
 } as const
 type DiagnosticCounter = keyof typeof diagnosticLabels
 type WindowDiagnostics = Record<DiagnosticCounter, number> & {
 	last_operation: string
 	last_reason: string
 	last_observation: string
+	last_stage: string
+	unconfirmed_operation: string
+	unconfirmed_reason: string
+	unconfirmed_observation: string
+	unconfirmed_state: string
+	unconfirmed_stage: string
+	unconfirmed_checks: number
+	unconfirmed_error: number
 }
 export type WindowStatus = {
 	supported: boolean
@@ -63,9 +75,20 @@ export function parseWindowStatus(value: unknown): WindowStatus {
 		Object.keys(diagnosticLabels).some(
 			(key) => !Number.isSafeInteger(diagnostics[key]) || Number(diagnostics[key]) < 0
 		) ||
-		["last_operation", "last_reason", "last_observation"].some(
-			(key) => typeof diagnostics[key] !== "string"
-		)
+		["unconfirmed_checks", "unconfirmed_error"].some(
+			(key) => !Number.isSafeInteger(diagnostics[key]) || Number(diagnostics[key]) < 0
+		) ||
+		[
+			"last_operation",
+			"last_reason",
+			"last_observation",
+			"last_stage",
+			"unconfirmed_operation",
+			"unconfirmed_reason",
+			"unconfirmed_observation",
+			"unconfirmed_state",
+			"unconfirmed_stage"
+		].some((key) => typeof diagnostics[key] !== "string")
 	)
 		throw new Error("O host retornou diagnósticos de janelas inválidos.")
 	const applications = documents(source.applications).map((app) => {
@@ -178,8 +201,36 @@ const observations: Record<string, string> = {
 	destination_mismatch: "Última conferência: monitor diferente do destino solicitado."
 }
 
+const stages: Record<string, string> = {
+	none: "não informada",
+	interactive_context: "contexto interativo",
+	window_identity: "identidade da janela",
+	window_session: "sessão ou desktop da janela",
+	process_access: "acesso ao processo",
+	token_access: "acesso ao token",
+	user_identity: "identidade do usuário",
+	integrity: "integridade do processo",
+	process_security: "informações de segurança do processo",
+	window_style: "estilo da janela",
+	window_geometry: "leitura da geometria da janela",
+	origin_monitor: "monitor de origem",
+	origin_binding: "associação CCD da origem",
+	origin_dpi: "DPI da origem",
+	normal_geometry: "geometria da posição restaurada",
+	admission: "autorização para submissão",
+	window_snapshot: "revalidação da janela",
+	eligibility: "elegibilidade da janela",
+	destination_binding: "associação CCD do destino",
+	destination_geometry: "geometria do destino",
+	responsiveness: "responsividade da janela",
+	final_snapshot: "última revalidação antes da submissão",
+	set_window_pos: "chamada SetWindowPos",
+	set_window_placement: "chamada SetWindowPlacement",
+	worker: "executor de janelas"
+}
+
 export function windowDiagnosticDescription(status: WindowStatus) {
-	const { last_operation, last_reason, last_observation } = status.diagnostics
+	const { last_operation, last_reason, last_observation, last_stage } = status.diagnostics
 	const operation = operations[last_operation] || "Operação não reconhecida"
 	const reason =
 		diagnosticReasons[last_reason] || reasons[last_reason] || "Motivo não reconhecido."
@@ -187,5 +238,28 @@ export function windowDiagnosticDescription(status: WindowStatus) {
 	const code = status.last_error
 		? ` Código Win32 ${status.last_error}.`
 		: " Sem código Win32 associado."
-	return `${operation}: ${reason}${observation ? ` ${observation}` : ""}${code}`
+	return `${operation}: ${reason}${observation ? ` ${observation}` : ""} Etapa: ${stages[last_stage] || "não reconhecida"}.${code}`
+}
+
+export function windowUnconfirmedDescription(status: WindowStatus) {
+	const diagnostic = status.diagnostics
+	if (diagnostic.unconfirmed_operation === "none")
+		return "Nenhuma operação sem confirmação registrada."
+	const states: Record<string, string> = {
+		normal: "normal",
+		maximized: "maximizado",
+		minimized: "minimizado"
+	}
+	const description = windowDiagnosticDescription({
+		...status,
+		last_error: diagnostic.unconfirmed_error,
+		diagnostics: {
+			...diagnostic,
+			last_operation: diagnostic.unconfirmed_operation,
+			last_reason: diagnostic.unconfirmed_reason,
+			last_observation: diagnostic.unconfirmed_observation,
+			last_stage: diagnostic.unconfirmed_stage
+		}
+	})
+	return `Última operação sem confirmação: ${description} Estado solicitado: ${states[diagnostic.unconfirmed_state] || "não informado"}. Conferências executadas: ${diagnostic.unconfirmed_checks}.`
 }

@@ -66,10 +66,19 @@ counts include only observed completion, not merely an accepted OS request.
 Restoration requires the original monitor and window identity to remain valid,
 with no subsequent change to the confirmed placement. It may be refused or expire.
 
+Operational state, counters and the **Recuperar janelas agora** action live on
+the **Diagnóstico** page (`/troubleshooting`). The configuration group contains
+persisted options and application selection, not session diagnostics or recovery
+actions. Application choices load from the application inventory independently
+of the window-management status query.
+
 **Recuperar janelas agora** is an explicit action on the currently authorized
 session, not on the unsaved settings draft. It can rebase ownership after a manual
 change. The status panel reports waiting, active, paused, stopped or failed state;
 failure of window management does not stop streaming or select a physical fallback.
+The latest unconfirmed operation is retained separately from later inspection
+errors. Timeout categories distinguish an unobserved result from the last
+observed state, geometry or monitor mismatch; none establishes movement ownership.
 
 ## General
 

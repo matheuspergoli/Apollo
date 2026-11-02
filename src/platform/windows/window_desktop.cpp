@@ -271,39 +271,39 @@ namespace window_management::win32 {
 
   window_result window_desktop::inspect(std::uintptr_t handle, std::uint64_t incarnation) {
     if (!impl_->available() || !handle || !incarnation) {
-      return {{}, ERROR_ACCESS_DENIED};
+      return {{}, ERROR_ACCESS_DENIED, "interactive_context"};
     }
     const auto window = reinterpret_cast<HWND>(handle);
     if (!IsWindow(window)) {
-      return {{}, ERROR_INVALID_WINDOW_HANDLE};
+      return {{}, ERROR_INVALID_WINDOW_HANDLE, "window_identity"};
     }
     DWORD process_id = 0;
     const auto thread_id = GetWindowThreadProcessId(window, &process_id);
     DWORD process_session = 0;
     if (!thread_id || !ProcessIdToSessionId(process_id, &process_session) || process_session != impl_->session ||
         object_name(GetThreadDesktop(thread_id)) != L"Default" || !receives_input(GetThreadDesktop(thread_id))) {
-      return {{}, ERROR_ACCESS_DENIED};
+      return {{}, ERROR_ACCESS_DENIED, "window_session"};
     }
     owned_handle process;
     process.value = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, process_id);
     if (!process.value) {
-      return {{}, error_or(ERROR_ACCESS_DENIED)};
+      return {{}, error_or(ERROR_ACCESS_DENIED), "process_access"};
     }
     owned_handle token;
     if (!OpenProcessToken(process.value, TOKEN_QUERY, &token.value)) {
-      return {{}, error_or(ERROR_ACCESS_DENIED)};
+      return {{}, error_or(ERROR_ACCESS_DENIED), "token_access"};
     }
     const auto user = token_data(token.value, TokenUser);
     if (user.empty() || !EqualSid(reinterpret_cast<const TOKEN_USER *>(user.data())->User.Sid, impl_->user_sid.data())) {
-      return {{}, ERROR_ACCESS_DENIED};
+      return {{}, ERROR_ACCESS_DENIED, "user_identity"};
     }
     const auto integrity = token_data(token.value, TokenIntegrityLevel);
     if (integrity.size() < sizeof(TOKEN_MANDATORY_LABEL)) {
-      return {{}, ERROR_ACCESS_DENIED};
+      return {{}, ERROR_ACCESS_DENIED, "integrity"};
     }
     const auto integrity_sid = reinterpret_cast<const TOKEN_MANDATORY_LABEL *>(integrity.data())->Label.Sid;
     if (!IsValidSid(integrity_sid) || !*GetSidSubAuthorityCount(integrity_sid)) {
-      return {{}, ERROR_ACCESS_DENIED};
+      return {{}, ERROR_ACCESS_DENIED, "integrity"};
     }
     const auto integrity_level = *GetSidSubAuthority(integrity_sid, *GetSidSubAuthorityCount(integrity_sid) - 1);
     TOKEN_ELEVATION elevation {};
@@ -315,17 +315,17 @@ namespace window_management::win32 {
         !GetTokenInformation(token.value, TokenUIAccess, &ui_access, sizeof(ui_access), &returned) ||
         !GetProcessTimes(process.value, &created, &exited, &kernel, &cpu) ||
         !GetProcessInformation(process.value, ProcessProtectionLevelInfo, &protection, sizeof(protection))) {
-      return {{}, error_or(ERROR_ACCESS_DENIED)};
+      return {{}, error_or(ERROR_ACCESS_DENIED), "process_security"};
     }
     SetLastError(ERROR_SUCCESS);
     const auto style = GetWindowLongPtrW(window, GWL_STYLE);
     if (!style && GetLastError()) {
-      return {{}, error_or()};
+      return {{}, error_or(), "window_style"};
     }
     SetLastError(ERROR_SUCCESS);
     const auto ex_style = GetWindowLongPtrW(window, GWL_EXSTYLE);
     if (!ex_style && GetLastError()) {
-      return {{}, error_or()};
+      return {{}, error_or(), "window_style"};
     }
     DWORD cloaked = 0;
     RECT actual {};
@@ -333,26 +333,26 @@ namespace window_management::win32 {
     native.length = sizeof(native);
     if (FAILED(DwmGetWindowAttribute(window, DWMWA_CLOAKED, &cloaked, sizeof(cloaked))) ||
         !GetWindowRect(window, &actual) || !GetWindowPlacement(window, &native)) {
-      return {{}, ERROR_INVALID_WINDOW_HANDLE};
+      return {{}, ERROR_INVALID_WINDOW_HANDLE, "window_geometry"};
     }
     const auto monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONULL);
     MONITORINFOEXW info {};
     info.cbSize = sizeof(info);
     if (!monitor || !GetMonitorInfoW(monitor, reinterpret_cast<MONITORINFO *>(&info))) {
-      return {{}, ERROR_NOT_FOUND};
+      return {{}, ERROR_NOT_FOUND, "origin_monitor"};
     }
     const auto origin = origin_for_source(info.szDevice);
     if (!origin.target) {
-      return {{}, origin.error};
+      return {{}, origin.error, "origin_binding"};
     }
     const auto source = impl_->read_area(*origin.target);
     if (!source) {
-      return {{}, ERROR_NOT_SUPPORTED};
+      return {{}, ERROR_NOT_SUPPORTED, "origin_dpi"};
     }
     const workspace_rect workspace {static_cast<std::int32_t>(native.rcNormalPosition.left), static_cast<std::int32_t>(native.rcNormalPosition.top), static_cast<std::int32_t>(native.rcNormalPosition.right), static_cast<std::int32_t>(native.rcNormalPosition.bottom)};
     const auto normal = ex_style & WS_EX_TOOLWINDOW ? std::optional {screen(native.rcNormalPosition)} : to_screen(workspace, *source);
     if (!normal) {
-      return {{}, ERROR_INVALID_DATA};
+      return {{}, ERROR_INVALID_DATA, "normal_geometry"};
     }
     observed_window observed;
     observed.identity = {handle, process_id, thread_id, (std::uint64_t(created.dwHighDateTime) << 32) | created.dwLowDateTime, incarnation};
@@ -379,7 +379,7 @@ namespace window_management::win32 {
     traits.fullscreen = !IsZoomed(window) && screen(actual) == source->bounds;
     DWORD final_pid = 0;
     if (GetWindowThreadProcessId(window, &final_pid) != thread_id || final_pid != process_id) {
-      return {{}, ERROR_INVALID_WINDOW_HANDLE};
+      return {{}, ERROR_INVALID_WINDOW_HANDLE, "window_identity"};
     }
     return {std::move(observed), ERROR_SUCCESS};
   }
@@ -397,36 +397,36 @@ namespace window_management::win32 {
 
   placement_result window_desktop::submit(const observed_window &expected, placement desired, const target_snapshot &destination, bool restoration) {
     if (!impl_->admitted(restoration) || !window_allowed(expected.traits)) {
-      return {placement_status::rejected, ERROR_ACCESS_DENIED};
+      return {placement_status::rejected, ERROR_ACCESS_DENIED, "admission"};
     }
     const auto fresh = inspect(expected.identity.handle, expected.identity.incarnation);
     if (!fresh.window) {
-      return {placement_status::rejected, fresh.error};
+      return {placement_status::rejected, fresh.error, fresh.error_stage};
     }
     const auto &current = *fresh.window;
     if (current.identity != expected.identity || current.position != expected.position || current.origin.monitor_device_path != expected.origin.monitor_device_path) {
-      return {placement_status::stale, ERROR_RETRY};
+      return {placement_status::stale, ERROR_RETRY, "window_snapshot"};
     }
     if (!window_allowed(current.traits) || current.position.state == show_state::minimized || desired.state != current.position.state) {
-      return {placement_status::rejected, ERROR_ACCESS_DENIED};
+      return {placement_status::rejected, ERROR_ACCESS_DENIED, "eligibility"};
     }
     const auto target = restoration ? refresh_origin(destination.monitor_device_path) : refresh_target(destination.monitor_device_path);
     if (!target.target || target.target->bounds != destination.bounds || target.target->work != destination.work) {
-      return {placement_status::stale, target.error ? target.error : ERROR_RETRY};
+      return {placement_status::stale, target.error ? target.error : ERROR_RETRY, "destination_binding"};
     }
     const auto target_area = impl_->read_area(*target.target);
     const auto width = std::int64_t(desired.normal.right) - desired.normal.left;
     const auto height = std::int64_t(desired.normal.bottom) - desired.normal.top;
     if (!target_area || width <= 0 || height <= 0 || width > std::numeric_limits<int>::max() || height > std::numeric_limits<int>::max() ||
         !overlaps(desired.normal, destination.work)) {
-      return {placement_status::rejected, ERROR_INVALID_PARAMETER};
+      return {placement_status::rejected, ERROR_INVALID_PARAMETER, "destination_geometry"};
     }
     const auto visible_width = std::min<std::int64_t>(desired.normal.right, destination.work.right) - std::max<std::int64_t>(desired.normal.left, destination.work.left);
     const auto caption_height = std::min(height, std::int64_t(32) * target_area->dpi / 96);
     if (desired.normal.top < destination.work.top || std::int64_t(desired.normal.top) + caption_height > destination.work.bottom ||
         visible_width < std::min(width, std::int64_t(160) * target_area->dpi / 96) ||
         (!restoration && (desired.normal.left < destination.work.left || desired.normal.right > destination.work.right || desired.normal.bottom > destination.work.bottom))) {
-      return {placement_status::rejected, ERROR_INVALID_PARAMETER};
+      return {placement_status::rejected, ERROR_INVALID_PARAMETER, "destination_geometry"};
     }
     if (desired == current.position && current.origin.monitor_device_path == destination.monitor_device_path) {
       return {placement_status::unchanged, ERROR_SUCCESS};
@@ -434,7 +434,7 @@ namespace window_management::win32 {
     const auto window = reinterpret_cast<HWND>(expected.identity.handle);
     DWORD_PTR response = 0;
     if (IsHungAppWindow(window) || !SendMessageTimeoutW(window, WM_NULL, 0, 0, SMTO_ABORTIFHUNG | SMTO_BLOCK, 25, &response)) {
-      return {placement_status::rejected, ERROR_TIMEOUT};
+      return {placement_status::rejected, ERROR_TIMEOUT, "responsiveness"};
     }
     // The responsiveness probe can pump the application's own messages. Re-read
     // afterward so a position/state/identity change during that probe is not
@@ -442,12 +442,12 @@ namespace window_management::win32 {
     const auto rechecked = inspect(expected.identity.handle, expected.identity.incarnation);
     if (!rechecked.window || rechecked.window->identity != current.identity || rechecked.window->position != current.position ||
         rechecked.window->origin.monitor_device_path != current.origin.monitor_device_path || !window_allowed(rechecked.window->traits)) {
-      return {placement_status::stale, ERROR_RETRY};
+      return {placement_status::stale, ERROR_RETRY, "final_snapshot"};
     }
     BOOL submitted = FALSE;
     if (desired.state == show_state::normal) {
       if (!impl_->available() || !impl_->admitted(restoration)) {
-        return {placement_status::rejected, ERROR_ACCESS_DENIED};
+        return {placement_status::rejected, ERROR_ACCESS_DENIED, "admission"};
       }
       submitted = SetWindowPos(window, nullptr, desired.normal.left, desired.normal.top, static_cast<int>(width), static_cast<int>(height), SWP_ASYNCWINDOWPOS | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER);
     } else {
@@ -455,7 +455,7 @@ namespace window_management::win32 {
       WINDOWPLACEMENT native {};
       native.length = sizeof(native);
       if (!workspace || !GetWindowPlacement(window, &native)) {
-        return {placement_status::failed, ERROR_INVALID_DATA};
+        return {placement_status::failed, ERROR_INVALID_DATA, "normal_geometry"};
       }
       native.rcNormalPosition = {workspace->left, workspace->top, workspace->right, workspace->bottom};
       // Reusing SW_SHOWMAXIMIZED can activate a background window. SW_SHOWNA
@@ -464,10 +464,10 @@ namespace window_management::win32 {
       native.showCmd = SW_SHOWNA;
       native.flags |= WPF_ASYNCWINDOWPLACEMENT;
       if (!impl_->available() || !impl_->admitted(restoration)) {
-        return {placement_status::rejected, ERROR_ACCESS_DENIED};
+        return {placement_status::rejected, ERROR_ACCESS_DENIED, "admission"};
       }
       submitted = SetWindowPlacement(window, &native);
     }
-    return submitted ? placement_result {placement_status::submitted, ERROR_SUCCESS} : placement_result {placement_status::failed, error_or()};
+    return submitted ? placement_result {placement_status::submitted, ERROR_SUCCESS} : placement_result {placement_status::failed, error_or(), desired.state == show_state::normal ? "set_window_pos" : "set_window_placement"};
   }
 }  // namespace window_management::win32

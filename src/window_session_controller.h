@@ -21,9 +21,23 @@ namespace window_management {
     std::uint64_t restoration_skips = 0;
     std::uint64_t shutdown_unfinished = 0;
     std::uint64_t target_failures = 0;
+    std::uint64_t timeouts_unobserved = 0;
+    std::uint64_t timeouts_state = 0;
+    std::uint64_t timeouts_position = 0;
+    std::uint64_t timeouts_destination = 0;
     std::string last_operation = "none";
     std::string last_reason = "none";
     std::string last_observation = "none";
+    std::string last_stage = "none";
+    // Inspection noise must not erase the last unconfirmed operation. This is
+    // bounded, per-generation evidence, without HWNDs, titles or process paths.
+    std::string unconfirmed_operation = "none";
+    std::string unconfirmed_reason = "none";
+    std::string unconfirmed_observation = "none";
+    std::string unconfirmed_state = "none";
+    std::string unconfirmed_stage = "none";
+    std::uint64_t unconfirmed_checks = 0;
+    unsigned long unconfirmed_error = 0;
   };
 
   struct controller_statistics {
@@ -79,6 +93,7 @@ namespace window_management {
       clock::time_point deadline;
       bool restoration = false;
       std::string_view discrepancy = "not_observed";
+      std::uint64_t checks = 0;
     };
 
     std::optional<observed_window> inspect(std::uintptr_t handle);
@@ -86,7 +101,8 @@ namespace window_management {
     void move(const pending_event &event, const target_snapshot &target, monitor_area area, clock::time_point now, bool recent_remote_input);
     void restore();
     bool in_flight(std::uintptr_t handle) const;
-    void diagnose(std::string_view operation, std::string_view reason, unsigned long error = 0);
+    void diagnose(std::string_view operation, std::string_view reason, unsigned long error = 0, std::string_view stage = "none");
+    void diagnose_confirmation(const request &request, std::string_view reason, unsigned long error = 0, std::string_view stage = "none");
 
     window_backend &backend_;
     session_state state_;

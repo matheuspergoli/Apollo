@@ -149,6 +149,23 @@ geometria ou destino divergente de ausência de conferência; ela não prova que
 aplicativo recusou a operação nem permite relaxar a confirmação. Não se incluem
 títulos, nomes de processos ou caminhos privados de janelas nesses diagnósticos.
 
+O último movimento/restauração sem confirmação possui um resumo separado e
+limitado, preservado mesmo após novas falhas de inspeção. Inclui etapa, código,
+estado solicitado e número de conferências executadas, sem identificadores de
+janelas. Contadores de timeout distinguem ausência de conferência de divergência
+observada de estado, geometria ou monitor; quando várias divergências coexistem,
+a classificação prioriza estado, depois geometria e depois destino. A soma
+dessas categorias corresponde aos timeouts, não a todas as falhas. Zero
+conferências não prova que o aplicativo recusou o movimento. Uma etapa de acesso
+negado não autoriza remover a restrição de segurança nem elevar o gerenciador.
+
+A página Configurações contém opções persistidas e seleção de aplicativo. Estado WSM,
+contadores, diagnósticos e recuperação manual pertencem à página Diagnóstico;
+consultar ou editar configurações não inicia polling do estado WSM. O seletor
+usa o inventário de aplicativos, independentemente da disponibilidade dos
+diagnósticos. Uma confirmação HTTP de recuperação não acompanha gerações futuras
+nem permanece apresentada como solicitação da sessão ativa após seu encerramento.
+
 Após suspensão, `recovery_required` recomenda uma descoberta manual explícita;
 retornar a `active` não readquire ownership. O aviso é retirado quando o
 controlador aceita a descoberta manual, não apenas porque o HTTP enfileirou a
@@ -260,6 +277,44 @@ Z-order quando a fixture é elegível. `SW_SHOWNA` mantém o estado corrente sem
 ativação; não se reaproveita o comando ativador `SW_SHOWMAXIMIZED` nem se usa
 `SW_SHOWNOACTIVATE`, que pode restaurar o estado normal. Com token elevado,
 esse teste continua relatando apenas recusa, não qualificação de movimentação.
+
+**Critérios de resiliência do gerenciamento de janelas.** Retomar observação não
+é o mesmo que recuperar ownership. Quando desktop, exclusividade, permissão e
+captura do mesmo destino voltam a estar válidos, o worker pode voltar a processar
+eventos. Isso não autoriza limpar `user_override`, reutilizar operações pendentes
+ou repetir a recuperação inicial sobre todas as janelas. Janelas cuja evidência
+anterior foi invalidada continuam exigindo recuperação manual na mesma geração
+para estabelecer uma nova origem. Reiniciar automaticamente um worker também
+não pode contornar essa proteção nem a quarentena de um executor que ainda não
+terminou.
+
+Uma nova enumeração não comprova continuidade de identidade depois de perder
+eventos de criação/destruição: um HWND pode ser reutilizado dentro do mesmo
+processo/thread, mantendo PID e horário de criação do processo. Por isso, uma
+recuperação de overflow não pode preservar silenciosamente o ownership anterior.
+A fila bruta WinEvent é distinta da fila de política, que já agrupa solicitações
+por janela. Agrupar apenas notificações comprovadamente equivalentes exige
+preservar ordem e barreiras de criação, destruição, início de movimento e troca de
+desktop. Mesclar alterações de localização pode ocultar que uma janela saiu e
+voltou à mesma posição, invalidando a proteção contra alterações posteriores.
+
+A evidência Smart registra pacote validado e permitido antes de enfileirar a
+injeção de entrada; não comprova que o Windows entregou esse pacote a uma janela.
+Os hooks atuais não associam o horário original do WinEvent a um pacote
+específico. Uma associação temporal mais restrita deve distinguir recebimento,
+injeção e ocorrência/processamento do evento, inclusive atrasos de fila e ações
+locais intercaladas. Nenhuma heurística temporal deve ser apresentada como prova
+de autoria remota ou ampliar permissões. Gamepad não vira evidência de desktop
+para compensar a ausência dessa associação.
+
+Alterações nessas políticas precisam de regressões de produção para perda/retorno
+de autorização, mudança manual durante interrupção, reutilização de identidade,
+ordenação de eventos e ausência de replay. Restauração sob queda de rede exige
+também captura/teardown reais em Windows: não pode recriar o display apenas para
+restaurar, adotar outro destino nem recuperar ownership de uma geração anterior.
+Cache de CCD, novos limites de fila e alterações de prazo exigem medições ou uma
+reprodução; resultados de política com backend controlado não demonstram custo
+de Win32 nem estabilidade de streaming sob carga.
 
 Os contratos nativos incluem os testes de `input_packet.h` com os headers de
 protocolo fixados: todos os eventos tratados pelo Apollo, cada truncamento,

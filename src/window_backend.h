@@ -34,6 +34,7 @@ namespace window_management {
   struct window_result {
     std::optional<observed_window> window;
     unsigned long error = 0;
+    std::string_view error_stage = "none";
   };
 
   struct window_inventory {
@@ -53,6 +54,7 @@ namespace window_management {
   struct placement_result {
     placement_status status;
     unsigned long error = 0;
+    std::string_view error_stage = "none";
   };
 
   class window_backend {

@@ -39,6 +39,7 @@ namespace {
     unsigned long enumeration_error = 0;
     unsigned long inspection_error = 0;
     std::uintptr_t uninspectable = 0;
+    std::string_view inspection_stage = "none";
 
     wm::window_inventory enumerate() override {
       wm::window_inventory inventory;
@@ -52,7 +53,7 @@ namespace {
 
     wm::window_result inspect(std::uintptr_t handle, std::uint64_t incarnation) override {
       if (handle == uninspectable) {
-        return {{}, inspection_error};
+        return {{}, inspection_error, inspection_stage};
       }
       if (!windows.contains(handle)) {
         return {{}, 1};
@@ -570,4 +571,101 @@ TEST_F(WindowControllerTest, NewGenerationDoesNotInheritDiagnosticsOrRecoveryRec
   EXPECT_EQ(stats.failed, 0u);
   EXPECT_EQ(stats.diagnostics.enumeration_failures, 0u);
   EXPECT_EQ(stats.diagnostics.last_operation, "none");
+  EXPECT_EQ(stats.diagnostics.unconfirmed_operation, "none");
+  EXPECT_EQ(stats.diagnostics.unconfirmed_checks, 0u);
+  EXPECT_EQ(stats.diagnostics.timeouts_unobserved, 0u);
+}
+
+TEST_F(WindowControllerTest, LaterInspectionNoiseCannotEraseTheUnconfirmedMovementEvidence) {
+  backend.windows.at(1).position.state = wm::show_state::maximized;
+  recover();
+  ASSERT_EQ(backend.operations.size(), 1u);
+  backend.complete(0);
+  // Model a maximized window whose restored rectangle changed but whose
+  // actual monitor did not. This is not a qualification of SetWindowPlacement.
+  backend.windows.at(1).origin = physical;
+  controller.tick(now + 100ms, false);
+  controller.tick(now + 600ms, false);
+  backend.uninspectable = 99;
+  backend.inspection_error = 13;
+  backend.inspection_stage = "normal_geometry";
+  for (unsigned int i = 0; i < 2000; ++i) {
+    controller.event(99, wm::trigger::location_changed, false, now + 650ms);
+  }
+  const auto &stats = controller.statistics();
+  EXPECT_EQ(stats.diagnostics.inspection_failures, 2000u);
+  EXPECT_EQ(stats.last_error, 13ul);
+  EXPECT_EQ(stats.diagnostics.last_operation, "inspect");
+  EXPECT_EQ(stats.diagnostics.last_stage, "normal_geometry");
+  EXPECT_EQ(stats.diagnostics.unconfirmed_operation, "confirm_move");
+  EXPECT_EQ(stats.diagnostics.unconfirmed_reason, "confirmation_timeout");
+  EXPECT_EQ(stats.diagnostics.unconfirmed_observation, "destination_mismatch");
+  EXPECT_EQ(stats.diagnostics.unconfirmed_state, "maximized");
+  EXPECT_EQ(stats.diagnostics.unconfirmed_checks, 1u);
+  EXPECT_EQ(stats.diagnostics.unconfirmed_error, 0ul);
+  EXPECT_EQ(stats.diagnostics.timeouts_destination, 1u);
+  EXPECT_EQ(stats.moved, 0u);
+  controller.begin_stop(now + 700ms, now + 1s);
+  controller.tick(now + 750ms, false);
+  EXPECT_EQ(backend.operations.size(), 1u);
+  EXPECT_EQ(stats.diagnostics.unconfirmed_observation, "destination_mismatch");
+}
+
+TEST_F(WindowControllerTest, TimeoutBeforeAnyCheckIsDifferentFromAnObservedPositionMismatch) {
+  recover();
+  controller.tick(now + 600ms, false);
+  const auto &diagnostics = controller.statistics().diagnostics;
+  EXPECT_EQ(diagnostics.timeouts_unobserved, 1u);
+  EXPECT_EQ(diagnostics.unconfirmed_checks, 0u);
+  EXPECT_EQ(diagnostics.unconfirmed_observation, "not_observed");
+  EXPECT_EQ(diagnostics.unconfirmed_state, "normal");
+  EXPECT_EQ(diagnostics.timeouts_position, 0u);
+  EXPECT_EQ(diagnostics.timeouts_state, 0u);
+  EXPECT_EQ(diagnostics.timeouts_destination, 0u);
+}
+
+TEST_F(WindowControllerTest, MixedTimeoutCategoriesAccountForEveryExpiredRequestOnce) {
+  backend.windows.emplace(2, ordinary(2));
+  backend.windows.emplace(3, ordinary(3));
+  recover();
+  ASSERT_EQ(backend.operations.size(), 3u);
+  for (std::size_t i = 0; i < 3; ++i) {
+    backend.complete(i);
+    const auto handle = backend.operations.at(i).handle;
+    if (handle == 1) {
+      backend.windows.at(handle).position.normal.right += 1;
+    } else if (handle == 2) {
+      backend.windows.at(handle).position.state = wm::show_state::maximized;
+    } else {
+      backend.windows.at(handle).origin = physical;
+    }
+  }
+  controller.tick(now + 100ms, false);
+  controller.tick(now + 600ms, false);
+  controller.tick(now + 650ms, false);
+  const auto &diagnostics = controller.statistics().diagnostics;
+  EXPECT_EQ(diagnostics.confirmation_timeouts, 3u);
+  EXPECT_EQ(diagnostics.timeouts_position, 1u);
+  EXPECT_EQ(diagnostics.timeouts_state, 1u);
+  EXPECT_EQ(diagnostics.timeouts_destination, 1u);
+  EXPECT_EQ(diagnostics.timeouts_unobserved, 0u);
+}
+
+TEST_F(WindowControllerTest, ConfirmationRefusalKeepsItsOwnStageAfterAnotherInspectionFailure) {
+  recover();
+  backend.uninspectable = 1;
+  backend.inspection_error = 5;
+  backend.inspection_stage = "process_access";
+  controller.tick(now + 100ms, false);
+  backend.uninspectable = 99;
+  backend.inspection_error = 13;
+  backend.inspection_stage = "normal_geometry";
+  controller.event(99, wm::trigger::location_changed, false, now + 150ms);
+  const auto &diagnostics = controller.statistics().diagnostics;
+  EXPECT_EQ(diagnostics.last_stage, "normal_geometry");
+  EXPECT_EQ(diagnostics.unconfirmed_stage, "process_access");
+  EXPECT_EQ(diagnostics.unconfirmed_error, 5ul);
+  EXPECT_EQ(diagnostics.unconfirmed_reason, "inspection_failed");
+  EXPECT_EQ(diagnostics.confirmation_rejections, 1u);
+  EXPECT_EQ(diagnostics.confirmation_timeouts, 0u);
 }

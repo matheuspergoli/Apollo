@@ -110,6 +110,7 @@ namespace window_management::win32 {
         snapshot.statistics.diagnostics.last_operation = "worker";
         snapshot.statistics.diagnostics.last_reason = snapshot.reason;
         snapshot.statistics.diagnostics.last_observation = "none";
+        snapshot.statistics.diagnostics.last_stage = "worker";
       }
       if (changed) {
         // Lifecycle summaries only: no window titles, process paths or per-event
@@ -126,7 +127,17 @@ namespace window_management::win32 {
                         << " shutdown_unfinished=" << stats.diagnostics.shutdown_unfinished
                         << " recovery_required=" << stats.recovery_required
                         << " diagnostic=" << stats.diagnostics.last_operation << "/" << stats.diagnostics.last_reason
-                        << " observation=" << stats.diagnostics.last_observation << " win32=" << stats.last_error;
+                        << " observation=" << stats.diagnostics.last_observation << " stage=" << stats.diagnostics.last_stage << " win32=" << stats.last_error
+                        << " timeouts_unobserved=" << stats.diagnostics.timeouts_unobserved
+                        << " timeouts_state=" << stats.diagnostics.timeouts_state
+                        << " timeouts_position=" << stats.diagnostics.timeouts_position
+                        << " timeouts_destination=" << stats.diagnostics.timeouts_destination
+                        << " unconfirmed=" << stats.diagnostics.unconfirmed_operation << "/" << stats.diagnostics.unconfirmed_reason
+                        << " unconfirmed_observation=" << stats.diagnostics.unconfirmed_observation
+                        << " unconfirmed_state=" << stats.diagnostics.unconfirmed_state
+                        << " unconfirmed_checks=" << stats.diagnostics.unconfirmed_checks
+                        << " unconfirmed_stage=" << stats.diagnostics.unconfirmed_stage
+                        << " unconfirmed_win32=" << stats.diagnostics.unconfirmed_error;
       }
     }
 

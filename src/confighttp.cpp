@@ -1051,9 +1051,21 @@ namespace confighttp {
       {"restoration_skips", diagnostics.restoration_skips},
       {"shutdown_unfinished", diagnostics.shutdown_unfinished},
       {"target_failures", diagnostics.target_failures},
+      {"timeouts_unobserved", diagnostics.timeouts_unobserved},
+      {"timeouts_state", diagnostics.timeouts_state},
+      {"timeouts_position", diagnostics.timeouts_position},
+      {"timeouts_destination", diagnostics.timeouts_destination},
       {"last_operation", diagnostics.last_operation},
       {"last_reason", diagnostics.last_reason},
-      {"last_observation", diagnostics.last_observation}
+      {"last_observation", diagnostics.last_observation},
+      {"last_stage", diagnostics.last_stage},
+      {"unconfirmed_operation", diagnostics.unconfirmed_operation},
+      {"unconfirmed_reason", diagnostics.unconfirmed_reason},
+      {"unconfirmed_observation", diagnostics.unconfirmed_observation},
+      {"unconfirmed_state", diagnostics.unconfirmed_state},
+      {"unconfirmed_stage", diagnostics.unconfirmed_stage},
+      {"unconfirmed_checks", diagnostics.unconfirmed_checks},
+      {"unconfirmed_error", diagnostics.unconfirmed_error}
     };
     output_tree["applications"] = std::move(applications);
     send_response(response, output_tree);

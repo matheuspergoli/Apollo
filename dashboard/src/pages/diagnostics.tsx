@@ -21,6 +21,7 @@ import {
 	SelectTrigger,
 	SelectValue
 } from "@/components/ui/select"
+import { WindowManagementStatus } from "@/features/diagnostics/window-management-status"
 import { configOptions, request } from "@/lib/api"
 import { action } from "@/lib/documents"
 import { downloadFile } from "@/lib/download"
@@ -88,6 +89,18 @@ export function DiagnosticsPage() {
 					<AlertDescription>{feedback}</AlertDescription>
 				</Alert>
 			)}
+			<Card>
+				<CardHeader>
+					<CardTitle>Janelas da sessão</CardTitle>
+					<CardDescription>
+						Estado operacional e recuperação explícita das janelas, sem alterar as opções
+						salvas.
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<WindowManagementStatus />
+				</CardContent>
+			</Card>
 			<Card>
 				<CardHeader>
 					<CardTitle>Log do Apollo</CardTitle>

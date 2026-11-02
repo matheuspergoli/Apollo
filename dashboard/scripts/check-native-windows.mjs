@@ -224,9 +224,21 @@ try {
 		restoration_skips: 0,
 		shutdown_unfinished: 0,
 		target_failures: 0,
+		timeouts_unobserved: 0,
+		timeouts_state: 0,
+		timeouts_position: 0,
+		timeouts_destination: 0,
 		last_operation: "none",
 		last_reason: "none",
-		last_observation: "none"
+		last_observation: "none",
+		last_stage: "none",
+		unconfirmed_operation: "none",
+		unconfirmed_reason: "none",
+		unconfirmed_observation: "none",
+		unconfirmed_state: "none",
+		unconfirmed_stage: "none",
+		unconfirmed_checks: 0,
+		unconfirmed_error: 0
 	})
 	assert(Array.isArray(windowStatus.json.applications))
 	const refusedRecovery = await http("/api/window-management/recover", {
@@ -423,6 +435,12 @@ try {
 	assert.match(windowConfiguration, /port = 50989/)
 	assert.match(windowConfiguration, /nvenc_preset = 4/)
 	assert.match(windowConfiguration, /sunshine_name = Teste global ç/)
+	assert.equal(await page.getByRole("button", { name: "Recuperar janelas agora" }).count(), 0)
+	await page.goto(`${base}/troubleshooting`)
+	await page
+		.getByRole("region", { name: "Estado do gerenciamento de janelas" })
+		.getByText(/Geração 0\./)
+		.waitFor()
 	assert(await page.getByRole("button", { name: "Recuperar janelas agora" }).isDisabled())
 	const inactiveWindows = (await http("/api/window-management", { cookie })).json
 	assert.equal(inactiveWindows.manual_available, false)

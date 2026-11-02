@@ -150,6 +150,7 @@ TEST_F(WindowDesktopTest, AdmissionCancellationRefusesSubmissionBeforeInspecting
   EXPECT_TRUE(restoration_seen);
   EXPECT_EQ(request.status, native::placement_status::rejected);
   EXPECT_EQ(request.error, ERROR_ACCESS_DENIED);
+  EXPECT_EQ(request.error_stage, "admission");
   const auto after = inspect();
   ASSERT_TRUE(after.window) << after.error;
   EXPECT_EQ(after.window->position, before.window->position);
@@ -204,6 +205,7 @@ TEST_F(WindowDesktopTest, StaleSnapshotCannotMoveAWindow) {
   desired.normal.right += 10;
   const auto request = desktop->submit(stale, desired, destination, true);
   EXPECT_NE(request.status, native::placement_status::submitted);
+  EXPECT_EQ(request.error_stage, "window_snapshot");
   const auto after = inspect();
   ASSERT_TRUE(after.window) << after.error;
   EXPECT_EQ(after.window->position, result.window->position);

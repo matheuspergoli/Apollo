@@ -1,6 +1,6 @@
 import { IconCheck, IconDeviceFloppy, IconSearch, IconX } from "@tabler/icons-react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useNavigate } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import { useRef, useState } from "react"
 import { RequestError } from "@/components/request-error"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -38,7 +38,6 @@ import {
 } from "@/features/settings/model"
 import { searchSettings } from "@/features/settings/search"
 import { SectionTemplates } from "@/features/settings/section-templates"
-import { WindowManagementStatus } from "@/features/settings/window-management-controls"
 import { configOptions, post } from "@/lib/api"
 import { accepted } from "@/lib/documents"
 import { configuredWebAddress } from "@/lib/lifecycle"
@@ -244,7 +243,15 @@ function Editor({ initial }: { initial: Snapshot }) {
 						)}
 					</CardHeader>
 					<CardContent className="space-y-6">
-						{!searching && selected.id === "window-session" && <WindowManagementStatus />}
+						{!searching && selected.id === "window-session" && (
+							<p className="text-muted-foreground text-sm">
+								Estado da sessão, contadores e recuperação manual estão em{" "}
+								<Link to="/troubleshooting" className="underline underline-offset-4">
+									Diagnóstico
+								</Link>
+								.
+							</p>
+						)}
 						{results.length ? (
 							results.map(({ field }) => (
 								<SettingControl

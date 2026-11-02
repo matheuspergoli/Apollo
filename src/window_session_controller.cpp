@@ -7,13 +7,37 @@ namespace window_management {
   session_controller::session_controller(window_backend &backend):
       backend_(backend) {}
 
-  void session_controller::diagnose(std::string_view operation, std::string_view reason, unsigned long error) {
+  void session_controller::diagnose(std::string_view operation, std::string_view reason, unsigned long error, std::string_view stage) {
     statistics_.diagnostics.last_operation = operation;
     statistics_.diagnostics.last_reason = reason;
     statistics_.diagnostics.last_observation = "none";
+    statistics_.diagnostics.last_stage = stage;
     // A semantic failure has no Win32 code. Never attach an unrelated earlier
     // inspection error to a later timeout, identity loss or user override.
     statistics_.last_error = error;
+  }
+
+  void session_controller::diagnose_confirmation(const request &request, std::string_view reason, unsigned long error, std::string_view stage) {
+    diagnose(request.restoration ? "confirm_restore" : "confirm_move", reason, error, stage);
+    auto &diagnostics = statistics_.diagnostics;
+    diagnostics.last_observation = request.discrepancy;
+    diagnostics.unconfirmed_operation = diagnostics.last_operation;
+    diagnostics.unconfirmed_reason = reason;
+    diagnostics.unconfirmed_observation = request.discrepancy;
+    diagnostics.unconfirmed_stage = stage;
+    diagnostics.unconfirmed_checks = request.checks;
+    diagnostics.unconfirmed_error = error;
+    switch (request.desired.state) {
+      case show_state::normal:
+        diagnostics.unconfirmed_state = "normal";
+        break;
+      case show_state::maximized:
+        diagnostics.unconfirmed_state = "maximized";
+        break;
+      case show_state::minimized:
+        diagnostics.unconfirmed_state = "minimized";
+        break;
+    }
   }
 
   bool session_controller::begin(settings options, session_context context, target_snapshot target) {
@@ -77,7 +101,7 @@ namespace window_management {
     auto result = backend_.inspect(handle, incarnation);
     if (!result.window) {
       ++statistics_.diagnostics.inspection_failures;
-      diagnose("inspect", "inspection_failed", result.error);
+      diagnose("inspect", "inspection_failed", result.error, result.error_stage);
       return {};
     }
     if (known != registry_.end() && result.window->identity != known->second.identity) {
@@ -85,7 +109,7 @@ namespace window_management {
       result = backend_.inspect(handle, ++incarnation_);
       if (!result.window) {
         ++statistics_.diagnostics.inspection_failures;
-        diagnose("inspect", "inspection_failed", result.error);
+        diagnose("inspect", "inspection_failed", result.error, result.error_stage);
         return {};
       }
       known = registry_.end();
@@ -206,7 +230,7 @@ namespace window_management {
     if (result.status != placement_status::submitted) {
       ++statistics_.skipped;
       ++statistics_.diagnostics.submission_rejections;
-      diagnose("move", "submission_rejected", result.error);
+      diagnose("move", "submission_rejected", result.error, result.error_stage);
       return;
     }
     requests_.push_back({event.identity, window->position, *desired, window->origin.monitor_device_path, target.monitor_device_path, now + confirmation_timeout, false});
@@ -220,11 +244,21 @@ namespace window_management {
       if (now >= request.deadline) {
         ++statistics_.failed;
         ++statistics_.diagnostics.confirmation_timeouts;
-        diagnose(request.restoration ? "confirm_restore" : "confirm_move", "confirmation_timeout");
-        statistics_.diagnostics.last_observation = request.discrepancy;
+        diagnose_confirmation(request, "confirmation_timeout");
+        auto &diagnostics = statistics_.diagnostics;
+        if (request.discrepancy == "state_mismatch") {
+          ++diagnostics.timeouts_state;
+        } else if (request.discrepancy == "position_mismatch") {
+          ++diagnostics.timeouts_position;
+        } else if (request.discrepancy == "destination_mismatch") {
+          ++diagnostics.timeouts_destination;
+        } else {
+          ++diagnostics.timeouts_unobserved;
+        }
         continue;
       }
       const auto entry = registry_.find(request.identity.handle);
+      ++request.checks;
       const auto current = backend_.inspect(request.identity.handle, request.identity.incarnation);
       if (entry == registry_.end() || entry->second.user_override || !current.window || current.window->identity != request.identity ||
           !window_allowed(current.window->traits)) {
@@ -232,7 +266,7 @@ namespace window_management {
         ++statistics_.diagnostics.confirmation_rejections;
         if (!current.window) {
           ++statistics_.diagnostics.inspection_failures;
-          diagnose(request.restoration ? "confirm_restore" : "confirm_move", "inspection_failed", current.error);
+          diagnose_confirmation(request, "inspection_failed", current.error, current.error_stage);
         } else {
           auto reason = "window_ineligible";
           if (entry == registry_.end() || entry->second.user_override) {
@@ -240,7 +274,7 @@ namespace window_management {
           } else if (current.window->identity != request.identity) {
             reason = "identity_changed";
           }
-          diagnose(request.restoration ? "confirm_restore" : "confirm_move", reason);
+          diagnose_confirmation(request, reason);
         }
         continue;
       }
@@ -252,7 +286,7 @@ namespace window_management {
         } else {
           ++statistics_.failed;
           ++statistics_.diagnostics.confirmation_rejections;
-          diagnose("confirm_move", "ownership_not_recorded");
+          diagnose_confirmation(request, "ownership_not_recorded");
         }
       } else {
         if (current.window->position.state != request.desired.state) {
@@ -300,7 +334,7 @@ namespace window_management {
         ++statistics_.diagnostics.restoration_skips;
         if (!current.window) {
           ++statistics_.diagnostics.inspection_failures;
-          diagnose("restore", "inspection_failed", current.error);
+          diagnose("restore", "inspection_failed", current.error, current.error_stage);
         } else if (!origin.target) {
           diagnose("restore", "origin_unavailable", origin.error);
         } else {
@@ -315,7 +349,7 @@ namespace window_management {
         ++statistics_.skipped;
         ++statistics_.diagnostics.submission_rejections;
         ++statistics_.diagnostics.restoration_skips;
-        diagnose("restore", "submission_rejected", result.error);
+        diagnose("restore", "submission_rejected", result.error, result.error_stage);
       }
     }
   }
@@ -328,6 +362,9 @@ namespace window_management {
       statistics_.failed += requests_.size() + restoration_.size();
       statistics_.diagnostics.shutdown_unfinished += requests_.size() + restoration_.size();
       if (!requests_.empty() || !restoration_.empty()) {
+        if (!requests_.empty()) {
+          diagnose_confirmation(requests_.front(), "shutdown_deadline");
+        }
         diagnose("shutdown", "shutdown_deadline");
       }
       requests_.clear();

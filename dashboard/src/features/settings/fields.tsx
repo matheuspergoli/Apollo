@@ -23,7 +23,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { bool, type Document, object } from "@/lib/documents"
 import { type SettingField, settingOptions } from "./model"
-import { WindowApplicationSelector } from "./window-management-controls"
+import { WindowApplicationSelector } from "./window-application-selector"
 
 function validMappings(value: unknown): value is Document {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return false
