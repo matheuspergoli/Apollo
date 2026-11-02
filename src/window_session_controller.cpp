@@ -225,6 +225,17 @@ namespace window_management {
   }
 
   void session_controller::restore() {
+    if (restoration_.empty()) {
+      return;
+    }
+    // Disconnect can race the next regular target refresh. Matching restore
+    // coordinates alone do not prove that Windows left the window on our virtual
+    // target after hot-unplug or a topology change.
+    if (!backend_.resolve(target_.monitor_device_path, false).target) {
+      statistics_.skipped += restoration_.size();
+      restoration_.clear();
+      return;
+    }
     for (std::size_t count = 0; count < batch_limit && !restoration_.empty() && requests_.size() < session_state::event_limit; ++count) {
       auto record = std::move(restoration_.front());
       restoration_.pop_front();
@@ -235,7 +246,7 @@ namespace window_management {
       }
       const auto current = backend_.inspect(record.identity.handle, record.identity.incarnation);
       const auto origin = backend_.resolve(record.origin_device_id, true);
-      if (!current.window || !origin.target || !window_allowed(current.window->traits) ||
+      if (!current.window || !origin.target || current.window->origin.monitor_device_path != target_.monitor_device_path || !window_allowed(current.window->traits) ||
           !can_restore(options_, record, context_.generation, current.window->identity, current.window->position, true)) {
         ++statistics_.skipped;
         continue;

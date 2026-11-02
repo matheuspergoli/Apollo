@@ -351,3 +351,25 @@ TEST_F(WindowControllerTest, LateCompletionDoesNotAcquireOwnershipAfterConfirmat
   EXPECT_TRUE(controller.stopped());
   EXPECT_EQ(backend.operations.size(), 1u);
 }
+
+TEST_F(WindowControllerTest, DisconnectCannotRestoreAfterTargetLossBeforeTheNextRegularTick) {
+  recover();
+  confirm();
+  backend.virtual_available = false;
+  controller.begin_stop(now + 150ms, now + 1s);
+  controller.tick(now + 200ms, false);
+  EXPECT_TRUE(controller.stopped());
+  EXPECT_EQ(controller.statistics().restored, 0u);
+  EXPECT_EQ(backend.operations.size(), 1u);
+}
+
+TEST_F(WindowControllerTest, MatchingCoordinatesOnAnotherMonitorDoNotProveRestorationOwnership) {
+  recover();
+  confirm();
+  backend.windows.at(1).origin = physical;
+  controller.begin_stop(now + 150ms, now + 1s);
+  controller.tick(now + 200ms, false);
+  EXPECT_TRUE(controller.stopped());
+  EXPECT_EQ(controller.statistics().restored, 0u);
+  EXPECT_EQ(backend.operations.size(), 1u);
+}
