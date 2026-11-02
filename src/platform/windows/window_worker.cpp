@@ -1,6 +1,7 @@
 #include "window_worker.h"
 
 #include "src/display_device.h"
+#include "src/logging.h"
 #include "window_desktop.h"
 
 #include <array>
@@ -94,6 +95,8 @@ namespace window_management::win32 {
 
     void publish(runtime_phase phase, std::string reason, const session_controller *controller = nullptr, unsigned long error = 0) {
       std::lock_guard lock(mutex);
+      const auto changed = snapshot.phase != phase || snapshot.reason != reason ||
+                           (controller && snapshot.statistics.recovery_required != controller->statistics().recovery_required);
       snapshot.supported = true;
       snapshot.generation = context.generation;
       snapshot.phase = phase;
@@ -102,8 +105,28 @@ namespace window_management::win32 {
       if (controller) {
         snapshot.statistics = controller->statistics();
       }
-      if (error) {
+      if (error || (!controller && phase == runtime_phase::failed) || snapshot.reason == "event_queue_overflow") {
         snapshot.statistics.last_error = error;
+        snapshot.statistics.diagnostics.last_operation = "worker";
+        snapshot.statistics.diagnostics.last_reason = snapshot.reason;
+        snapshot.statistics.diagnostics.last_observation = "none";
+      }
+      if (changed) {
+        // Lifecycle summaries only: no window titles, process paths or per-event
+        // logs. Counters belong to this generation, not the host's lifetime.
+        const auto &stats = snapshot.statistics;
+        BOOST_LOG(info) << "WSM: generation=" << context.generation << " phase=" << phase_name(phase)
+                        << " reason=" << snapshot.reason << " moved=" << stats.moved << " restored=" << stats.restored
+                        << " skipped=" << stats.skipped << " failed=" << stats.failed
+                        << " inspection_failures=" << stats.diagnostics.inspection_failures
+                        << " submission_rejections=" << stats.diagnostics.submission_rejections
+                        << " confirmation_timeouts=" << stats.diagnostics.confirmation_timeouts
+                        << " confirmation_rejections=" << stats.diagnostics.confirmation_rejections
+                        << " restoration_skips=" << stats.diagnostics.restoration_skips
+                        << " shutdown_unfinished=" << stats.diagnostics.shutdown_unfinished
+                        << " recovery_required=" << stats.recovery_required
+                        << " diagnostic=" << stats.diagnostics.last_operation << "/" << stats.diagnostics.last_reason
+                        << " observation=" << stats.diagnostics.last_observation << " win32=" << stats.last_error;
       }
     }
 
@@ -277,6 +300,9 @@ namespace window_management::win32 {
               // display-management state on every batch or adopt a replacement.
               if (!actual.target || actual.target->monitor_device_path != bound_target_path) {
                 controller->begin_stop(now, now, false);
+                controller->tick(now, false);
+                publish(runtime_phase::failed, "capture_target_mismatch", controller.get(), actual.error ? actual.error : ERROR_INVALID_DATA);
+                break;
               } else {
                 verified_capture = revision;
               }

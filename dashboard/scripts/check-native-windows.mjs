@@ -213,6 +213,21 @@ try {
 	assert.equal(windowStatus.json.manual_available, false)
 	assert.equal(windowStatus.json.moved, 0)
 	assert.equal(windowStatus.json.restored, 0)
+	assert.equal(windowStatus.json.generation, 0)
+	assert.equal(windowStatus.json.recovery_required, false)
+	assert.deepEqual(windowStatus.json.diagnostics, {
+		enumeration_failures: 0,
+		inspection_failures: 0,
+		submission_rejections: 0,
+		confirmation_timeouts: 0,
+		confirmation_rejections: 0,
+		restoration_skips: 0,
+		shutdown_unfinished: 0,
+		target_failures: 0,
+		last_operation: "none",
+		last_reason: "none",
+		last_observation: "none"
+	})
 	assert(Array.isArray(windowStatus.json.applications))
 	const refusedRecovery = await http("/api/window-management/recover", {
 		method: "POST",

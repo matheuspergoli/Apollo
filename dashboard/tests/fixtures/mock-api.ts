@@ -62,6 +62,21 @@ export async function mockHost(page: Page): Promise<MockHost> {
 			failed: 0,
 			overflow: 0,
 			last_error: 0,
+			generation: 0,
+			recovery_required: false,
+			diagnostics: {
+				enumeration_failures: 0,
+				inspection_failures: 0,
+				submission_rejections: 0,
+				confirmation_timeouts: 0,
+				confirmation_rejections: 0,
+				restoration_skips: 0,
+				shutdown_unfinished: 0,
+				target_failures: 0,
+				last_operation: "none",
+				last_reason: "none",
+				last_observation: "none"
+			},
 			applications: [
 				{ uuid: "12345678-abcd-4321-9876-1234567890ab", name: "Desktop de exemplo" }
 			]

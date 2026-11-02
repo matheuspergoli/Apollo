@@ -7,6 +7,15 @@ namespace window_management {
   session_controller::session_controller(window_backend &backend):
       backend_(backend) {}
 
+  void session_controller::diagnose(std::string_view operation, std::string_view reason, unsigned long error) {
+    statistics_.diagnostics.last_operation = operation;
+    statistics_.diagnostics.last_reason = reason;
+    statistics_.diagnostics.last_observation = "none";
+    // A semantic failure has no Win32 code. Never attach an unrelated earlier
+    // inspection error to a later timeout, identity loss or user override.
+    statistics_.last_error = error;
+  }
+
   bool session_controller::begin(settings options, session_context context, target_snapshot target) {
     if (!stopped_ || target.monitor_device_path.empty() || !state_.activate(options, context)) {
       return false;
@@ -33,7 +42,8 @@ namespace window_management {
     }
     const auto inventory = backend_.enumerate();
     if (inventory.error) {
-      statistics_.last_error = inventory.error;
+      ++statistics_.diagnostics.enumeration_failures;
+      diagnose("enumerate", "enumeration_failed", inventory.error);
       ++statistics_.failed;
       return false;
     }
@@ -42,6 +52,11 @@ namespace window_management {
     }
     for (std::size_t i = 0; i < std::min(inventory.handles.size(), session_state::record_limit); ++i) {
       discovery_.push_back({inventory.handles[i], reason});
+    }
+    if (reason == trigger::manual) {
+      // A manual discovery pass was accepted, not a promise that every window
+      // can move. A rejected/busy request must retain the recommendation.
+      statistics_.recovery_required = false;
     }
     return true;
   }
@@ -61,13 +76,16 @@ namespace window_management {
     const auto incarnation = known == registry_.end() ? ++incarnation_ : known->second.identity.incarnation;
     auto result = backend_.inspect(handle, incarnation);
     if (!result.window) {
-      statistics_.last_error = result.error;
+      ++statistics_.diagnostics.inspection_failures;
+      diagnose("inspect", "inspection_failed", result.error);
       return {};
     }
     if (known != registry_.end() && result.window->identity != known->second.identity) {
       destroyed(handle);
       result = backend_.inspect(handle, ++incarnation_);
       if (!result.window) {
+        ++statistics_.diagnostics.inspection_failures;
+        diagnose("inspect", "inspection_failed", result.error);
         return {};
       }
       known = registry_.end();
@@ -147,6 +165,7 @@ namespace window_management {
   }
 
   void session_controller::suspend() {
+    statistics_.recovery_required = true;
     discovery_.clear();
     requests_.clear();
     restoration_.clear();
@@ -186,7 +205,8 @@ namespace window_management {
     const auto result = backend_.submit(*window, *desired, target, false);
     if (result.status != placement_status::submitted) {
       ++statistics_.skipped;
-      statistics_.last_error = result.error;
+      ++statistics_.diagnostics.submission_rejections;
+      diagnose("move", "submission_rejected", result.error);
       return;
     }
     requests_.push_back({event.identity, window->position, *desired, window->origin.monitor_device_path, target.monitor_device_path, now + confirmation_timeout, false});
@@ -199,6 +219,9 @@ namespace window_management {
       requests_.pop_front();
       if (now >= request.deadline) {
         ++statistics_.failed;
+        ++statistics_.diagnostics.confirmation_timeouts;
+        diagnose(request.restoration ? "confirm_restore" : "confirm_move", "confirmation_timeout");
+        statistics_.diagnostics.last_observation = request.discrepancy;
         continue;
       }
       const auto entry = registry_.find(request.identity.handle);
@@ -206,6 +229,19 @@ namespace window_management {
       if (entry == registry_.end() || entry->second.user_override || !current.window || current.window->identity != request.identity ||
           !window_allowed(current.window->traits)) {
         ++statistics_.failed;
+        ++statistics_.diagnostics.confirmation_rejections;
+        if (!current.window) {
+          ++statistics_.diagnostics.inspection_failures;
+          diagnose(request.restoration ? "confirm_restore" : "confirm_move", "inspection_failed", current.error);
+        } else {
+          auto reason = "window_ineligible";
+          if (entry == registry_.end() || entry->second.user_override) {
+            reason = "ownership_lost";
+          } else if (current.window->identity != request.identity) {
+            reason = "identity_changed";
+          }
+          diagnose(request.restoration ? "confirm_restore" : "confirm_move", reason);
+        }
         continue;
       }
       if (current.window->position == request.desired && current.window->origin.monitor_device_path == request.destination) {
@@ -215,11 +251,18 @@ namespace window_management {
           ++statistics_.moved;
         } else {
           ++statistics_.failed;
+          ++statistics_.diagnostics.confirmation_rejections;
+          diagnose("confirm_move", "ownership_not_recorded");
         }
-      } else if (now < request.deadline) {
-        requests_.push_back(std::move(request));
       } else {
-        ++statistics_.failed;
+        if (current.window->position.state != request.desired.state) {
+          request.discrepancy = "state_mismatch";
+        } else if (current.window->position.normal != request.desired.normal) {
+          request.discrepancy = "position_mismatch";
+        } else {
+          request.discrepancy = "destination_mismatch";
+        }
+        requests_.push_back(std::move(request));
       }
     }
   }
@@ -231,8 +274,11 @@ namespace window_management {
     // Disconnect can race the next regular target refresh. Matching restore
     // coordinates alone do not prove that Windows left the window on our virtual
     // target after hot-unplug or a topology change.
-    if (!backend_.resolve(target_.monitor_device_path, false).target) {
+    const auto target = backend_.resolve(target_.monitor_device_path, false);
+    if (!target.target) {
       statistics_.skipped += restoration_.size();
+      statistics_.diagnostics.restoration_skips += restoration_.size();
+      diagnose("restore", "target_unavailable", target.error);
       restoration_.clear();
       return;
     }
@@ -242,6 +288,8 @@ namespace window_management {
       const auto entry = registry_.find(record.identity.handle);
       if (entry == registry_.end() || entry->second.identity != record.identity || entry->second.user_override) {
         ++statistics_.skipped;
+        ++statistics_.diagnostics.restoration_skips;
+        diagnose("restore", "ownership_lost");
         continue;
       }
       const auto current = backend_.inspect(record.identity.handle, record.identity.incarnation);
@@ -249,6 +297,15 @@ namespace window_management {
       if (!current.window || !origin.target || current.window->origin.monitor_device_path != target_.monitor_device_path || !window_allowed(current.window->traits) ||
           !can_restore(options_, record, context_.generation, current.window->identity, current.window->position, true)) {
         ++statistics_.skipped;
+        ++statistics_.diagnostics.restoration_skips;
+        if (!current.window) {
+          ++statistics_.diagnostics.inspection_failures;
+          diagnose("restore", "inspection_failed", current.error);
+        } else if (!origin.target) {
+          diagnose("restore", "origin_unavailable", origin.error);
+        } else {
+          diagnose("restore", "ownership_lost");
+        }
         continue;
       }
       const auto result = backend_.submit(*current.window, record.original, *origin.target, true);
@@ -256,7 +313,9 @@ namespace window_management {
         requests_.push_back({record.identity, record.applied, record.original, {}, record.origin_device_id, stop_deadline_, true});
       } else {
         ++statistics_.skipped;
-        statistics_.last_error = result.error;
+        ++statistics_.diagnostics.submission_rejections;
+        ++statistics_.diagnostics.restoration_skips;
+        diagnose("restore", "submission_rejected", result.error);
       }
     }
   }
@@ -267,6 +326,10 @@ namespace window_management {
     }
     if (stopping_ && now >= stop_deadline_) {
       statistics_.failed += requests_.size() + restoration_.size();
+      statistics_.diagnostics.shutdown_unfinished += requests_.size() + restoration_.size();
+      if (!requests_.empty() || !restoration_.empty()) {
+        diagnose("shutdown", "shutdown_deadline");
+      }
       requests_.clear();
       restoration_.clear();
       state_.stop(context_.generation);
@@ -293,13 +356,16 @@ namespace window_management {
     const auto target = backend_.resolve(target_.monitor_device_path, false);
     if (!target.target) {
       ++statistics_.failed;
-      statistics_.last_error = target.error;
+      ++statistics_.diagnostics.target_failures;
+      diagnose("resolve_target", "target_unavailable", target.error);
       begin_stop(now, now, false);
       return;
     }
     const auto area = backend_.area(*target.target);
     if (!area) {
       ++statistics_.failed;
+      ++statistics_.diagnostics.target_failures;
+      diagnose("resolve_target", "target_area_unavailable");
       begin_stop(now, now, false);
       return;
     }

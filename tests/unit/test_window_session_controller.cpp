@@ -36,9 +36,13 @@ namespace {
     bool virtual_available = true;
     bool physical_available = true;
     bool fail_submit = false;
+    unsigned long enumeration_error = 0;
+    unsigned long inspection_error = 0;
+    std::uintptr_t uninspectable = 0;
 
     wm::window_inventory enumerate() override {
       wm::window_inventory inventory;
+      inventory.error = enumeration_error;
       for (const auto &[handle, window] : windows) {
         inventory.handles.push_back(handle);
       }
@@ -47,6 +51,9 @@ namespace {
     }
 
     wm::window_result inspect(std::uintptr_t handle, std::uint64_t incarnation) override {
+      if (handle == uninspectable) {
+        return {{}, inspection_error};
+      }
       if (!windows.contains(handle)) {
         return {{}, 1};
       }
@@ -372,4 +379,195 @@ TEST_F(WindowControllerTest, MatchingCoordinatesOnAnotherMonitorDoNotProveRestor
   EXPECT_TRUE(controller.stopped());
   EXPECT_EQ(controller.statistics().restored, 0u);
   EXPECT_EQ(backend.operations.size(), 1u);
+}
+
+TEST_F(WindowControllerTest, TimeoutNeverInheritsAnUnrelatedInspectionError) {
+  recover();
+  backend.uninspectable = 99;
+  backend.inspection_error = 13;
+  controller.event(99, wm::trigger::shown, true, now + 100ms);
+  EXPECT_EQ(controller.statistics().failed, 0u);
+  EXPECT_EQ(controller.statistics().diagnostics.inspection_failures, 1u);
+  EXPECT_EQ(controller.statistics().last_error, 13ul);
+  EXPECT_EQ(controller.statistics().diagnostics.last_operation, "inspect");
+  controller.tick(now + 600ms, false);
+  const auto &stats = controller.statistics();
+  EXPECT_EQ(stats.failed, 1u);
+  EXPECT_EQ(stats.diagnostics.confirmation_timeouts, 1u);
+  EXPECT_EQ(stats.diagnostics.last_operation, "confirm_move");
+  EXPECT_EQ(stats.diagnostics.last_reason, "confirmation_timeout");
+  EXPECT_EQ(stats.last_error, 0ul);
+  EXPECT_EQ(stats.moved, 0u);
+}
+
+TEST_F(WindowControllerTest, ConfirmationInspectionFailureRetainsItsOwnCodeAndStage) {
+  recover();
+  backend.uninspectable = 1;
+  backend.inspection_error = 13;
+  controller.tick(now + 100ms, false);
+  const auto &stats = controller.statistics();
+  EXPECT_EQ(stats.failed, 1u);
+  EXPECT_EQ(stats.diagnostics.confirmation_rejections, 1u);
+  EXPECT_EQ(stats.diagnostics.inspection_failures, 1u);
+  EXPECT_EQ(stats.diagnostics.last_operation, "confirm_move");
+  EXPECT_EQ(stats.diagnostics.last_reason, "inspection_failed");
+  EXPECT_EQ(stats.last_error, 13ul);
+  controller.begin_stop(now + 150ms, now + 1s);
+  controller.tick(now + 200ms, false);
+  EXPECT_EQ(backend.operations.size(), 1u);
+  EXPECT_EQ(stats.restored, 0u);
+}
+
+TEST_F(WindowControllerTest, AdjustedPositionIsDiagnosedWithoutRelaxingOwnership) {
+  recover();
+  backend.complete(0);
+  backend.windows.at(1).position.normal.right += 1;
+  controller.tick(now + 100ms, false);
+  controller.tick(now + 600ms, false);
+  const auto &stats = controller.statistics();
+  EXPECT_EQ(stats.moved, 0u);
+  EXPECT_EQ(stats.diagnostics.confirmation_timeouts, 1u);
+  EXPECT_EQ(stats.diagnostics.last_observation, "position_mismatch");
+  controller.begin_stop(now + 650ms, now + 1s);
+  controller.tick(now + 700ms, false);
+  EXPECT_EQ(backend.operations.size(), 1u);
+}
+
+TEST_F(WindowControllerTest, SubmissionRefusalIsNotAnUnconfirmedMovement) {
+  backend.fail_submit = true;
+  recover();
+  const auto &stats = controller.statistics();
+  EXPECT_EQ(stats.skipped, 1u);
+  EXPECT_EQ(stats.failed, 0u);
+  EXPECT_EQ(stats.diagnostics.submission_rejections, 1u);
+  EXPECT_EQ(stats.diagnostics.confirmation_timeouts, 0u);
+  EXPECT_EQ(stats.diagnostics.last_operation, "move");
+  EXPECT_EQ(stats.last_error, 5ul);
+}
+
+TEST_F(WindowControllerTest, RecoveryRecommendationRequiresAnAcceptedManualDiscovery) {
+  recover();
+  confirm();
+  controller.suspend();
+  EXPECT_TRUE(controller.statistics().recovery_required);
+  controller.event(1, wm::trigger::foreground, true, now + 150ms);
+  controller.tick(now + 250ms, true);
+  EXPECT_EQ(backend.operations.size(), 1u);
+  EXPECT_TRUE(controller.statistics().recovery_required);
+  backend.enumeration_error = 5;
+  EXPECT_FALSE(controller.recover(wm::trigger::manual));
+  EXPECT_TRUE(controller.statistics().recovery_required);
+  EXPECT_EQ(controller.statistics().diagnostics.enumeration_failures, 1u);
+  backend.enumeration_error = 0;
+  EXPECT_TRUE(controller.recover(wm::trigger::manual));
+  EXPECT_FALSE(controller.statistics().recovery_required);
+  EXPECT_EQ(controller.statistics().moved, 1u);
+}
+
+TEST_F(WindowControllerTest, RestorationOriginLossIsReportedWithoutSubmittingAFallback) {
+  recover();
+  confirm();
+  backend.physical_available = false;
+  controller.begin_stop(now + 150ms, now + 1s);
+  controller.tick(now + 200ms, false);
+  const auto &stats = controller.statistics();
+  EXPECT_EQ(stats.diagnostics.restoration_skips, 1u);
+  EXPECT_EQ(stats.diagnostics.last_operation, "restore");
+  EXPECT_EQ(stats.diagnostics.last_reason, "origin_unavailable");
+  EXPECT_EQ(stats.last_error, 1ul);
+  EXPECT_EQ(backend.operations.size(), 1u);
+}
+
+TEST_F(WindowControllerTest, ShutdownDeadlineReportsPendingRestorationWithoutInventingAWin32Error) {
+  recover();
+  confirm();
+  controller.begin_stop(now + 150ms, now + 200ms);
+  controller.tick(now + 150ms, false);
+  controller.tick(now + 250ms, false);
+  const auto &stats = controller.statistics();
+  EXPECT_EQ(stats.restored, 0u);
+  EXPECT_EQ(stats.failed, 1u);
+  EXPECT_EQ(stats.diagnostics.shutdown_unfinished, 1u);
+  EXPECT_EQ(stats.diagnostics.last_operation, "shutdown");
+  EXPECT_EQ(stats.diagnostics.last_reason, "shutdown_deadline");
+  EXPECT_EQ(stats.last_error, 0ul);
+}
+
+TEST_F(WindowControllerTest, MismatchedStateAndDestinationRemainUnconfirmedAndExplainTheLastObservation) {
+  for (const auto state_mismatch : {false, true}) {
+    desktop_fixture fixture;
+    wm::session_controller subject {fixture};
+    ASSERT_TRUE(subject.begin(options(), context(), target));
+    ASSERT_TRUE(subject.recover(wm::trigger::initial));
+    subject.tick(now, false);
+    subject.tick(now + 50ms, false);
+    ASSERT_EQ(fixture.operations.size(), 1u);
+    fixture.complete(0);
+    if (state_mismatch) {
+      fixture.windows.at(1).position.state = wm::show_state::maximized;
+    } else {
+      fixture.windows.at(1).origin = physical;
+    }
+    subject.tick(now + 100ms, false);
+    subject.tick(now + 600ms, false);
+    EXPECT_EQ(subject.statistics().moved, 0u);
+    EXPECT_EQ(subject.statistics().diagnostics.confirmation_timeouts, 1u);
+    EXPECT_EQ(subject.statistics().diagnostics.last_observation, state_mismatch ? "state_mismatch" : "destination_mismatch");
+  }
+}
+
+TEST_F(WindowControllerTest, OrdinaryManualOverrideDoesNotRecommendReclaimingTheUsersWindow) {
+  recover();
+  confirm();
+  controller.user_move_started(1);
+  EXPECT_FALSE(controller.statistics().recovery_required);
+  controller.begin_stop(now + 150ms, now + 1s);
+  controller.tick(now + 200ms, false);
+  EXPECT_EQ(backend.operations.size(), 1u);
+  EXPECT_FALSE(controller.statistics().recovery_required);
+}
+
+TEST_F(WindowControllerTest, ConfirmationIdentityChangeIsNotReportedAsAnInspectionError) {
+  recover();
+  ++backend.windows.at(1).identity.process_created;
+  controller.tick(now + 100ms, false);
+  const auto &stats = controller.statistics();
+  EXPECT_EQ(stats.moved, 0u);
+  EXPECT_EQ(stats.diagnostics.confirmation_rejections, 1u);
+  EXPECT_EQ(stats.diagnostics.inspection_failures, 0u);
+  EXPECT_EQ(stats.diagnostics.last_reason, "identity_changed");
+  EXPECT_EQ(stats.last_error, 0ul);
+}
+
+TEST_F(WindowControllerTest, FailedRestorationConfirmationUsesTheRestorationStage) {
+  recover();
+  confirm();
+  controller.begin_stop(now + 150ms, now + 1s);
+  controller.tick(now + 150ms, false);
+  ASSERT_EQ(backend.operations.size(), 2u);
+  backend.uninspectable = 1;
+  backend.inspection_error = 5;
+  controller.tick(now + 200ms, false);
+  EXPECT_TRUE(controller.stopped());
+  EXPECT_EQ(controller.statistics().restored, 0u);
+  EXPECT_EQ(controller.statistics().diagnostics.last_operation, "confirm_restore");
+  EXPECT_EQ(controller.statistics().diagnostics.last_reason, "inspection_failed");
+  EXPECT_EQ(controller.statistics().last_error, 5ul);
+}
+
+TEST_F(WindowControllerTest, NewGenerationDoesNotInheritDiagnosticsOrRecoveryRecommendation) {
+  controller.suspend();
+  backend.enumeration_error = 5;
+  EXPECT_FALSE(controller.recover(wm::trigger::manual));
+  EXPECT_TRUE(controller.statistics().recovery_required);
+  controller.begin_stop(now, now);
+  controller.tick(now, false);
+  ASSERT_TRUE(controller.stopped());
+  ASSERT_TRUE(controller.begin(options(), context(2), target));
+  const auto &stats = controller.statistics();
+  EXPECT_FALSE(stats.recovery_required);
+  EXPECT_EQ(stats.last_error, 0ul);
+  EXPECT_EQ(stats.failed, 0u);
+  EXPECT_EQ(stats.diagnostics.enumeration_failures, 0u);
+  EXPECT_EQ(stats.diagnostics.last_operation, "none");
 }

@@ -81,6 +81,84 @@ test("failed status cannot leave a stale recovery action enabled and preserves t
 	)
 })
 
+test("diagnostics explain the operation without attributing an inspection code to all failed movements", async ({
+	page
+}) => {
+	const host = await mockHost(page)
+	host.windowStatus = {
+		...host.windowStatus,
+		generation: 2,
+		phase: "stopped",
+		reason: "stopped",
+		failed: 3,
+		skipped: 3,
+		last_error: 13,
+		diagnostics: {
+			...host.windowStatus.diagnostics,
+			inspection_failures: 1,
+			confirmation_timeouts: 3,
+			last_operation: "inspect",
+			last_reason: "inspection_failed"
+		}
+	}
+	await page.goto("/config?section=window-session")
+	const state = page.getByRole("region", { name: "Estado do gerenciamento de janelas" })
+	await expect(state).toContainText("Geração 2")
+	const summary = state.getByText("Diagnósticos das operações", { exact: true })
+	await summary.focus()
+	await page.keyboard.press("Enter")
+	await expect(state.getByText(/Inspeção de janela:.*Código Win32 13/)).toBeVisible()
+	await expect(state).toContainText("Categorias podem se sobrepor")
+	await expect(state.getByRole("button", { name: "Recuperar janelas agora" })).toBeDisabled()
+	expect(host.calls.filter((call) => call.path === "window-management/recover")).toHaveLength(
+		0
+	)
+})
+
+test("returning to active after interruption recommends recovery but never replays it", async ({
+	page
+}) => {
+	const host = await mockHost(page)
+	host.windowStatus = {
+		...host.windowStatus,
+		phase: "paused",
+		reason: "session_not_exclusive",
+		recovery_required: true
+	}
+	await page.goto("/config?section=window-session")
+	const state = page.getByRole("region", { name: "Estado do gerenciamento de janelas" })
+	await expect(
+		state.getByText("Recuperação manual recomendada", { exact: true })
+	).toBeVisible()
+	const recovery = state.getByRole("button", { name: "Recuperar janelas agora" })
+	await expect(recovery).toBeDisabled()
+	host.windowStatus = {
+		...host.windowStatus,
+		phase: "active",
+		reason: "active",
+		manual_available: true
+	}
+	await state.getByRole("button", { name: "Atualizar estado" }).click()
+	await expect(recovery).toBeEnabled()
+	await expect(
+		state.getByText("Recuperação manual recomendada", { exact: true })
+	).toBeVisible()
+	expect(host.calls.filter((call) => call.path === "window-management/recover")).toHaveLength(
+		0
+	)
+	await recovery.click()
+	await expect(state).toContainText("Recuperação solicitada")
+	// HTTP acceptance only queues a pass. Do not clear the warning or claim that
+	// anything moved until the host reports the resulting controller state.
+	await expect(
+		state.getByText("Recuperação manual recomendada", { exact: true })
+	).toBeVisible()
+	expect(host.windowStatus.moved).toBe(0)
+	expect(host.calls.filter((call) => call.path === "window-management/recover")).toHaveLength(
+		1
+	)
+})
+
 test("rejected recovery is reported without a success claim or automatic replay", async ({
 	page
 }) => {
@@ -113,6 +191,12 @@ for (const colorScheme of ["light", "dark"] as const) {
 	}) => {
 		const host = await mockHost(page)
 		host.config.wsm_application_uuid = "12345678-abcd-4321-9876-1234567890ab"
+		host.windowStatus = {
+			...host.windowStatus,
+			phase: "paused",
+			reason: "capture_unavailable",
+			recovery_required: true
+		}
 		await page.setViewportSize({ width: 390, height: 844 })
 		await page.emulateMedia({ colorScheme })
 		await page.goto("/config?section=window-session")
@@ -120,6 +204,10 @@ for (const colorScheme of ["light", "dark"] as const) {
 			page.getByRole("combobox", { name: "Aplicativo da sessão Desktop" })
 		).toBeEnabled()
 		await expect(page.getByRole("button", { name: "Recuperar janelas agora" })).toBeDisabled()
+		await page.getByText("Diagnósticos das operações", { exact: true }).click()
+		await expect(
+			page.getByText("Recuperação manual recomendada", { exact: true })
+		).toBeVisible()
 		expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
 			true
 		)

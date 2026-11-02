@@ -10,6 +10,22 @@
 #include <deque>
 
 namespace window_management {
+  // Counts describe observations/attempts, not distinct windows. Inspection and
+  // refusal diagnostics do not imply that an OS movement was submitted.
+  struct controller_diagnostics {
+    std::uint64_t enumeration_failures = 0;
+    std::uint64_t inspection_failures = 0;
+    std::uint64_t submission_rejections = 0;
+    std::uint64_t confirmation_timeouts = 0;
+    std::uint64_t confirmation_rejections = 0;
+    std::uint64_t restoration_skips = 0;
+    std::uint64_t shutdown_unfinished = 0;
+    std::uint64_t target_failures = 0;
+    std::string last_operation = "none";
+    std::string last_reason = "none";
+    std::string last_observation = "none";
+  };
+
   struct controller_statistics {
     std::uint64_t moved = 0;
     std::uint64_t restored = 0;
@@ -17,6 +33,8 @@ namespace window_management {
     std::uint64_t failed = 0;
     std::uint64_t overflow = 0;
     unsigned long last_error = 0;
+    controller_diagnostics diagnostics;
+    bool recovery_required = false;
   };
 
   class session_controller {
@@ -60,6 +78,7 @@ namespace window_management {
       std::wstring destination;
       clock::time_point deadline;
       bool restoration = false;
+      std::string_view discrepancy = "not_observed";
     };
 
     std::optional<observed_window> inspect(std::uintptr_t handle);
@@ -67,6 +86,7 @@ namespace window_management {
     void move(const pending_event &event, const target_snapshot &target, monitor_area area, clock::time_point now, bool recent_remote_input);
     void restore();
     bool in_flight(std::uintptr_t handle) const;
+    void diagnose(std::string_view operation, std::string_view reason, unsigned long error = 0);
 
     window_backend &backend_;
     session_state state_;

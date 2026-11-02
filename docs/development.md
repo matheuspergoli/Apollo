@@ -133,6 +133,30 @@ de autorização e perda do destino invalidam trabalho ou ownership; recuperaç�
 manual explícita pode estabelecer uma nova origem. O encerramento tem um prazo
 único e não considera uma conclusão observada depois dele como sucesso.
 
+Os contadores pertencem à geração de gerenciamento, não ao histórico do host nem
+ao número de aplicativos distintos. `moved`/`restored` exigem confirmação;
+`failed` inclui confirmações e trabalho incompleto; `skipped` inclui tentativas
+não submetidas e restaurações recusadas, mas não é um censo de todas as janelas
+inelegíveis. Os diagnósticos de enumeração, inspeção, submissão, confirmação,
+destino e restauração são ocorrências que podem se sobrepor. Uma inspeção
+recusada não prova que uma movimentação foi submetida ou falhou.
+
+`last_error` é o código Win32 associado a `diagnostics.last_operation` e
+`last_reason`, não um código independente a ser atribuído a todas as falhas.
+Um timeout ou outra falha sem código nativo zera esse campo, sem herdar o erro de
+uma inspeção anterior. A última observação antes de um timeout distingue estado,
+geometria ou destino divergente de ausência de conferência; ela não prova que o
+aplicativo recusou a operação nem permite relaxar a confirmação. Não se incluem
+títulos, nomes de processos ou caminhos privados de janelas nesses diagnósticos.
+
+Após suspensão, `recovery_required` recomenda uma descoberta manual explícita;
+retornar a `active` não readquire ownership. O aviso é retirado quando o
+controlador aceita a descoberta manual, não apenas porque o HTTP enfileirou a
+solicitação. Isso não garante movimentação ou restauração de toda janela. Uma
+alteração manual isolada continua protegida e não gera automaticamente esse
+aviso de interrupção. O worker registra transições/resumos por geração no log,
+sem emitir uma linha para cada evento ou consulta do painel.
+
 `src/window_runtime_state.*` coordena associação de streams, exclusividade,
 permissões e gerações por uma interface de executor. Os testes exercitam essa
 implementação de produção com executor controlado: mensagens de uma geração
@@ -156,6 +180,13 @@ O prazo de encerramento começa no chamador. Em timeout, o estado e os callbacks
 permanecem vivos até a thread sair, e o runtime recusa outro worker nesse intervalo.
 Testes portáteis do controlador/runtime não qualificam hooks, captura nem esse
 ciclo de thread Win32; a integração nativa requer build e ambiente Windows.
+
+Os 750 ms de orçamento de restauração e 1.000 ms de espera do worker não são uma
+garantia de cancelamento das chamadas Win32 em andamento. Uma retomada da captura
+depois de interrupção não restaura a evidência anterior. Desconexão de rede pode
+acionar o ciclo existente de remoção/recriação do virtual; ausência de qualquer
+reenumeração não é um contrato. Nenhum desses caminhos autoriza o WSM a mudar
+modos, duplicação ou disposição dos monitores físicos.
 
 Os chamadores de produção associam a geração ao lançamento/retomada e ao stream,
 antes de iniciar as threads de captura. Encerrar a sessão retira sua associação;

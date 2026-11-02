@@ -1039,6 +1039,22 @@ namespace confighttp {
     output_tree["failed"] = state.statistics.failed;
     output_tree["overflow"] = state.statistics.overflow;
     output_tree["last_error"] = state.statistics.last_error;
+    output_tree["generation"] = state.generation;
+    output_tree["recovery_required"] = state.statistics.recovery_required;
+    const auto &diagnostics = state.statistics.diagnostics;
+    output_tree["diagnostics"] = {
+      {"enumeration_failures", diagnostics.enumeration_failures},
+      {"inspection_failures", diagnostics.inspection_failures},
+      {"submission_rejections", diagnostics.submission_rejections},
+      {"confirmation_timeouts", diagnostics.confirmation_timeouts},
+      {"confirmation_rejections", diagnostics.confirmation_rejections},
+      {"restoration_skips", diagnostics.restoration_skips},
+      {"shutdown_unfinished", diagnostics.shutdown_unfinished},
+      {"target_failures", diagnostics.target_failures},
+      {"last_operation", diagnostics.last_operation},
+      {"last_reason", diagnostics.last_reason},
+      {"last_observation", diagnostics.last_observation}
+    };
     output_tree["applications"] = std::move(applications);
     send_response(response, output_tree);
   }

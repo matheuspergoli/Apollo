@@ -12,7 +12,13 @@ import {
 } from "@/components/ui/select"
 import { action } from "@/lib/documents"
 import type { SettingField } from "./model"
-import { phaseLabels, windowStatusDescription, windowStatusOptions } from "./window-management"
+import {
+	diagnosticLabels,
+	phaseLabels,
+	windowDiagnosticDescription,
+	windowStatusDescription,
+	windowStatusOptions
+} from "./window-management"
 
 export function WindowApplicationSelector({
 	field,
@@ -100,6 +106,21 @@ export function WindowManagementStatus() {
 						<p className="text-sm">
 							<strong>{phaseLabels[state.phase]}</strong> — {windowStatusDescription(state)}
 						</p>
+						<p className="text-muted-foreground text-xs">
+							Geração {state.generation}. Contadores desta sessão, não um histórico do host.
+						</p>
+						{state.recovery_required &&
+							(state.phase === "active" || state.phase === "paused") && (
+								<Alert>
+									<AlertTitle>Recuperação manual recomendada</AlertTitle>
+									<AlertDescription>
+										Uma interrupção invalidou o controle anterior. Voltar ao estado ativo não
+										reassume essas janelas. Quando a sessão permitir, use Recuperar janelas
+										agora se desejar estabelecer uma nova origem; alterações manuais não são
+										desfeitas automaticamente.
+									</AlertDescription>
+								</Alert>
+							)}
 						<dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
 							{[
 								["Movidas", state.moved],
@@ -107,7 +128,7 @@ export function WindowManagementStatus() {
 								["Ignoradas", state.skipped],
 								["Falhas", state.failed],
 								["Limites excedidos", state.overflow],
-								["Último erro Win32", state.last_error]
+								["Código Win32 do diagnóstico", state.last_error]
 							].map(([label, count]) => (
 								<div key={label}>
 									<dt className="text-muted-foreground">{label}</dt>
@@ -115,6 +136,25 @@ export function WindowManagementStatus() {
 								</div>
 							))}
 						</dl>
+						<details className="text-sm">
+							<summary>Diagnósticos das operações</summary>
+							<p className="mt-3">{windowDiagnosticDescription(state)}</p>
+							<dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+								{Object.entries(diagnosticLabels).map(([key, label]) => (
+									<div key={key}>
+										<dt className="text-muted-foreground">{label}</dt>
+										<dd className="font-mono">
+											{state.diagnostics[key as keyof typeof diagnosticLabels]}
+										</dd>
+									</div>
+								))}
+							</dl>
+							<p className="mt-3 text-muted-foreground text-xs">
+								São ocorrências e tentativas, não quantidades de aplicativos. Categorias podem
+								se sobrepor. Uma recusa de inspeção não comprova falha de movimentação; somente
+								resultados confirmados contam como movidos ou restaurados.
+							</p>
+						</details>
 					</>
 				)
 			)}

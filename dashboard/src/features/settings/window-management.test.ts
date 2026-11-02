@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { draftFrom, serializeSettings, snapshot } from "./model"
-import { parseWindowStatus } from "./window-management"
+import { parseWindowStatus, windowDiagnosticDescription } from "./window-management"
 
 const status = {
 	status: true,
@@ -14,6 +14,21 @@ const status = {
 	failed: 0,
 	overflow: 0,
 	last_error: 0,
+	generation: 1,
+	recovery_required: false,
+	diagnostics: {
+		enumeration_failures: 0,
+		inspection_failures: 0,
+		submission_rejections: 0,
+		confirmation_timeouts: 0,
+		confirmation_rejections: 0,
+		restoration_skips: 0,
+		shutdown_unfinished: 0,
+		target_failures: 0,
+		last_operation: "none",
+		last_reason: "none",
+		last_observation: "none"
+	},
 	applications: [{ uuid: "12345678-abcd-4321-9876-1234567890ab", name: "Desktop" }]
 }
 
@@ -28,6 +43,43 @@ describe("window management contracts", () => {
 			{ manual_available: "true" }
 		])
 			expect(() => parseWindowStatus({ ...status, ...patch })).toThrow()
+	})
+	it("rejects malformed diagnostics rather than inventing zero failures", () => {
+		for (const diagnostics of [
+			undefined,
+			{ ...status.diagnostics, inspection_failures: -1 },
+			{ ...status.diagnostics, confirmation_timeouts: "3" },
+			{ ...status.diagnostics, last_operation: null },
+			{ ...status.diagnostics, last_observation: false }
+		])
+			expect(() => parseWindowStatus({ ...status, diagnostics })).toThrow()
+		for (const patch of [{ generation: undefined }, { recovery_required: "true" }])
+			expect(() => parseWindowStatus({ ...status, ...patch })).toThrow()
+	})
+	it("correlates the code with its operation and explains unconfirmed geometry without claiming movement", () => {
+		const inspected = parseWindowStatus({
+			...status,
+			last_error: 13,
+			diagnostics: {
+				...status.diagnostics,
+				last_operation: "inspect",
+				last_reason: "inspection_failed"
+			}
+		})
+		expect(windowDiagnosticDescription(inspected)).toContain("Inspeção de janela")
+		expect(windowDiagnosticDescription(inspected)).toContain("Código Win32 13")
+		const timedOut = parseWindowStatus({
+			...status,
+			diagnostics: {
+				...status.diagnostics,
+				last_operation: "confirm_move",
+				last_reason: "confirmation_timeout",
+				last_observation: "position_mismatch",
+				confirmation_timeouts: 1
+			}
+		})
+		expect(windowDiagnosticDescription(timedOut)).toContain("posição ou tamanho diferente")
+		expect(windowDiagnosticDescription(timedOut)).toContain("Sem código Win32 associado")
 	})
 	it("does not expose manual recovery for unsupported or inactive sessions", () => {
 		expect(parseWindowStatus({ ...status, supported: false }).manual_available).toBe(false)
