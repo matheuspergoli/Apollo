@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -15,6 +16,36 @@ SPEC.loader.exec_module(MODULE)
 
 
 class ReleaseMetadataTests(unittest.TestCase):
+    def test_dashboard_checkout_preserves_lf_and_binary_assets_with_autocrlf(self):
+        # Exercise Git's checkout using Apollo's real policy, not an assertion
+        # about attribute source text. Do not modify a developer's Git settings.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source, checkout = root / "source", root / "checkout"
+            source.mkdir()
+            env = {**os.environ, "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": os.devnull}
+
+            def git(*arguments):
+                return subprocess.run(["git", "-C", str(source), *arguments], check=True,
+                                      capture_output=True, env=env)
+
+            git("init", "--quiet")
+            git("config", "core.autocrlf", "true")
+            (source / ".gitattributes").write_bytes((ROOT / ".gitattributes").read_bytes())
+            (source / "dashboard/src").mkdir(parents=True)
+            text = b"const fixture = 1\n"
+            binary = b"\x89PNG\r\n\x1a\n\x00binary fixture\r\n"
+            (source / "dashboard/src/fixture.ts").write_bytes(text)
+            (source / "dashboard/fixture.json").write_bytes(b"{}\n")
+            (source / "dashboard/fixture.png").write_bytes(binary)
+            (source / "native.txt").write_bytes(text)
+            git("add", ".")
+            git("checkout-index", "--all", "--prefix=" + checkout.as_posix() + "/")
+            self.assertEqual((checkout / "dashboard/src/fixture.ts").read_bytes(), text)
+            self.assertEqual((checkout / "dashboard/fixture.json").read_bytes(), b"{}\n")
+            self.assertEqual((checkout / "dashboard/fixture.png").read_bytes(), binary)
+            self.assertEqual((checkout / "native.txt").read_bytes(), b"const fixture = 1\r\n")
+
     def test_checkout_guard_ignores_only_crlf(self):
         with tempfile.TemporaryDirectory() as temporary:
             left, right = Path(temporary) / "source", Path(temporary) / "checkout"

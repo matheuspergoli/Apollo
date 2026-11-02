@@ -3,3 +3,6 @@ Dockerfile text eol=lf
 *.dockerfile text eol=lf
 *flatpak-lint-*.json text eol=lf
 *.sh text eol=lf
+
+# The dashboard formatter uses LF on every host; keep binary assets unchanged.
+dashboard/** text=auto eol=lf
