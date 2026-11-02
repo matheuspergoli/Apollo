@@ -29,6 +29,7 @@ namespace window_management {
   }
 
   bool runtime_state::retire() {
+    retiring_ = true;
     const auto current = evidence_.exchange({});
     if (current) {
       current->admitted.store(false);
@@ -56,6 +57,7 @@ namespace window_management {
     const auto owns = streams_.size() == 1 && streams_.begin()->second.generation == generation_;
     const auto permitted = owns && streams_.begin()->second.input_allowed;
     worker_->admission(owns, streams_.size() == 1, permitted);
+    worker_->captured(owns ? streams_.begin()->second.capture_source : std::string {});
     const auto current = evidence_.load();
     if (current) {
       current->admitted.store(permitted);
@@ -68,13 +70,20 @@ namespace window_management {
   std::uint64_t runtime_state::prepare(const settings &options, const std::string &application_uuid, const std::string &device_id) noexcept {
     try {
       std::lock_guard lock(mutex_);
-      if (!factory_ || !retire()) {
+      if (!factory_) {
         return 0;
       }
       if (!options.enabled || options.policy == mode::disabled || options.application_uuid.empty() ||
           options.application_uuid != application_uuid || device_id.empty() ||
           (options.policy != mode::smart && options.policy != mode::automatic)) {
+        retire();
         snapshot_ = {true, false, runtime_phase::disabled, 0, {}, "application_not_selected"};
+        return 0;
+      }
+      if (worker_ && !retiring_ && !worker_->finished() && application_uuid_ == application_uuid && target_device_id_ == device_id) {
+        return generation_;
+      }
+      if (!retire()) {
         return 0;
       }
       if (next_generation_ == std::numeric_limits<std::uint64_t>::max()) {
@@ -95,6 +104,9 @@ namespace window_management {
         return 0;
       }
       generation_ = context.generation;
+      application_uuid_ = application_uuid;
+      target_device_id_ = device_id;
+      retiring_ = false;
       evidence_.store(std::move(activity));
       update_admission();
       return context.generation;
@@ -121,7 +133,7 @@ namespace window_management {
         return;
       }
       std::lock_guard lock(mutex_);
-      streams_.insert_or_assign(stream, membership {generation, input_allowed});
+      streams_.insert_or_assign(stream, membership {generation, input_allowed, {}});
       update_admission();
     } catch (...) {
       // An untracked stream cannot leave the existing worker authorized.
@@ -167,11 +179,15 @@ namespace window_management {
     }
   }
 
-  void runtime_state::capture_ready(std::uint64_t generation, const std::string &source_name) noexcept {
+  void runtime_state::capture_ready(std::uint64_t generation, std::uintptr_t stream, const std::string &source_name) noexcept {
     try {
       std::lock_guard lock(mutex_);
-      if (generation && generation == generation_ && worker_) {
-        worker_->captured(source_name);
+      const auto member = streams_.find(stream);
+      if (generation && generation == generation_ && worker_ && member != streams_.end() && member->second.generation == generation) {
+        member->second.capture_source = source_name;
+        if (streams_.size() == 1) {
+          worker_->captured(source_name);
+        }
       }
     } catch (...) {
     }

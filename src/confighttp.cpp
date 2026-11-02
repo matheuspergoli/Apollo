@@ -40,6 +40,8 @@
 #include "process.h"
 #include "utility.h"
 #include "uuid.h"
+#include "window_management_runtime.h"
+#include "window_management_settings.h"
 
 #ifdef _WIN32
   #include "platform/windows/utils.h"
@@ -1014,6 +1016,43 @@ namespace confighttp {
    * @param response The HTTP response object.
    * @param request The HTTP request object.
    */
+  void getWindowManagementStatus(resp_https_t response, req_https_t request) {
+    if (!authenticate(response, request)) {
+      return;
+    }
+    const auto state = window_management::status();
+    nlohmann::json applications = nlohmann::json::array();
+    for (const auto &app : proc::proc.get_apps()) {
+      if (!app.uuid.empty() && app.uuid != REMOTE_INPUT_UUID && app.uuid != TERMINATE_APP_UUID) {
+        applications.push_back({{"uuid", app.uuid}, {"name", app.name}});
+      }
+    }
+    nlohmann::json output_tree;
+    output_tree["status"] = true;
+    output_tree["supported"] = state.supported;
+    output_tree["phase"] = window_management::phase_name(state.phase);
+    output_tree["manual_available"] = state.manual_available;
+    output_tree["reason"] = state.reason;
+    output_tree["moved"] = state.statistics.moved;
+    output_tree["restored"] = state.statistics.restored;
+    output_tree["skipped"] = state.statistics.skipped;
+    output_tree["failed"] = state.statistics.failed;
+    output_tree["overflow"] = state.statistics.overflow;
+    output_tree["last_error"] = state.statistics.last_error;
+    output_tree["applications"] = std::move(applications);
+    send_response(response, output_tree);
+  }
+
+  void recoverWindows(resp_https_t response, req_https_t request) {
+    if (!validateContentType(response, request, "application/json") || !authenticate(response, request)) {
+      return;
+    }
+    // Authenticated administrative action. Never let the caller choose a target,
+    // window handle or generation; the runtime revalidates current authorization.
+    const bool queued = window_management::recover_windows();
+    send_response(response, nlohmann::json {{"status", queued}, {"message", queued ? "Recuperacao solicitada; aguarde a confirmacao dos movimentos." : "A sessao atual nao permite recuperar janelas."}});
+  }
+
   void getConfig(resp_https_t response, req_https_t request) {
     if (!authenticate(response, request)) {
       return;
@@ -1071,7 +1110,17 @@ namespace confighttp {
         bad_request(response, request, "A interface usa apenas pt-BR; a opcao locale foi removida.");
         return;
       }
+      window_management::settings window_options;
       for (const auto &[k, v] : input_tree.items()) {
+        if (k.find_first_of("\r\n=") != std::string::npos || (v.is_string() && v.get_ref<const std::string &>().find_first_of("\r\n") != std::string::npos)) {
+          bad_request(response, request, "A configuracao deve usar uma linha por valor.");
+          return;
+        }
+        if (k.starts_with("wsm_") &&
+            ((!v.is_string() && !v.is_boolean()) || !window_management::apply_setting(window_options, k, v.is_string() ? v.get<std::string>() : v.dump()))) {
+          bad_request(response, request, "Configuracao de gerenciamento de janelas invalida.");
+          return;
+        }
         if (v.is_null() || (v.is_string() && v.get<std::string>().empty())) {
           continue;
         }
@@ -1575,6 +1624,8 @@ namespace confighttp {
     server.resource["^/api/logs$"]["GET"] = getLogs;
     server.resource["^/api/config$"]["GET"] = getConfig;
     server.resource["^/api/config$"]["POST"] = saveConfig;
+    server.resource["^/api/window-management$"]["GET"] = getWindowManagementStatus;
+    server.resource["^/api/window-management/recover$"]["POST"] = recoverWindows;
     server.resource["^/api/restart$"]["POST"] = restart;
     server.resource["^/api/quit$"]["POST"] = quit;
     server.resource["^/api/reset-display-device-persistence$"]["POST"] = resetDisplayDevicePersistence;

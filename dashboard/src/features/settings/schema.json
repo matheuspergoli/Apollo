@@ -96,6 +96,47 @@
 		]
 	},
 	{
+		"id": "window-session",
+		"title": "Janelas da sessão",
+		"fields": [
+			{
+				"key": "wsm_mode",
+				"defaultValue": "smart",
+				"label": "Gerenciamento de janelas",
+				"description": "Move somente janelas elegíveis para o display virtual capturado. Não altera a topologia dos monitores. Smart exige entrada remota recente para eventos de ativação e exibição; essa correlação não distingue perfeitamente ações locais e remotas.",
+				"options": [
+					{ "value": "disabled", "label": "Desativado" },
+					{ "value": "smart", "label": "Smart" },
+					{ "value": "automatic", "label": "Automático" }
+				]
+			},
+			{
+				"key": "wsm_application_uuid",
+				"defaultValue": "",
+				"label": "Aplicativo da sessão Desktop",
+				"description": "Selecione explicitamente o aplicativo pelo UUID. Nenhum aplicativo é escolhido pelo nome ou comando vazio. Sem seleção, o gerenciamento permanece inativo. A sessão precisa usar um display virtual; o WSM não cria displays."
+			},
+			{
+				"key": "wsm_recover_existing",
+				"defaultValue": "enabled",
+				"label": "Recuperar janelas existentes",
+				"description": "Recupera janelas elegíveis após confirmar a captura e a autorização da sessão. Não retira janelas do estado minimizado."
+			},
+			{
+				"key": "wsm_handle_new",
+				"defaultValue": "enabled",
+				"label": "Recuperar janelas novas e ativadas",
+				"description": "Trata eventos de exibição e ativação conforme o modo selecionado. Janelas elevadas, protegidas, auxiliares e em tela cheia não são movidas."
+			},
+			{
+				"key": "wsm_restore_positions",
+				"defaultValue": "enabled",
+				"label": "Restaurar posições ao encerrar",
+				"description": "Restaura somente movimentos confirmados do WSM, se a origem e a identidade ainda forem válidas e não houver mudança posterior. A restauração é limitada por prazo e pode ser recusada."
+			}
+		]
+	},
+	{
 		"id": "input",
 		"title": "Controles e entrada",
 		"fields": [

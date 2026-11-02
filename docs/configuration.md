@@ -32,6 +32,45 @@ location by modifying the configuration file.
 Although it is recommended to use the configuration UI, it is possible manually configure Sunshine by
 editing the `conf` file in a text editor. Use the examples as reference.
 
+## Window session management (Windows)
+
+The **Janelas da sessão** group manages eligible windows on the virtual display
+that Apollo is actually capturing. It does not configure, duplicate, disable,
+reposition or recreate displays. The selected application must already use
+Apollo's virtual-display path. No application is inferred from its name or an
+empty launch command.
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `wsm_mode` | `smart` | `disabled`, `smart` or `automatic`. Smart requires recent accepted remote desktop input for show/foreground events; automatic does not. |
+| `wsm_application_uuid` | empty | Explicit application UUID selected in the dashboard. Empty leaves management inactive. |
+| `wsm_recover_existing` | `enabled` | Recover eligible existing windows after capture and session authorization are ready. |
+| `wsm_handle_new` | `enabled` | Recover eligible shown/activated windows according to the selected mode. |
+| `wsm_restore_positions` | `enabled` | Attempt bounded restoration of confirmed WSM-owned movements when the session ends. |
+
+Boolean settings accept exactly `enabled`, `disabled`, `true`, `false`, `1` or
+`0`. Unknown modes, malformed identities and invalid toggles are not interpreted
+as permission to move windows. Invalid file settings disable management; invalid
+dashboard saves are rejected without replacing the file. Saving settings does not
+hot-apply them or restart the host.
+
+Management requires one authorized streaming owner on the interactive desktop.
+Input-only sessions cannot own it; additional sessions or permission loss pause
+management and invalidate previous ownership evidence. Smart input evidence is a
+time correlation, not an infallible distinction between local and remote actions.
+Gamepad heartbeat, motion and battery packets do not count as desktop activity.
+
+Minimized, elevated, protected, auxiliary, shell and fullscreen windows are not
+recovered. An application may reject or adjust a request. Movement/restoration
+counts include only observed completion, not merely an accepted OS request.
+Restoration requires the original monitor and window identity to remain valid,
+with no subsequent change to the confirmed placement. It may be refused or expire.
+
+**Recuperar janelas agora** is an explicit action on the currently authorized
+session, not on the unsaved settings draft. It can rebase ownership after a manual
+change. The status panel reports waiting, active, paused, stopped or failed state;
+failure of window management does not stop streaming or select a physical fallback.
+
 ## General
 
 The personal Apollo interface is fixed to Brazilian Portuguese (pt-BR).

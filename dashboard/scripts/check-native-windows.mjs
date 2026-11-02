@@ -122,6 +122,11 @@ try {
 	assert.equal(created.status, 200)
 	assert.equal(created.json.status, true)
 	assert.equal((await http("/api/config")).status, 401)
+	assert.equal((await http("/api/window-management")).status, 401)
+	assert.equal(
+		(await http("/api/window-management/recover", { method: "POST", data: {} })).status,
+		401
+	)
 	const login = await http("/api/login", { method: "POST", data: credentials })
 	assert.equal(login.status, 200)
 	const cookie = login.headers["set-cookie"]?.[0]?.split(";")[0]
@@ -200,6 +205,35 @@ try {
 		400
 	)
 	assert.equal(await readFile(config, "utf8"), before)
+	const windowStatus = await http("/api/window-management", { cookie })
+	assert.equal(windowStatus.status, 200)
+	assert.equal(windowStatus.json.supported, true)
+	assert.equal(windowStatus.json.phase, "disabled")
+	assert.equal(windowStatus.json.manual_available, false)
+	assert.equal(windowStatus.json.moved, 0)
+	assert.equal(windowStatus.json.restored, 0)
+	assert(Array.isArray(windowStatus.json.applications))
+	const refusedRecovery = await http("/api/window-management/recover", {
+		method: "POST",
+		data: {},
+		cookie
+	})
+	assert.equal(refusedRecovery.status, 200)
+	assert.equal(refusedRecovery.json.status, false)
+	for (const data of [
+		{ wsm_mode: "enabled" },
+		{ wsm_handle_new: "enable1" },
+		{ wsm_application_uuid: "Desktop" },
+		{ wsm_unknown: "enabled" },
+		{ sunshine_name: "example\nwsm_mode = automatic" }
+	]) {
+		assert.equal((await http("/api/config", { method: "POST", data, cookie })).status, 400)
+		assert.equal(
+			await readFile(config, "utf8"),
+			before,
+			"Rejected settings must preserve the complete file"
+		)
+	}
 
 	browser = await chromium.launch({ headless: true })
 	const context = await browser.newContext({ ignoreHTTPSErrors: true })

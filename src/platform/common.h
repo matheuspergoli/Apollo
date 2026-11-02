@@ -533,6 +533,10 @@ namespace platf {
 
     virtual ~display_t() = default;
 
+    // Actual backend-selected source, not normalized capture offsets or the
+    // requested display name. Empty means this backend supplies no identity.
+    std::string capture_source_name;
+
     // Offsets for when streaming a specific monitor. By default, they are 0.
     int offset_x, offset_y;
     int env_width, env_height;

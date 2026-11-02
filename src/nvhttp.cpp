@@ -1342,6 +1342,7 @@ namespace nvhttp {
     );
     tree.put("root.gamesession", 1);
 
+    proc::proc.prepare_window_session(*launch_session);
     rtsp_stream::launch_session_raise(launch_session);
   }
 
@@ -1449,6 +1450,7 @@ namespace nvhttp {
     );
     tree.put("root.resume", 1);
 
+    proc::proc.prepare_window_session(*launch_session);
     rtsp_stream::launch_session_raise(launch_session);
 
 #if defined SUNSHINE_TRAY && SUNSHINE_TRAY >= 1

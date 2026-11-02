@@ -51,8 +51,8 @@ namespace window_management {
     state().permissions_changed(stream, input_allowed);
   }
 
-  void capture_ready(std::uint64_t generation, const std::string &source_name) noexcept {
-    state().capture_ready(generation, source_name);
+  void capture_ready(std::uint64_t generation, std::uintptr_t stream, const std::string &source_name) noexcept {
+    state().capture_ready(generation, stream, source_name);
   }
 
   void remote_activity(std::uint64_t generation) noexcept {

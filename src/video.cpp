@@ -19,7 +19,6 @@ extern "C" {
 }
 
 // local includes
-#include "process.h"
 #include "cbs.h"
 #include "config.h"
 #include "display_device.h"
@@ -28,8 +27,10 @@ extern "C" {
 #include "logging.h"
 #include "nvenc/nvenc_base.h"
 #include "platform/common.h"
+#include "process.h"
 #include "sync.h"
 #include "video.h"
+#include "window_management_runtime.h"
 
 #ifdef _WIN32
   #include "platform/windows/virtual_display.h"
@@ -1903,6 +1904,11 @@ namespace video {
       }
     }
 
+    window_management::capture_ready(config.window_session_generation, config.window_session_stream, disp->capture_source_name);
+    auto window_capture_guard = util::fail_guard([&]() {
+      window_management::capture_ready(config.window_session_generation, config.window_session_stream, {});
+    });
+
     std::chrono::steady_clock::time_point encode_frame_timestamp;
     bool missing_frame_timestamp_warning_logged = false;
 
@@ -2100,6 +2106,9 @@ namespace video {
     }
 
     encode_session.session = std::move(session);
+    if (!ctx.config.input_only) {
+      window_management::capture_ready(ctx.config.window_session_generation, ctx.config.window_session_stream, disp->capture_source_name);
+    }
 
     return encode_session;
   }
@@ -2111,6 +2120,12 @@ namespace video {
     int &display_p
   ) {
     const auto &encoder = *chosen_encoder;
+
+    auto window_capture_guard = util::fail_guard([&]() {
+      for (const auto &ctx : synced_session_ctxs) {
+        window_management::capture_ready(ctx->config.window_session_generation, ctx->config.window_session_stream, {});
+      }
+    });
 
     std::shared_ptr<platf::display_t> disp;
 
@@ -2183,6 +2198,7 @@ namespace video {
         KITTY_WHILE_LOOP(auto pos = std::begin(synced_sessions), pos != std::end(synced_sessions), {
           auto ctx = pos->ctx;
           if (ctx->shutdown_event->peek()) {
+            window_management::capture_ready(ctx->config.window_session_generation, ctx->config.window_session_stream, {});
             // Let waiting thread know it can delete shutdown_event
             ctx->join_event->raise(true);
 

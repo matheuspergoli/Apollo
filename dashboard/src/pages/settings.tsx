@@ -38,6 +38,7 @@ import {
 } from "@/features/settings/model"
 import { searchSettings } from "@/features/settings/search"
 import { SectionTemplates } from "@/features/settings/section-templates"
+import { WindowManagementStatus } from "@/features/settings/window-management-controls"
 import { configOptions, post } from "@/lib/api"
 import { accepted } from "@/lib/documents"
 import { configuredWebAddress } from "@/lib/lifecycle"
@@ -243,6 +244,7 @@ function Editor({ initial }: { initial: Snapshot }) {
 						)}
 					</CardHeader>
 					<CardContent className="space-y-6">
+						{!searching && selected.id === "window-session" && <WindowManagementStatus />}
 						{results.length ? (
 							results.map(({ field }) => (
 								<SettingControl

@@ -36,7 +36,7 @@ namespace window_management {
     void stream_started(std::uint64_t generation, std::uintptr_t stream, bool input_allowed) noexcept;
     void stream_stopped(std::uint64_t generation, std::uintptr_t stream) noexcept;
     void permissions_changed(std::uintptr_t stream, bool input_allowed) noexcept;
-    void capture_ready(std::uint64_t generation, const std::string &source_name) noexcept;
+    void capture_ready(std::uint64_t generation, std::uintptr_t stream, const std::string &source_name) noexcept;
     void remote_activity(std::uint64_t generation) noexcept;
     void stop(std::uint64_t generation) noexcept;
     bool recover_windows() noexcept;
@@ -48,6 +48,7 @@ namespace window_management {
     struct membership {
       std::uint64_t generation;
       bool input_allowed;
+      std::string capture_source;
     };
 
     bool retire();
@@ -57,6 +58,9 @@ namespace window_management {
     std::mutex mutex_;
     std::uint64_t next_generation_ = 0;
     std::uint64_t generation_ = 0;
+    std::string application_uuid_;
+    std::string target_device_id_;
+    bool retiring_ = false;
     std::unordered_map<std::uintptr_t, membership> streams_;
     std::atomic<std::shared_ptr<activity_evidence>> evidence_;
     runtime_status snapshot_;

@@ -48,6 +48,9 @@ namespace video {
 
     int encodingFramerate; // Requested display framerate
     bool input_only;
+    // Host-only metadata. Never part of the negotiated Moonlight wire layout.
+    std::uint64_t window_session_generation = 0;
+    std::uintptr_t window_session_stream = 0;
   };
 
   platf::mem_type_e map_base_dev_type(AVHWDeviceType type);

@@ -1,6 +1,7 @@
 add_executable(apollo_ui_contracts ../integration/test_config_consistency.cpp ../unit/test_virtual_display_policy.cpp ../unit/test_input_packet.cpp)
 target_sources(apollo_ui_contracts PRIVATE ../unit/test_config_bool.cpp ../../src/config_bool.cpp)
 target_sources(apollo_ui_contracts PRIVATE ../unit/test_window_management_policy.cpp ../../src/window_management_policy.cpp)
+target_sources(apollo_ui_contracts PRIVATE ../unit/test_window_management_settings.cpp ../../src/window_management_settings.cpp)
 target_sources(apollo_ui_contracts PRIVATE ../unit/test_window_session_state.cpp ../../src/window_session_state.cpp)
 target_sources(apollo_ui_contracts PRIVATE ../unit/test_window_session_controller.cpp ../../src/window_session_controller.cpp)
 target_sources(apollo_ui_contracts PRIVATE ../unit/test_window_runtime_state.cpp ../../src/window_runtime_state.cpp)

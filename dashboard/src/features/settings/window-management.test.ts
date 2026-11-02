@@ -1,0 +1,54 @@
+import { describe, expect, it } from "vitest"
+import { draftFrom, serializeSettings, snapshot } from "./model"
+import { parseWindowStatus } from "./window-management"
+
+const status = {
+	status: true,
+	supported: true,
+	manual_available: true,
+	phase: "active",
+	reason: "active",
+	moved: 2,
+	restored: 1,
+	skipped: 3,
+	failed: 0,
+	overflow: 0,
+	last_error: 0,
+	applications: [{ uuid: "12345678-abcd-4321-9876-1234567890ab", name: "Desktop" }]
+}
+
+describe("window management contracts", () => {
+	it("uses reported counters and never fabricates missing or invalid values", () => {
+		expect(parseWindowStatus(status).moved).toBe(2)
+		for (const patch of [
+			{ moved: undefined },
+			{ failed: -1 },
+			{ restored: "2" },
+			{ phase: "unknown" },
+			{ manual_available: "true" }
+		])
+			expect(() => parseWindowStatus({ ...status, ...patch })).toThrow()
+	})
+	it("does not expose manual recovery for unsupported or inactive sessions", () => {
+		expect(parseWindowStatus({ ...status, supported: false }).manual_available).toBe(false)
+		expect(parseWindowStatus({ ...status, phase: "paused" }).manual_available).toBe(false)
+	})
+	it("keeps defaults inactive without an explicit selection and validates values before saving", () => {
+		const draft = draftFrom(snapshot({ status: true, platform: "windows" }))
+		expect(draft.wsm_application_uuid).toBe("")
+		expect(serializeSettings(draft)).toEqual({})
+		for (const patch of [
+			{ wsm_mode: "enabled" },
+			{ wsm_application_uuid: "Desktop" },
+			{ wsm_handle_new: "enable1" }
+		])
+			expect(() => serializeSettings({ ...draft, ...patch })).toThrow()
+		expect(
+			serializeSettings({
+				...draft,
+				wsm_mode: "disabled",
+				wsm_application_uuid: status.applications[0].uuid
+			})
+		).toEqual({ wsm_mode: "disabled", wsm_application_uuid: status.applications[0].uuid })
+	})
+})

@@ -28,14 +28,15 @@
 #include "crypto.h"
 #include "display_device.h"
 #include "file_handler.h"
+#include "httpcommon.h"
 #include "logging.h"
 #include "platform/common.h"
 #include "process.h"
-#include "httpcommon.h"
 #include "system_tray.h"
 #include "utility.h"
-#include "video.h"
 #include "uuid.h"
+#include "video.h"
+#include "window_management_runtime.h"
 
 #ifdef _WIN32
   // from_utf8() string conversion function
@@ -173,6 +174,13 @@ namespace proc {
 #if defined SUNSHINE_TRAY && SUNSHINE_TRAY >= 1
     system_tray::update_tray_playing(_app_name);
 #endif
+  }
+
+  void proc_t::prepare_window_session(rtsp_stream::launch_session_t &launch_session) {
+    if (!launch_session.input_only && virtual_display && !_window_target_device_id.empty()) {
+      _window_generation = window_management::prepare(config::window_manager, _app.uuid, _window_target_device_id);
+      launch_session.window_session_generation = _window_generation;
+    }
   }
 
   int proc_t::execute(const ctx_t& app, std::shared_ptr<rtsp_stream::launch_session_t> launch_session) {
@@ -323,6 +331,7 @@ namespace proc {
           // empty name when probing graphics cards.
 
           config::video.output_name = display_device::map_display_name(this->display_name);
+          _window_target_device_id = config::video.output_name;
         } else {
           BOOST_LOG(error) << "Virtual display target was not identified; refusing physical-display fallback";
           return 503;
@@ -705,6 +714,11 @@ namespace proc {
   }
 
   void proc_t::terminate(bool immediate, bool needs_refresh) {
+    // Window-only restoration must finish (or expire) before any display undo
+    // command, HDR revert or virtual-display removal below.
+    window_management::stop(_window_generation);
+    _window_generation = 0;
+    _window_target_device_id.clear();
     std::error_code ec;
     placebo = false;
 

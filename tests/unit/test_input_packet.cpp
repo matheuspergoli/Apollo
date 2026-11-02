@@ -96,3 +96,17 @@ TEST(InputPacket, UnalignedWireStorageIsAcceptedWithoutMutation) {
   EXPECT_TRUE(input::validate_input_packet(std::span<const std::uint8_t>(bytes).subspan(1)));
   EXPECT_EQ(bytes, original);
 }
+
+TEST(InputPacket, OnlyStructurallyValidDesktopEventsGrantSmartActivityEvidence) {
+  for (const auto &event : fixed_events) {
+    const bool desktop = event.magic != MULTI_CONTROLLER_MAGIC_GEN5 &&
+                         event.magic != SS_CONTROLLER_ARRIVAL_MAGIC && event.magic != SS_CONTROLLER_TOUCH_MAGIC &&
+                         event.magic != SS_CONTROLLER_MOTION_MAGIC && event.magic != SS_CONTROLLER_BATTERY_MAGIC;
+    auto bytes = packet(event.magic, event.size - 4, event.size);
+    EXPECT_EQ(input::desktop_input_activity(bytes), desktop) << event.magic;
+    bytes.pop_back();
+    EXPECT_FALSE(input::desktop_input_activity(bytes)) << event.magic;
+  }
+  EXPECT_FALSE(input::desktop_input_activity(packet(0x7fffffff, 4, 8)));
+  EXPECT_TRUE(input::desktop_input_activity(packet(UTF8_TEXT_EVENT_MAGIC, 5, 9)));
+}

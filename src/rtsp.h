@@ -27,6 +27,7 @@ namespace rtsp_stream {
 
   struct launch_session_t {
     uint32_t id;
+    std::uint64_t window_session_generation = 0;
 
     crypto::aes_t gcm_key;
     crypto::aes_t iv;

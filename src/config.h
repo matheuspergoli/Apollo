@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#include "window_management_policy.h"
+
 // standard includes
 #include <bitset>
 #include <chrono>
@@ -291,6 +293,7 @@ namespace config {
   extern nvhttp_t nvhttp;
   extern input_t input;
   extern sunshine_t sunshine;
+  extern window_management::settings window_manager;
 
   int parse(int argc, char *argv[]);
   std::unordered_map<std::string, std::string> parse_config(const std::string_view &file_content);

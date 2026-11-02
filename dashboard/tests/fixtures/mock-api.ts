@@ -8,6 +8,7 @@ export type MockHost = {
 	current: string
 	logs: string
 	authorized: boolean
+	windowStatus: Item
 	calls: { path: string; method: string; body: Item }[]
 }
 
@@ -49,6 +50,22 @@ export async function mockHost(page: Page): Promise<MockHost> {
 		],
 		current: "",
 		authorized: true,
+		windowStatus: {
+			status: true,
+			supported: true,
+			manual_available: false,
+			phase: "disabled",
+			reason: "not_configured",
+			moved: 0,
+			restored: 0,
+			skipped: 0,
+			failed: 0,
+			overflow: 0,
+			last_error: 0,
+			applications: [
+				{ uuid: "12345678-abcd-4321-9876-1234567890ab", name: "Desktop de exemplo" }
+			]
+		},
 		logs: "[test]: Info: ready\n[test]: Warning: test warning\n[test]: Error: <script>window.injected=true</script>\n",
 		calls: []
 	}
@@ -72,6 +89,12 @@ export async function mockHost(page: Page): Promise<MockHost> {
 				platform: "windows",
 				version: "test-build",
 				vdisplayStatus: 0
+			})
+		if (path === "window-management" && method === "GET") return json(state.windowStatus)
+		if (path === "window-management/recover")
+			return json({
+				status: state.windowStatus.manual_available === true,
+				message: "Recuperação indisponível."
 			})
 		if (path === "config" && method === "POST") {
 			state.config = Object.fromEntries(

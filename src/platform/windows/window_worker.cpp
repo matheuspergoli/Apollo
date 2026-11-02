@@ -55,6 +55,7 @@ namespace window_management::win32 {
     std::atomic<bool> stop_requested {false};
     std::atomic<bool> manual {false};
     std::atomic<bool> admission_interrupted {false};
+    std::atomic<bool> capture_interrupted {false};
     std::atomic<std::int64_t> restore_deadline {0};
     std::atomic<std::uint64_t> capture_revision {0};
     std::uint64_t verified_capture = 0;
@@ -137,6 +138,7 @@ namespace window_management::win32 {
       bool ending = false;
       bool suspended = false;
       while (true) {
+        bool ready_for_work = false;
         const auto now = clock::now();
         if (stop_requested.load() && !ending) {
           ending = true;
@@ -158,16 +160,24 @@ namespace window_management::win32 {
             revision = capture_revision.load();
           }
           if (!captured.empty()) {
+            // Interruptions before the initial binding cannot invalidate any
+            // ownership yet. Later interruptions remain latched for suspension.
+            admission_interrupted.exchange(false);
+            capture_interrupted.exchange(false);
             unsigned long error = 0;
             desktop = window_desktop::open(error, [this](bool restoration) {
               if (restoration) {
-                return !overflow && !event_count && !desktop_interrupted && !admission_interrupted.load() && flags.load() == 7 && stop_requested.load() && clock::now().time_since_epoch().count() < restore_deadline.load();
+                return !overflow && !event_count && !desktop_interrupted && !admission_interrupted.load() && !capture_interrupted.load() && flags.load() == 7 && stop_requested.load() && clock::now().time_since_epoch().count() < restore_deadline.load();
               }
-              return !overflow && !event_count && !desktop_interrupted && !admission_interrupted.load() && !stop_requested.load() && flags.load() == 7 && capture_revision.load() == verified_capture;
+              return !overflow && !event_count && !desktop_interrupted && !admission_interrupted.load() && !capture_interrupted.load() && !stop_requested.load() && flags.load() == 7 && capture_revision.load() == verified_capture;
             });
             if (!desktop) {
-              publish(runtime_phase::failed, "interactive_context_unavailable", nullptr, error);
-              break;
+              publish(runtime_phase::paused, "interactive_context_unavailable", nullptr, error);
+              if (WaitForSingleObject(wake, 250) == WAIT_FAILED) {
+                publish(runtime_phase::failed, "event_wait_failed", nullptr, GetLastError());
+                break;
+              }
+              continue;
             }
             // Resolve the stable identity Apollo already selected, not an old
             // DISPLAYn name that may have changed during display preparation.
@@ -209,12 +219,22 @@ namespace window_management::win32 {
         }
         if (initialized) {
           const auto interactive = desktop->interactive();
+          std::string captured;
+          std::uint64_t revision = 0;
+          {
+            std::lock_guard lock(mutex);
+            captured = capture_source;
+            revision = capture_revision.load();
+          }
+          const auto capture_available = !captured.empty();
+          ready_for_work = interactive && capture_available && flags.load() == 7;
           const auto interrupted = admission_interrupted.exchange(false);
-          if (interrupted || desktop_interrupted || ((!interactive || (!ending && flags.load() != 7)) && !suspended)) {
+          const auto capture_lost = capture_interrupted.exchange(false);
+          if (interrupted || capture_lost || desktop_interrupted || ((!interactive || !capture_available || (!ending && flags.load() != 7)) && !suspended)) {
             controller->suspend();
             suspended = true;
             desktop_interrupted = false;
-          } else if (interactive && flags.load() == 7) {
+          } else if (ready_for_work) {
             suspended = false;
           }
           if (overflow) {
@@ -234,7 +254,7 @@ namespace window_management::win32 {
               // Observation does not authorize movement, including while paused
               // or restoring. Returning to an old position cannot erase override.
               controller->event(event.handle, trigger::location_changed, recent, now);
-            } else if (interactive && !ending && flags.load() == 7) {
+            } else if (ready_for_work && !ending) {
               if (event.event == EVENT_SYSTEM_FOREGROUND) {
                 controller->event(event.handle, trigger::foreground, recent, now);
               } else if (event.event == EVENT_OBJECT_SHOW) {
@@ -243,18 +263,11 @@ namespace window_management::win32 {
             }
           }
           event_count = 0;
-          if (manual.exchange(false) && interactive && !ending && flags.load() == 7) {
+          if (manual.exchange(false) && ready_for_work && !ending) {
             controller->recover(trigger::manual);
           }
-          if (ending || (interactive && flags.load() == 7)) {
+          if (ending || ready_for_work) {
             // A reinitialized capture must still refer to the bound virtual.
-            std::string captured;
-            std::uint64_t revision = 0;
-            {
-              std::lock_guard lock(mutex);
-              captured = capture_source;
-              revision = capture_revision.load();
-            }
             if (!ending) {
               const auto actual = bind_target(wide(captured));
               const auto expected = bind_target(wide(display_device::map_output_name(context.target_device_id)));
@@ -275,7 +288,9 @@ namespace window_management::win32 {
           if (ending) {
             phase = runtime_phase::stopping;
             reason = "restoring";
-          } else if (interactive && flags.load() == 7) {
+          } else if (interactive && !capture_available) {
+            reason = "capture_unavailable";
+          } else if (ready_for_work) {
             phase = runtime_phase::active;
             reason = "active";
           } else if (interactive) {
@@ -283,7 +298,7 @@ namespace window_management::win32 {
           }
           publish(phase, std::move(reason), controller.get());
         }
-        const auto timeout = initialized && (ending || (desktop->interactive() && flags.load() == 7 && controller->has_work())) ? 50ul : INFINITE;
+        const auto timeout = initialized && (ending || (ready_for_work && controller->has_work())) ? 50ul : INFINITE;
         const auto wait = MsgWaitForMultipleObjects(1, &wake, FALSE, timeout, QS_ALLINPUT);
         if (wait == WAIT_FAILED) {
           publish(runtime_phase::failed, "event_wait_failed", controller.get(), GetLastError());
@@ -343,8 +358,14 @@ namespace window_management::win32 {
   void window_worker::captured(const std::string &source) {
     {
       std::lock_guard lock(impl_->mutex);
+      if (impl_->capture_source == source) {
+        return;
+      }
       impl_->capture_source = source;
       impl_->capture_revision.fetch_add(1);
+      // A reinit can finish before the worker gets its next turn. Keep evidence
+      // of the gap instead of treating the old binding as uninterrupted.
+      impl_->capture_interrupted.store(true);
     }
     SetEvent(impl_->wake);
   }

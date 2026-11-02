@@ -143,6 +143,34 @@ permanecem vivos até a thread sair, e o runtime recusa outro worker nesse inter
 Testes portáteis do controlador/runtime não qualificam hooks, captura nem esse
 ciclo de thread Win32; a integração nativa requer build e ambiente Windows.
 
+Os chamadores de produção associam a geração ao lançamento/retomada e ao stream,
+antes de iniciar as threads de captura. Encerrar a sessão retira sua associação;
+encerrar o aplicativo aguarda o orçamento do WSM antes de comandos de undo e
+remoção do virtual. Preparar novamente a mesma sessão viva não recria o worker.
+Cada stream conserva sua própria origem capturada: a saída de um stream não pode
+autorizar movimentos usando a origem de outro.
+
+`display_base.cpp` publica o `DeviceName` da saída DXGI realmente selecionada.
+Os caminhos síncrono/assíncrono sinalizam prontidão depois de preparar a sessão
+de encoder e retiram essa evidência em teardown/reinit, não a cada frame.
+Offsets normalizados de captura não são usados como coordenadas globais ou
+identidade de monitor. O WSM compara a origem capturada com a identidade estável
+já escolhida pelo Apollo, sem consultas de fallback físico.
+
+`input.cpp` sinaliza atividade somente depois da validação estrutural e aceitação
+da permissão do pacote. O classificador de produção é testado com os headers
+fixados; eventos de controle de jogo e eventos desconhecidos não fornecem essa
+evidência. Os testes portáteis não injetam entrada no sistema.
+
+Configurações `wsm_*` usam parser estrito compartilhado pelo carregamento nativo
+e pela validação de gravação HTTP. A seleção ausente não autoriza gerenciamento.
+Os endpoints autenticados de estado e recuperação manual não recebem HWND,
+geração ou destino do cliente. A integração HTTPS isolada verifica autenticação,
+recusa sem sessão elegível e preservação do arquivo após configurações inválidas;
+isso não qualifica movimentos reais nem a instalação do driver. Os testes de UI
+verificam seleção por UUID, rascunhos, erros, ausência de replay de ações e
+contadores fornecidos pelo host, sem inventar métricas de dispositivo.
+
 O resolvedor Windows em `src/platform/windows/window_target.*` usa somente
 consultas: associa o nome exato recebido da criação do virtual ao device path do
 monitor e atualiza sua área útil por essa identidade. Não usa monitor principal

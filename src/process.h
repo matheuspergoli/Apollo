@@ -120,6 +120,7 @@ namespace proc {
     }
 
     void launch_input_only();
+    void prepare_window_session(rtsp_stream::launch_session_t &launch_session);
 
     int execute(const ctx_t& _app, std::shared_ptr<rtsp_stream::launch_session_t> launch_session);
 
@@ -143,6 +144,8 @@ namespace proc {
   private:
     int _app_id = 0;
     std::string _app_name;
+    std::string _window_target_device_id;
+    std::uint64_t _window_generation = 0;
 
     boost::process::v1::environment _env;
 

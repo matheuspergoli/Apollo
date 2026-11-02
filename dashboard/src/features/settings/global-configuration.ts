@@ -36,6 +36,11 @@ function canonicalValue(field: SettingField, value: unknown): unknown {
 		return value.trim() === "" ? field.defaultValue : Number(value)
 	}
 	if (["enabled", "disabled"].includes(String(field.defaultValue)) && !field.options) {
+		if (field.key.startsWith("wsm_")) {
+			if (["true", "enabled", "1"].includes(String(value))) return "enabled"
+			if (["false", "disabled", "0"].includes(String(value))) return "disabled"
+			return value
+		}
 		const raw = String(value).trim().toLowerCase()
 		if (["true", "yes", "on", "enable", "enabled", "1"].includes(raw)) return "enabled"
 		if (["false", "no", "off", "disable", "disabled", "0"].includes(raw)) return "disabled"

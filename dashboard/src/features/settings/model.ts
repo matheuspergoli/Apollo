@@ -113,7 +113,7 @@ export function visibleSections(platform: string) {
 			!(
 				{
 					windows: ["vaapi"],
-					linux: ["amd", "qsv"]
+					linux: ["amd", "qsv", "window-session"]
 				}[platform] ?? []
 			).includes(section.id)
 	)
@@ -132,6 +132,18 @@ export function serializeSettings(draft: Document): Document {
 	}
 	for (const field of fields) {
 		const value = result[field.key]
+		if (field.key.startsWith("wsm_")) {
+			const valid =
+				field.key === "wsm_mode"
+					? typeof value === "string" && ["disabled", "smart", "automatic"].includes(value)
+					: field.key === "wsm_application_uuid"
+						? typeof value === "string" &&
+							(value === "" || /^[\da-f]{8}(-[\da-f]{4}){3}-[\da-f]{12}$/i.test(value))
+						: (typeof value === "string" || typeof value === "boolean") &&
+							["enabled", "disabled", "true", "false", "1", "0"].includes(String(value))
+			if (value !== undefined && !valid)
+				throw new Error(`${field.label}: valor inválido. Revise antes de salvar.`)
+		}
 		if (typeof field.defaultValue === "number" && value !== "" && value !== undefined) {
 			const numeric = Number(value)
 			if (

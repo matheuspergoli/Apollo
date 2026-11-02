@@ -63,6 +63,7 @@ set(SUNSHINE_TARGET_FILES
         "${CMAKE_SOURCE_DIR}/src/config.cpp"
         "${CMAKE_SOURCE_DIR}/src/config_bool.cpp"
         "${CMAKE_SOURCE_DIR}/src/window_management_policy.cpp"
+        "${CMAKE_SOURCE_DIR}/src/window_management_settings.cpp"
         "${CMAKE_SOURCE_DIR}/src/window_session_state.cpp"
         "${CMAKE_SOURCE_DIR}/src/window_session_controller.cpp"
         "${CMAKE_SOURCE_DIR}/src/window_management_runtime.cpp"

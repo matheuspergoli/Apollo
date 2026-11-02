@@ -8,7 +8,7 @@ test("complete export explains the ten Windows sections and the additional Linux
 	await mockHost(page)
 	await page.goto("/config")
 	const card = page.locator('[data-slot="card"]').filter({ hasText: "Todas as configurações" })
-	await expect(card).toContainText("99 campos das 11 seções de todas as plataformas")
+	await expect(card).toContainText("104 campos das 12 seções de todas as plataformas")
 	await expect(card).toContainText("Neste host, o painel mostra 10 seções")
 	await expect(card).toContainText("inclui também VA-API")
 })

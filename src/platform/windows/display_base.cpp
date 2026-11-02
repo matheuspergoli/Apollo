@@ -494,6 +494,7 @@ namespace platf::dxgi {
 
           if (desc.AttachedToDesktop && test_dxgi_duplication(adapter_tmp, output_tmp, false)) {
             output = std::move(output_tmp);
+            capture_source_name = to_utf8(desc.DeviceName);
 
             offset_x = desc.DesktopCoordinates.left;
             offset_y = desc.DesktopCoordinates.top;

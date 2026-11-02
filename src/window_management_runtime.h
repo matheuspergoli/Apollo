@@ -29,7 +29,7 @@ namespace window_management {
   void stream_started(std::uint64_t generation, std::uintptr_t stream, bool input_allowed) noexcept;
   void stream_stopped(std::uint64_t generation, std::uintptr_t stream) noexcept;
   void permissions_changed(std::uintptr_t stream, bool input_allowed) noexcept;
-  void capture_ready(std::uint64_t generation, const std::string &source_name) noexcept;
+  void capture_ready(std::uint64_t generation, std::uintptr_t stream, const std::string &source_name) noexcept;
   void remote_activity(std::uint64_t generation) noexcept;
   void stop(std::uint64_t generation) noexcept;
   bool recover_windows() noexcept;

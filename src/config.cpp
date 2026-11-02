@@ -26,8 +26,9 @@
 #include "nvhttp.h"
 #include "platform/common.h"
 #include "rtsp.h"
-#include "video.h"
 #include "utility.h"
+#include "video.h"
+#include "window_management_settings.h"
 
 #ifdef _WIN32
   #include <shellapi.h>
@@ -49,6 +50,8 @@ using namespace std::literals;
 #define APPS_JSON_PATH platf::appdata().string() + "/apps.json"
 
 namespace config {
+
+  window_management::settings window_manager;
 
   namespace nv {
 
@@ -809,6 +812,19 @@ namespace config {
     input = to_bool(tmp);
   }
 
+  void window_setting_f(std::unordered_map<std::string, std::string> &vars, const std::string &name, window_management::settings &input) {
+    const auto found = vars.find(name);
+    if (found == vars.end()) {
+      return;
+    }
+    const auto valid = window_management::apply_setting(input, name, found->second);
+    vars.erase(found);
+    if (!valid) {
+      BOOST_LOG(warning) << "Invalid window management setting [" << name << "]; window management is disabled";
+      input.enabled = false;
+    }
+  }
+
   void double_f(std::unordered_map<std::string, std::string> &vars, const std::string &name, double &input) {
     std::string tmp;
     string_f(vars, name, tmp);
@@ -1136,6 +1152,12 @@ namespace config {
     string_f(vars, "fallback_mode", video.fallback_mode);
     bool_f(vars, "isolated_virtual_display_option", video.isolated_virtual_display_option);
     bool_f(vars, "ignore_encoder_probe_failure", video.ignore_encoder_probe_failure);
+
+    window_setting_f(vars, "wsm_mode", window_manager);
+    window_setting_f(vars, "wsm_application_uuid", window_manager);
+    window_setting_f(vars, "wsm_recover_existing", window_manager);
+    window_setting_f(vars, "wsm_handle_new", window_manager);
+    window_setting_f(vars, "wsm_restore_positions", window_manager);
 
     path_f(vars, "pkey", nvhttp.pkey);
     path_f(vars, "cert", nvhttp.cert);

@@ -102,20 +102,39 @@ TEST_F(WindowRuntimeTest, RequiresExactlyOneMatchingStreamWithInputPermission) {
 TEST_F(WindowRuntimeTest, StaleCaptureStopAndDisconnectCannotAffectANewerGeneration) {
   const auto old_generation = prepare();
   const auto old_worker = workers.back();
+  runtime.stop(old_generation);
   const auto generation = prepare();
   ASSERT_GT(generation, old_generation);
   const auto worker = workers.back();
   EXPECT_EQ(old_worker->stop_calls, 1);
   runtime.stream_started(generation, 11, true);
-  runtime.capture_ready(old_generation, "stale-source");
+  worker->captures.clear();
+  runtime.capture_ready(old_generation, 11, "stale-source");
   runtime.stop(old_generation);
   runtime.stream_stopped(old_generation, 11);
   EXPECT_TRUE(worker->admitted);
   EXPECT_TRUE(worker->captures.empty());
   EXPECT_EQ(worker->stop_calls, 0);
-  runtime.capture_ready(generation, "actual-source");
+  runtime.capture_ready(generation, 11, "actual-source");
   ASSERT_EQ(worker->captures.size(), 1u);
   EXPECT_EQ(worker->captures.front(), "actual-source");
+}
+
+TEST_F(WindowRuntimeTest, CaptureIdentityBelongsToTheSurvivingStreamNotTheLastCallback) {
+  const auto generation = prepare();
+  const auto worker = workers.back();
+  runtime.stream_started(generation, 11, true);
+  runtime.capture_ready(generation, 11, "first-source");
+  runtime.stream_started(generation, 22, true);
+  runtime.capture_ready(generation, 22, "second-source");
+  runtime.capture_ready(generation, 11, {});
+  EXPECT_FALSE(worker->admitted);
+  runtime.stream_stopped(generation, 11);
+  EXPECT_TRUE(worker->admitted);
+  ASSERT_FALSE(worker->captures.empty());
+  EXPECT_EQ(worker->captures.back(), "second-source");
+  runtime.capture_ready(generation, 11, "late-first-source");
+  EXPECT_EQ(worker->captures.back(), "second-source");
 }
 
 TEST_F(WindowRuntimeTest, RetirementRefusesReplacementUntilTheTimedOutWorkerActuallyFinishes) {
@@ -164,6 +183,27 @@ TEST_F(WindowRuntimeTest, InputEvidenceRequiresAdmissionAndIsNotInheritedAcrossG
   EXPECT_TRUE(worker->activity(generation));
   EXPECT_FALSE(old_worker->activity(old_generation));
   EXPECT_FALSE(worker->activity(old_generation));
+}
+
+TEST_F(WindowRuntimeTest, RepeatedLaunchPreparationReusesTheLiveGenerationWithoutRestoringWindows) {
+  const auto generation = prepare();
+  runtime.stream_started(generation, 11, true);
+  EXPECT_EQ(prepare(), generation);
+  EXPECT_EQ(workers.size(), 1u);
+  EXPECT_EQ(workers.front()->stop_calls, 0);
+  EXPECT_TRUE(workers.front()->admitted);
+}
+
+TEST_F(WindowRuntimeTest, DisabledPreparationCannotReuseAnAlreadyAuthorizedWorker) {
+  const auto generation = prepare();
+  runtime.stream_started(generation, 11, true);
+  wm::settings options;
+  options.policy = wm::mode::disabled;
+  options.application_uuid = "desktop-fixture";
+  EXPECT_EQ(runtime.prepare(options, "desktop-fixture", "virtual-fixture"), 0u);
+  EXPECT_FALSE(workers.front()->admitted);
+  EXPECT_EQ(workers.front()->stop_calls, 1);
+  EXPECT_FALSE(runtime.recover_windows());
 }
 
 TEST(WindowRuntimeState, UnsupportedPlatformDoesNotStartOrAuthorizeAnything) {

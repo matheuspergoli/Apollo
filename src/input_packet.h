@@ -77,4 +77,35 @@ namespace input {
         return true;
     }
   }
+
+  // Called only for permission-accepted packets in production. Keep structural
+  // validation here too so malformed/unknown bytes can never grant Smart input
+  // evidence. Controller heartbeats, motion and battery events do not qualify.
+  inline bool desktop_input_activity(std::span<const std::uint8_t> packet) {
+    if (!validate_input_packet(packet)) {
+      return false;
+    }
+    NV_INPUT_HEADER header {};
+    std::memcpy(&header, packet.data(), sizeof(header));
+    auto magic = header.magic;
+    if constexpr (std::endian::native == std::endian::big) {
+      magic = std::byteswap(magic);
+    }
+    switch (magic) {
+      case MOUSE_MOVE_REL_MAGIC_GEN5:
+      case MOUSE_MOVE_ABS_MAGIC:
+      case MOUSE_BUTTON_DOWN_EVENT_MAGIC_GEN5:
+      case MOUSE_BUTTON_UP_EVENT_MAGIC_GEN5:
+      case SCROLL_MAGIC_GEN5:
+      case SS_HSCROLL_MAGIC:
+      case KEY_DOWN_EVENT_MAGIC:
+      case KEY_UP_EVENT_MAGIC:
+      case UTF8_TEXT_EVENT_MAGIC:
+      case SS_TOUCH_MAGIC:
+      case SS_PEN_MAGIC:
+        return true;
+      default:
+        return false;
+    }
+  }
 }  // namespace input

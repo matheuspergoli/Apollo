@@ -23,6 +23,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { bool, type Document, object } from "@/lib/documents"
 import { type SettingField, settingOptions } from "./model"
+import { WindowApplicationSelector } from "./window-management-controls"
 
 function validMappings(value: unknown): value is Document {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return false
@@ -206,9 +207,14 @@ export function SettingControl({
 	platform: string
 }) {
 	const help = `${field.key}-help`
+	if (field.key === "wsm_application_uuid")
+		return <WindowApplicationSelector field={field} value={value} onChange={onChange} />
 	let options = settingOptions(field, platform)
 	const isSwitch =
 		!options?.length && (field.defaultValue === "enabled" || field.defaultValue === "disabled")
+	const windowToggle = isSwitch && field.key.startsWith("wsm_")
+	const invalidWindowToggle =
+		windowToggle && !["enabled", "disabled", "true", "false", "1", "0"].includes(String(value))
 	const choice = String(value ?? "") || "__auto__"
 	if (options?.length && !options.some((option) => option.value === String(value ?? "")))
 		options = [
@@ -228,6 +234,11 @@ export function SettingControl({
 						"Opção do host Apollo. Alterações são gravadas somente ao salvar."}
 				</FieldDescription>
 				<p className="font-mono text-[11px] text-muted-foreground">{field.key}</p>
+				{invalidWindowToggle && (
+					<p role="alert" className="text-destructive text-sm">
+						Valor inválido no arquivo. Use o controle para substituir o valor antes de salvar.
+					</p>
+				)}
 			</div>
 			{field.key === "dd_mode_remapping" ? (
 				<DisplayMappings value={value} onChange={onChange} />
@@ -272,7 +283,9 @@ export function SettingControl({
 			) : isSwitch ? (
 				<Switch
 					id={field.key}
-					checked={bool(value)}
+					checked={
+						windowToggle ? ["enabled", "true", "1"].includes(String(value)) : bool(value)
+					}
 					aria-describedby={help}
 					onCheckedChange={(checked) => onChange(checked ? "enabled" : "disabled")}
 				/>

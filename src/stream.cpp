@@ -34,6 +34,7 @@ extern "C" {
 #include "system_tray.h"
 #include "thread_safe.h"
 #include "utility.h"
+#include "window_management_runtime.h"
 
 #define IDX_START_A 0
 #define IDX_START_B 1
@@ -414,7 +415,8 @@ namespace stream {
     std::uint32_t launch_session_id;
     std::string device_name;
     std::string device_uuid;
-    crypto::PERM permission;
+    std::atomic<crypto::PERM> permission;
+    std::uint64_t window_generation = 0;
 
     std::list<crypto::command_entry_t> do_cmds;
     std::list<crypto::command_entry_t> undo_cmds;
@@ -998,13 +1000,13 @@ namespace stream {
         std::copy(payload.end() - 16, payload.end(), std::begin(iv));
       }
 
-      input::passthrough(session->input, std::move(plaintext), session->permission);
+      input::passthrough(session->input, std::move(plaintext), session->permission.load(), session->window_generation);
     });
 
     server->map(packetTypes[IDX_EXEC_SERVER_CMD], [server](session_t *session, const std::string_view &payload) {
       BOOST_LOG(debug) << "type [IDX_EXEC_SERVER_CMD]"sv;
 
-      if (!(session->permission & crypto::PERM::server_cmd)) {
+      if (!(session->permission.load() & crypto::PERM::server_cmd)) {
         BOOST_LOG(debug) << "Permission Exec Server Cmd deined for [" << session->device_name << "]";
         return;
       }
@@ -1037,7 +1039,7 @@ namespace stream {
     server->map(packetTypes[IDX_SET_CLIPBOARD], [server](session_t *session, const std::string_view &payload) {
       BOOST_LOG(info) << "type [IDX_SET_CLIPBOARD]: "sv << payload << " size: " << payload.size();
 
-      if (!(session->permission & crypto::PERM::clipboard_set)) {
+      if (!(session->permission.load() & crypto::PERM::clipboard_set)) {
         BOOST_LOG(debug) << "Permission Clipboard Set deined for [" << session->device_name << "]";
         return;
       }
@@ -1046,7 +1048,7 @@ namespace stream {
     server->map(packetTypes[IDX_FILE_TRANSFER_NONCE_REQUEST], [server](session_t *session, const std::string_view &payload) {
       BOOST_LOG(info) << "type [IDX_FILE_TRANSFER_NONCE_REQUEST]: "sv << payload << " size: " << payload.size();
 
-      if (!(session->permission & crypto::PERM::file_upload)) {
+      if (!(session->permission.load() & crypto::PERM::file_upload)) {
         BOOST_LOG(debug) << "Permission File Upload deined for [" << session->device_name << "]";
         return;
       }
@@ -1112,7 +1114,7 @@ namespace stream {
       // IDX_INPUT_DATA callback will attempt to decrypt unencrypted data, therefore we need pass it directly
       if (type == packetTypes[IDX_INPUT_DATA]) {
         plaintext.erase(std::begin(plaintext), std::begin(plaintext) + 4);
-        input::passthrough(session->input, std::move(plaintext), session->permission);
+        input::passthrough(session->input, std::move(plaintext), session->permission.load(), session->window_generation);
       } else {
         server->call(type, session, next_payload, true);
       }
@@ -1944,6 +1946,14 @@ namespace stream {
   namespace session {
     std::atomic_uint running_sessions;
 
+    bool window_input_allowed(crypto::PERM permission) {
+      return (permission & crypto::PERM::_allow_view) != crypto::PERM::_no &&
+             ((permission & crypto::PERM::input_mouse) != crypto::PERM::_no ||
+              (permission & crypto::PERM::input_kbd) != crypto::PERM::_no ||
+              (permission & crypto::PERM::input_touch) != crypto::PERM::_no ||
+              (permission & crypto::PERM::input_pen) != crypto::PERM::_no);
+    }
+
     state_e state(session_t &session) {
       return session.state.load(std::memory_order_relaxed);
     }
@@ -1961,6 +1971,7 @@ namespace stream {
     }
 
     bool update_device_info(session_t& session, const std::string& name, const crypto::PERM& newPerm) {
+      window_management::permissions_changed(reinterpret_cast<std::uintptr_t>(&session), window_input_allowed(newPerm));
       session.permission = newPerm;
       if (!(newPerm & crypto::PERM::_allow_view)) {
         BOOST_LOG(debug) << "Session: View permission revoked for [" << session.device_name << "], disconnecting...";
@@ -1986,6 +1997,7 @@ namespace stream {
         return;
       }
 
+      window_management::stream_stopped(session.window_generation, reinterpret_cast<std::uintptr_t>(&session));
       session.shutdown_event->raise(true);
     }
 
@@ -1998,6 +2010,7 @@ namespace stream {
       }
 
       // reason: graceful termination
+      window_management::stream_stopped(session.window_generation, reinterpret_cast<std::uintptr_t>(&session));
       std::uint32_t reason = 0x80030023;
 
       control_terminate_t plaintext;
@@ -2112,6 +2125,8 @@ namespace stream {
 
       session.pingTimeout = std::chrono::steady_clock::now() + config::stream.ping_timeout;
 
+      window_management::stream_started(session.window_generation, reinterpret_cast<std::uintptr_t>(&session), window_input_allowed(session.permission.load()));
+
       session.audioThread = std::thread {audioThread, &session};
       session.videoThread = std::thread {videoThread, &session};
 
@@ -2155,11 +2170,14 @@ namespace stream {
       session->device_name = launch_session.device_name;
       session->device_uuid = launch_session.unique_id;
       session->permission = launch_session.perm;
+      session->window_generation = launch_session.input_only ? 0 : launch_session.window_session_generation;
 
       session->do_cmds = std::move(launch_session.client_do_cmds);
       session->undo_cmds = std::move(launch_session.client_undo_cmds);
 
       session->config = config;
+      session->config.monitor.window_session_generation = session->window_generation;
+      session->config.monitor.window_session_stream = reinterpret_cast<std::uintptr_t>(session.get());
 
       session->control.connect_data = launch_session.control_connect_data;
       session->control.feedback_queue = mail->queue<platf::gamepad_feedback_msg_t>(mail::gamepad_feedback);
