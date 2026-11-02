@@ -2,6 +2,8 @@ add_executable(apollo_ui_contracts ../integration/test_config_consistency.cpp ..
 target_sources(apollo_ui_contracts PRIVATE ../unit/test_config_bool.cpp ../../src/config_bool.cpp)
 target_sources(apollo_ui_contracts PRIVATE ../unit/test_window_management_policy.cpp ../../src/window_management_policy.cpp)
 target_sources(apollo_ui_contracts PRIVATE ../unit/test_window_session_state.cpp ../../src/window_session_state.cpp)
+target_sources(apollo_ui_contracts PRIVATE ../unit/test_window_session_controller.cpp ../../src/window_session_controller.cpp)
+target_sources(apollo_ui_contracts PRIVATE ../unit/test_window_runtime_state.cpp ../../src/window_runtime_state.cpp)
 target_include_directories(apollo_ui_contracts PRIVATE "${CMAKE_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}/third-party")
 if(WIN32)
     target_sources(apollo_ui_contracts PRIVATE ../unit/test_nvenc_event_wait.cpp)

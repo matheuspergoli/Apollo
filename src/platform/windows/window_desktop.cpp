@@ -123,6 +123,15 @@ namespace window_management::win32 {
     std::vector<unsigned char> user_sid;
     DPI_AWARENESS_CONTEXT old_dpi = nullptr;
     std::vector<std::unique_ptr<dpi_probe>> probes;
+    admission_predicate admission;
+
+    bool admitted(bool restoration) const noexcept {
+      try {
+        return !admission || admission(restoration);
+      } catch (...) {
+        return false;
+      }
+    }
 
     ~impl() {
       probes.clear();
@@ -180,9 +189,10 @@ namespace window_management::win32 {
 
   window_desktop::~window_desktop() = default;
 
-  std::unique_ptr<window_desktop> window_desktop::open(unsigned long &error) {
+  std::unique_ptr<window_desktop> window_desktop::open(unsigned long &error, admission_predicate admission) {
     error = ERROR_ACCESS_DENIED;
     auto implementation = std::make_unique<impl>();
+    implementation->admission = std::move(admission);
     if (!ProcessIdToSessionId(GetCurrentProcessId(), &implementation->session) || !implementation->session ||
         implementation->session != WTSGetActiveConsoleSessionId() ||
         object_name(GetProcessWindowStation()) != L"WinSta0" ||
@@ -253,6 +263,10 @@ namespace window_management::win32 {
       result.handles.clear();
     }
     return result;
+  }
+
+  bool window_desktop::interactive() const {
+    return impl_->available();
   }
 
   window_result window_desktop::inspect(std::uintptr_t handle, std::uint64_t incarnation) {
@@ -374,8 +388,15 @@ namespace window_management::win32 {
     return impl_->available() ? impl_->read_area(target) : std::nullopt;
   }
 
+  target_result window_desktop::resolve(std::wstring_view device_path, bool restoration) {
+    if (!impl_->available()) {
+      return {{}, ERROR_ACCESS_DENIED};
+    }
+    return restoration ? refresh_origin(device_path) : refresh_target(device_path);
+  }
+
   placement_result window_desktop::submit(const observed_window &expected, placement desired, const target_snapshot &destination, bool restoration) {
-    if (!window_allowed(expected.traits)) {
+    if (!impl_->admitted(restoration) || !window_allowed(expected.traits)) {
       return {placement_status::rejected, ERROR_ACCESS_DENIED};
     }
     const auto fresh = inspect(expected.identity.handle, expected.identity.incarnation);
@@ -425,6 +446,9 @@ namespace window_management::win32 {
     }
     BOOL submitted = FALSE;
     if (desired.state == show_state::normal) {
+      if (!impl_->available() || !impl_->admitted(restoration)) {
+        return {placement_status::rejected, ERROR_ACCESS_DENIED};
+      }
       submitted = SetWindowPos(window, nullptr, desired.normal.left, desired.normal.top, static_cast<int>(width), static_cast<int>(height), SWP_ASYNCWINDOWPOS | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER);
     } else {
       const auto workspace = to_workspace(desired.normal, *target_area);
@@ -435,6 +459,9 @@ namespace window_management::win32 {
       }
       native.rcNormalPosition = {workspace->left, workspace->top, workspace->right, workspace->bottom};
       native.flags |= WPF_ASYNCWINDOWPLACEMENT;
+      if (!impl_->available() || !impl_->admitted(restoration)) {
+        return {placement_status::rejected, ERROR_ACCESS_DENIED};
+      }
       submitted = SetWindowPlacement(window, &native);
     }
     return submitted ? placement_result {placement_status::submitted, ERROR_SUCCESS} : placement_result {placement_status::failed, error_or()};

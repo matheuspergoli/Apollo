@@ -21,7 +21,7 @@ namespace {
   }
 
   wm::move_record moved() {
-    return {1, {100, 42, 7, 1234, 1}, {{-1800, 100, -1000, 700}, wm::show_state::normal}, {{120, 100, 920, 700}, wm::show_state::normal}, false, "physical-origin-fixture"};
+    return {1, {100, 42, 7, 1234, 1}, {{-1800, 100, -1000, 700}, wm::show_state::normal}, {{120, 100, 920, 700}, wm::show_state::normal}, false, L"physical-origin-fixture"};
   }
 }  // namespace
 

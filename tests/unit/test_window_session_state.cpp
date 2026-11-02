@@ -21,7 +21,7 @@ namespace {
   }
 
   wm::move_record moved() {
-    return {1, identity(), {{-1800, 100, -1000, 700}}, {{100, 100, 900, 700}}, false, "physical-origin-fixture"};
+    return {1, identity(), {{-1800, 100, -1000, 700}}, {{100, 100, 900, 700}}, false, L"physical-origin-fixture"};
   }
 }  // namespace
 
@@ -78,6 +78,26 @@ TEST(WindowSessionState, BoundsEventQueueAndReleasesCapacityAfterProcessing) {
   EXPECT_EQ(state.pending_count(), wm::session_state::event_limit);
   EXPECT_EQ(state.take_due(1, now + 100ms).size(), wm::session_state::event_limit);
   EXPECT_TRUE(state.enqueue(1, identity(10000), wm::trigger::manual, false, now));
+}
+
+TEST(WindowSessionState, BoundedBatchesPreserveOldestDeadlinesWithoutDroppingRemainingWork) {
+  wm::session_state state;
+  ASSERT_TRUE(state.activate(options(), context()));
+  const auto now = wm::session_state::clock::time_point {};
+  ASSERT_TRUE(state.enqueue(1, identity(3), wm::trigger::manual, false, now));
+  ASSERT_TRUE(state.enqueue(1, identity(2), wm::trigger::manual, false, now));
+  ASSERT_TRUE(state.enqueue(1, identity(1), wm::trigger::manual, false, now + 1ms));
+  EXPECT_TRUE(state.take_due(1, now + 100ms, 0).empty());
+  EXPECT_EQ(state.pending_count(), 3u);
+  const auto first = state.take_due(1, now + 100ms, 1);
+  ASSERT_EQ(first.size(), 1u);
+  EXPECT_EQ(first.front().identity.handle, 2u);
+  EXPECT_EQ(state.pending_count(), 2u);
+  const auto remaining = state.take_due(1, now + 100ms, 2);
+  ASSERT_EQ(remaining.size(), 2u);
+  EXPECT_EQ(remaining[0].identity.handle, 3u);
+  EXPECT_EQ(remaining[1].identity.handle, 1u);
+  EXPECT_EQ(state.pending_count(), 0u);
 }
 
 TEST(WindowSessionState, DoesNotRestoreOrFightAUserChangeEvenIfWindowReturnsToAppliedPosition) {

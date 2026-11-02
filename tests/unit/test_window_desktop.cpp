@@ -128,6 +128,33 @@ TEST_F(WindowDesktopTest, RejectsZeroIdentityAndDestroyedWindows) {
   EXPECT_FALSE(desktop->inspect(reinterpret_cast<std::uintptr_t>(handle), 1).window);
 }
 
+TEST_F(WindowDesktopTest, AdmissionCancellationRefusesSubmissionBeforeInspectingOrMoving) {
+  const auto before = inspect();
+  ASSERT_TRUE(before.window) << before.error;
+  desktop.reset();
+  unsigned long error = 0;
+  int checks = 0;
+  bool restoration_seen = false;
+  desktop = native::window_desktop::open(error, [&](bool restoration) {
+    ++checks;
+    restoration_seen = restoration;
+    return false;
+  });
+  ASSERT_NE(desktop, nullptr) << error;
+  EXPECT_TRUE(desktop->interactive());
+  auto desired = before.window->position;
+  desired.normal.left += 10;
+  desired.normal.right += 10;
+  const auto request = desktop->submit(*before.window, desired, destination, true);
+  EXPECT_EQ(checks, 1);
+  EXPECT_TRUE(restoration_seen);
+  EXPECT_EQ(request.status, native::placement_status::rejected);
+  EXPECT_EQ(request.error, ERROR_ACCESS_DENIED);
+  const auto after = inspect();
+  ASSERT_TRUE(after.window) << after.error;
+  EXPECT_EQ(after.window->position, before.window->position);
+}
+
 TEST_F(WindowDesktopTest, RefusesANonInputDesktopWithoutSwitchingTheVisibleDesktop) {
   const auto name = L"ApolloWindowContract-" + std::to_wstring(GetCurrentProcessId());
   auto private_desktop = CreateDesktopW(name.c_str(), nullptr, nullptr, 0, GENERIC_ALL, nullptr);

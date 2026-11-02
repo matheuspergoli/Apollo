@@ -4,25 +4,15 @@
  */
 #pragma once
 
-#include "src/window_management_policy.h"
+#include "src/window_backend.h"
 
 #include <optional>
 #include <string>
 #include <string_view>
 
 namespace window_management::win32 {
-  struct target_snapshot {
-    // Persist this identity for the session, never the GDI name or HMONITOR.
-    std::wstring monitor_device_path;
-    std::wstring source_name;
-    screen_rect bounds;
-    screen_rect work;
-  };
-
-  struct target_result {
-    std::optional<target_snapshot> target;
-    unsigned long error = 0;
-  };
+  using ::window_management::target_result;
+  using ::window_management::target_snapshot;
 
   // Initial binding uses the exact source returned by Apollo's virtual-display
   // creation, not a monitor index, friendly name or the primary-display flag.

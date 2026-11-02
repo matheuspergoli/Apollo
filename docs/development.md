@@ -116,6 +116,33 @@ Mudanças posteriores ao estado confirmado invalidam a restauração, mesmo que 
 janela volte depois à posição esperada. O consumidor deve revalidar janela,
 destino e autorização antes de executar trabalho coletado da fila.
 
+`src/window_session_controller.*` executa descoberta e confirmações em lotes
+limitados. A interface `window_backend` é usada tanto pelo adaptador Win32 quanto
+pelos testes com conclusão atrasada: aceitar uma solicitação não incrementa a
+contagem de movimentos nem autoriza restauração. É necessário observar a mesma
+identidade, posição, estado e destino dentro do prazo. Mudança manual, suspensão
+de autorização e perda do destino invalidam trabalho ou ownership; recuperação
+manual explícita pode estabelecer uma nova origem. O encerramento tem um prazo
+único e não considera uma conclusão observada depois dele como sucesso.
+
+`src/window_runtime_state.*` coordena associação de streams, exclusividade,
+permissões e gerações por uma interface de executor. Os testes exercitam essa
+implementação de produção com executor controlado: mensagens de uma geração
+antiga não afetam a nova, entrada recente não é herdada, streams adicionais
+retiram autorização e um executor que não encerrou impede sua substituição.
+Isso não comprova a entrega dos eventos de ciclo de vida por uma sessão real.
+
+O adaptador `src/platform/windows/window_worker.*` mantém hooks e message loop
+na mesma thread, com fila fixa e processamento limitado. O callback não inspeciona
+nem move janelas; perda de evidência por overflow invalida o gerenciamento.
+Suspensão de desktop/permissão invalida movimentos pendentes e ownership anterior.
+Cancelamento e revisão da captura são conferidos antes da submissão nativa;
+solicitações já entregues ao Windows não podem ser canceladas atomicamente.
+O prazo de encerramento começa no chamador. Em timeout, o estado e os callbacks
+permanecem vivos até a thread sair, e o runtime recusa outro worker nesse intervalo.
+Testes portáteis do controlador/runtime não qualificam hooks, captura nem esse
+ciclo de thread Win32; a integração nativa requer build e ambiente Windows.
+
 O resolvedor Windows em `src/platform/windows/window_target.*` usa somente
 consultas: associa o nome exato recebido da criação do virtual ao device path do
 monitor e atualiza sua área útil por essa identidade. Não usa monitor principal

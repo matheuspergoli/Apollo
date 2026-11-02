@@ -30,14 +30,17 @@ namespace window_management {
     bool activate(settings options, session_context context);
     bool active(std::uint64_t generation) const;
     bool enqueue(std::uint64_t generation, window_identity identity, trigger event, bool recent_remote_input, clock::time_point now);
-    std::vector<pending_event> take_due(std::uint64_t generation, clock::time_point now);
+    std::vector<pending_event> take_due(std::uint64_t generation, clock::time_point now, std::size_t limit = event_limit);
+    void discard_pending(std::uint64_t generation);
+    void rebase_manual(std::uint64_t generation, window_identity identity);
+    void relinquish(std::uint64_t generation, window_identity identity);
 
     // Check capacity before submitting any OS movement. The single-owner rule
     // keeps capacity stable until its result is confirmed or abandoned.
     bool can_record(std::uint64_t generation, window_identity identity) const;
     bool record_move(move_record record);
     // Only observe settled state, never an intermediate asynchronous move.
-    void observe(std::uint64_t generation, window_identity identity, placement current);
+    bool observe(std::uint64_t generation, window_identity identity, placement current);
     void destroyed(std::uint64_t generation, window_identity identity);
     std::vector<move_record> stop(std::uint64_t generation);
 

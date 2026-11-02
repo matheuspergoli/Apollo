@@ -1,5 +1,6 @@
 #include "window_session_state.h"
 
+#include <algorithm>
 #include <utility>
 
 namespace window_management {
@@ -67,20 +68,50 @@ namespace window_management {
     return true;
   }
 
-  std::vector<pending_event> session_state::take_due(std::uint64_t generation, clock::time_point now) {
+  std::vector<pending_event> session_state::take_due(std::uint64_t generation, clock::time_point now, std::size_t limit) {
     std::vector<pending_event> result;
     if (!active(generation)) {
       return result;
     }
-    for (auto it = pending_.begin(); it != pending_.end();) {
+    for (auto it = pending_.begin(); it != pending_.end(); ++it) {
       if (it->second.due <= now) {
         result.push_back(it->second);
-        it = pending_.erase(it);
-      } else {
-        ++it;
       }
     }
+    std::sort(result.begin(), result.end(), [](const auto &a, const auto &b) {
+      return a.due == b.due ? a.identity.handle < b.identity.handle : a.due < b.due;
+    });
+    result.resize(std::min(result.size(), limit));
+    for (const auto &event : result) {
+      pending_.erase(event.identity.handle);
+    }
     return result;
+  }
+
+  void session_state::discard_pending(std::uint64_t generation) {
+    if (active(generation)) {
+      pending_.clear();
+    }
+  }
+
+  void session_state::rebase_manual(std::uint64_t generation, window_identity identity) {
+    if (active(generation)) {
+      destroyed(generation, identity);
+    }
+  }
+
+  void session_state::relinquish(std::uint64_t generation, window_identity identity) {
+    if (!active(generation)) {
+      return;
+    }
+    const auto found = records_.find(identity.handle);
+    if (found != records_.end() && found->second.identity == identity) {
+      found->second.user_override = true;
+    }
+    const auto event = pending_.find(identity.handle);
+    if (event != pending_.end() && event->second.identity == identity) {
+      pending_.erase(event);
+    }
   }
 
   bool session_state::can_record(std::uint64_t generation, window_identity identity) const {
@@ -115,15 +146,17 @@ namespace window_management {
     return true;
   }
 
-  void session_state::observe(std::uint64_t generation, window_identity identity, placement current) {
+  bool session_state::observe(std::uint64_t generation, window_identity identity, placement current) {
     if (!active(generation)) {
-      return;
+      return false;
     }
     const auto found = records_.find(identity.handle);
     if (found != records_.end() && found->second.identity == identity && found->second.applied != current) {
       found->second.user_override = true;
       pending_.erase(identity.handle);
+      return true;
     }
+    return false;
   }
 
   void session_state::destroyed(std::uint64_t generation, window_identity identity) {

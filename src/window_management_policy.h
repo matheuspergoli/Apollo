@@ -117,7 +117,7 @@ namespace window_management {
     // Actual observed state after a successful move, not just requested state.
     placement applied;
     bool user_override = false;
-    std::string origin_device_id;
+    std::wstring origin_device_id;
   };
 
   bool session_allowed(const settings &options, const session_context &session);
