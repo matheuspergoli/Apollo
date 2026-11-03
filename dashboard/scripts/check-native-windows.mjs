@@ -4,7 +4,7 @@ import { createWriteStream } from "node:fs"
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises"
 import https from "node:https"
 import { dirname, resolve } from "node:path"
-import { chromium } from "@playwright/test"
+import { chromium, expect } from "@playwright/test"
 import { assertHostStyles } from "./browser-contract.mjs"
 import { assertGlobalArchive } from "./configuration-contract.ts"
 
@@ -189,6 +189,36 @@ try {
 		"Rejected upload must not overwrite a valid PNG"
 	)
 	const snapshot = await http("/api/config", { cookie })
+
+	// Exercise the actual diagnostic log reader, not a parallel file-read mock.
+	// Windows text-mode reads can treat SUB (0x1a) as EOF. Generate it through
+	// production debug logging on this isolated host and require later records.
+	const firstLog = await http("/api/logs", { cookie })
+	assert.equal(firstLog.status, 200)
+	const controlMarker = "apollo-log-before\u001aapollo-log-after"
+	const tailMarker = "apollo-log-later-record"
+	assert.equal(
+		(await http(`/api/config?log_probe=${encodeURIComponent(controlMarker)}`, { cookie }))
+			.status,
+		200
+	)
+	assert.equal((await http(`/api/config?log_probe=${tailMarker}`, { cookie })).status, 200)
+	await expect
+		.poll(
+			async () => {
+				const written = await readFile(resolve(home, "config/sunshine.log"), "utf8")
+				return written.includes(controlMarker) && written.includes(tailMarker)
+			},
+			{ timeout: 5000, message: "The isolated host must flush both diagnostic log fixtures" }
+		)
+		.toBe(true)
+	const refreshedLog = await http("/api/logs", { cookie })
+	assert.equal(refreshedLog.status, 200)
+	assert(refreshedLog.content.includes(controlMarker), "Diagnostic log must not stop at SUB")
+	assert(
+		refreshedLog.content.includes(tailMarker),
+		"A refreshed diagnostic log must include records written after the initial read"
+	)
 	assert.equal(snapshot.status, 200)
 	assert.equal(snapshot.json.status, true)
 	assert.equal(
