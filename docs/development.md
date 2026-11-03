@@ -411,8 +411,17 @@ e aguardar serviço/host. Não força término nem para dependências de outra i
 Regressões de timeout usam stand-ins e nunca controlam o serviço de uma máquina ativa.
 
 A confirmação de inicialização usa o PID atualizado do serviço, exatamente um
-processo filho pertencente à instalação e um listener na porta de configuração
-pertencente a esse filho. Um listener de outro processo não confirma a instalação.
+processo filho pertencente à instalação, um endpoint na porta de configuração
+pertencente a esse filho e uma conexão TCP efetivamente aceita nesse endereço.
+O estado textual/numérico da tabela TCP não basta: um Windows pode informar
+`Closed` para um endpoint que aceita conexões. Isso não autoriza aceitar `Closed`
+isoladamente; uma porta apenas vinculada, sem escuta, deve falhar a conexão.
+Um endpoint de outro processo não confirma a instalação. Serviço e filho são
+revalidados depois da conexão para recusar substituição durante a conferência.
+O probe tem até 250 ms por endereço dentro do orçamento restante e não envia
+dados de aplicação, credenciais ou requisições HTTPS; não desabilita validação de
+certificado. IPv4 e IPv6 são exercitados com sockets locais descartáveis no teste
+do helper. A integração HTTPS permanece uma verificação separada do host real.
 O orçamento de inicialização é medido por relógio monotônico; consultas CIM recebem
 o tempo restante e as pausas não reiniciam o orçamento. Chamadas síncronas do Windows
 podem exceder o tempo solicitado; isso não constitui garantia de prazo de tempo real.

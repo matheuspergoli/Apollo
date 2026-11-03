@@ -66,6 +66,28 @@ function Stop-OwnedApolloService {
     throw 'Timed out waiting for the owned service or host to stop. Program files were not released; no forced termination was attempted.'
 }
 
+function Test-ApolloTcpEndpoint {
+    param([string]$Address, [int]$Port, [int]$TimeoutMilliseconds)
+    if ($TimeoutMilliseconds -le 0) { return $false }
+    $ip = [Net.IPAddress]::Parse($Address)
+    if ($ip.Equals([Net.IPAddress]::Any)) { $ip = [Net.IPAddress]::Loopback }
+    if ($ip.Equals([Net.IPAddress]::IPv6Any)) { $ip = [Net.IPAddress]::IPv6Loopback }
+    $client = New-Object Net.Sockets.TcpClient($ip.AddressFamily)
+    $wait = $null
+    try {
+        $pending = $client.BeginConnect($ip, $Port, $null, $null)
+        $wait = $pending.AsyncWaitHandle
+        if (-not $wait.WaitOne($TimeoutMilliseconds)) { return $false }
+        $client.EndConnect($pending)
+        return $true
+    } catch [Net.Sockets.SocketException] {
+        return $false
+    } finally {
+        $client.Dispose()
+        if ($wait) { $wait.Dispose() }
+    }
+}
+
 function Start-OwnedApolloService {
     param([TimeSpan]$Timeout = [TimeSpan]::FromSeconds(90))
     $script:startupObservation = $null
@@ -103,15 +125,35 @@ function Start-OwnedApolloService {
             ServiceState = $service.State; ServiceProcessId = $service.ProcessId; ExpectedPort = $webPort
             Hosts = @($hosts | Select-Object ProcessId, ParentProcessId, ExecutablePath)
             Listeners = @()
+            ConnectionAccepted = $false
         }
         if ($clock.Elapsed -ge $Timeout) { break }
         if ($service.State -eq 'Running' -and $service.ProcessId -ne 0 -and $children.Count -eq 1) {
             $seconds = [Math]::Max(1, [int][Math]::Ceiling(($Timeout - $clock.Elapsed).TotalSeconds))
-            # Query only the expected endpoint, with the remaining CIM budget,
-            # rather than enumerating every TCP listener on each attempt.
-            $listeners = @(Get-CimInstance -Namespace root/StandardCimv2 -ClassName MSFT_NetTCPConnection -Filter "State=2 AND LocalPort=$webPort" -OperationTimeoutSec $seconds)
-            $script:startupObservation.Listeners = @($listeners | Select-Object OwningProcess, LocalAddress, LocalPort)
-            if ($clock.Elapsed -lt $Timeout -and @($listeners | Where-Object { $_.OwningProcess -eq $children[0].ProcessId }).Count -gt 0) { return }
+            # Some Windows hosts report a working listener as Closed. State alone
+            # cannot establish readiness: require the owned endpoint AND an
+            # actual bounded connection to that address, without sending data or
+            # weakening TLS/authentication. Bound-but-not-listening must fail.
+            $listeners = @(Get-CimInstance -Namespace root/StandardCimv2 -ClassName MSFT_NetTCPConnection -Filter "LocalPort=$webPort" -OperationTimeoutSec $seconds)
+            $script:startupObservation.Listeners = @($listeners | Select-Object OwningProcess, LocalAddress, LocalPort, RemotePort, State)
+            foreach ($listener in $listeners) {
+                if ($listener.LocalPort -ne $webPort -or $listener.OwningProcess -ne $children[0].ProcessId -or $listener.RemotePort -ne 0) { continue }
+                $remaining = [Math]::Floor(($Timeout - $clock.Elapsed).TotalMilliseconds)
+                if ($remaining -le 0) { break }
+                if (Test-ApolloTcpEndpoint -Address $listener.LocalAddress -Port $webPort -TimeoutMilliseconds ([int][Math]::Min(250, $remaining))) {
+                    $script:startupObservation.ConnectionAccepted = $true
+                    if ($clock.Elapsed -ge $Timeout) { break }
+                    # Do not accept a connection across a supervisor restart.
+                    $seconds = [Math]::Max(1, [int][Math]::Ceiling(($Timeout - $clock.Elapsed).TotalSeconds))
+                    $verified = Get-OwnedApolloService -OperationTimeoutSec $seconds
+                    if ($clock.Elapsed -ge $Timeout) { break }
+                    if ($verified -and $verified.State -eq 'Running' -and $verified.ProcessId -eq $service.ProcessId) {
+                        $seconds = [Math]::Max(1, [int][Math]::Ceiling(($Timeout - $clock.Elapsed).TotalSeconds))
+                        $verifiedHosts = @(Get-OwnedHostProcesses -OperationTimeoutSec $seconds | Where-Object { $_.ParentProcessId -eq $verified.ProcessId })
+                        if ($clock.Elapsed -lt $Timeout -and $verifiedHosts.Count -eq 1 -and $verifiedHosts[0].ProcessId -eq $children[0].ProcessId) { return }
+                    }
+                }
+            }
         }
         $remaining = ($Timeout - $clock.Elapsed).TotalMilliseconds
         if ($remaining -gt 0) { Start-Sleep -Milliseconds ([int][Math]::Min(1000, $remaining)) }

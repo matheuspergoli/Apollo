@@ -79,6 +79,24 @@ Assert-Fails { Stop-OwnedApolloService | Out-Null }
 if ($script:requests -ne 0) { throw 'A foreign service must never be stopped.' }
 Write-Output 'Service stop regressions passed without changing services or processes.'
 
+# Exercise the production TCP probe with temporary local sockets, not Apollo,
+# vendor drivers, TLS bypasses or the system's existing services/listeners.
+foreach ($address in @([Net.IPAddress]::Loopback, [Net.IPAddress]::IPv6Loopback)) {
+    $listener = New-Object Net.Sockets.TcpListener($address, 0)
+    $bound = New-Object Net.Sockets.Socket($address.AddressFamily, [Net.Sockets.SocketType]::Stream, [Net.Sockets.ProtocolType]::Tcp)
+    try {
+        $listener.Start()
+        if (-not (Test-ApolloTcpEndpoint -Address $address.ToString() -Port $listener.LocalEndpoint.Port -TimeoutMilliseconds 1000)) {
+            throw 'An actual local listener must accept the production readiness probe.'
+        }
+        $bound.Bind((New-Object Net.IPEndPoint($address, 0)))
+        if (Test-ApolloTcpEndpoint -Address $address.ToString() -Port $bound.LocalEndPoint.Port -TimeoutMilliseconds 250) {
+            throw 'A bound socket without Listen must not confirm readiness.'
+        }
+    } finally { $listener.Stop(); $bound.Dispose() }
+}
+Write-Output 'Production readiness probe accepted IPv4/IPv6 test listeners and rejected bound-only sockets.'
+
 # Startup must recognize only this service's child and its expected listener.
 # The real helper is exercised; SCM, processes and network remain stand-ins.
 function Start-Service {
@@ -86,30 +104,40 @@ function Start-Service {
     if ($Name -ne 'ApolloService') { throw 'Unexpected service start.' }
     $script:starts++
 }
+function Test-ApolloTcpEndpoint {
+    param($Address, $Port, $TimeoutMilliseconds)
+    if ($Address -ne '0.0.0.0' -or $Port -ne 47990 -or $TimeoutMilliseconds -lt 1 -or $TimeoutMilliseconds -gt 250) {
+        throw 'Unexpected or unbounded readiness probe.'
+    }
+    $script:probes++
+    if ($script:restartDuringProbe) { $script:restarted = $true }
+    return $script:endpointReachable
+}
 function Get-CimInstance {
     param($ClassName, $Filter, $OperationTimeoutSec, $Namespace)
     if ($OperationTimeoutSec -lt 1) { throw 'Startup queries require finite timeouts.' }
     if ($ClassName -eq 'Win32_Service') {
         $script:queries++
         if (($script:queries -gt 1 -or $script:delayInitialQuery) -and $script:queryDelay) { Start-Sleep -Milliseconds $script:queryDelay }
-        $pidValue = if ($script:queries -eq 1) { 0 } else { 501 }
+        $pidValue = if ($script:restarted) { 502 } elseif ($script:queries -eq 1) { 0 } else { 501 }
         return [pscustomobject]@{ State = 'Running'; StartMode = 'Auto'; PathName = $script:owner; ProcessId = $pidValue }
     }
     if ($ClassName -eq 'Win32_Process') {
         $script:hostQueries++
         $parent = if ($script:foreignParent) { 999 } else { 501 }
-        $child = [pscustomobject]@{ ExecutablePath = $hostBinary; ProcessId = 602; ParentProcessId = $parent }
+        $childPid = if ($script:replaceHostDuringProbe -and $script:probes -gt 0) { 603 } else { 602 }
+        $child = [pscustomobject]@{ ExecutablePath = $hostBinary; ProcessId = $childPid; ParentProcessId = $parent }
         $child
         if ($script:duplicateHost) { $child }
         return
     }
     if ($ClassName -eq 'MSFT_NetTCPConnection') {
-        if ($Namespace -ne 'root/StandardCimv2' -or $Filter -ne 'State=2 AND LocalPort=47990') {
-            throw 'Startup must query only the configured listening port.'
+        if ($Namespace -ne 'root/StandardCimv2' -or $Filter -ne 'LocalPort=47990') {
+            throw 'Startup must query the configured port without trusting its reported state.'
         }
         $script:listenerQueries++
         $ownerPid = if ($script:foreignListener) { 999 } else { 602 }
-        return [pscustomobject]@{ OwningProcess = $ownerPid; LocalPort = 47990; LocalAddress = '127.0.0.1' }
+        return [pscustomobject]@{ OwningProcess = $ownerPid; LocalPort = 47990; LocalAddress = '0.0.0.0'; RemotePort = 0; State = 'Closed' }
     }
     throw "Unexpected startup query: $ClassName"
 }
@@ -118,11 +146,13 @@ function Reset-StartupFixture {
     $script:queries = 0; $script:starts = 0; $script:hostQueries = 0; $script:listenerQueries = 0
     $script:foreignParent = $false; $script:foreignListener = $false; $script:duplicateHost = $false
     $script:queryDelay = 0; $script:delayInitialQuery = $false
+    $script:probes = 0; $script:endpointReachable = $true
+    $script:restartDuringProbe = $false; $script:restarted = $false; $script:replaceHostDuringProbe = $false
 }
 Reset-StartupFixture
 Start-OwnedApolloService | Out-Null
-if ($script:starts -ne 1 -or $script:hostQueries -ne 1 -or $script:listenerQueries -ne 1) {
-    throw 'A ready owned host must be confirmed immediately using the refreshed supervisor PID.'
+if ($script:starts -ne 1 -or $script:hostQueries -ne 2 -or $script:listenerQueries -ne 1 -or $script:probes -ne 1) {
+    throw 'A reachable owned host must be confirmed even if Windows labels its endpoint Closed.'
 }
 foreach ($scenario in @('foreignParent', 'foreignListener', 'duplicateHost')) {
     Reset-StartupFixture
@@ -131,6 +161,17 @@ foreach ($scenario in @('foreignParent', 'foreignListener', 'duplicateHost')) {
     Assert-Fails { Start-OwnedApolloService -Timeout ([TimeSpan]::FromMilliseconds(150)) | Out-Null }
     if ($watch.Elapsed.TotalSeconds -gt 3) { throw 'Startup exceeded its bounded test budget.' }
     if ($script:startupObservation.ExpectedPort -ne 47990) { throw 'Failed startup must retain its endpoint observation.' }
+    if ($script:probes -ne 0) { throw 'Endpoints without exactly one owned child must not be probed or accepted.' }
+}
+Reset-StartupFixture
+$script:endpointReachable = $false
+Assert-Fails { Start-OwnedApolloService -Timeout ([TimeSpan]::FromMilliseconds(150)) | Out-Null }
+if ($script:probes -lt 1) { throw 'Readiness must attempt a connection instead of accepting a bound endpoint alone.' }
+foreach ($scenario in @('restartDuringProbe', 'replaceHostDuringProbe')) {
+    Reset-StartupFixture
+    Set-Variable -Name $scenario -Scope Script -Value $true
+    Assert-Fails { Start-OwnedApolloService -Timeout ([TimeSpan]::FromMilliseconds(150)) | Out-Null }
+    if ($script:probes -lt 1) { throw 'Replacement regression must reach the connection/identity revalidation.' }
 }
 Reset-StartupFixture
 $script:queryDelay = 150
