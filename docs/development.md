@@ -228,6 +228,15 @@ Offsets normalizados de captura não são usados como coordenadas globais ou
 identidade de monitor. O WSM compara a origem capturada com a identidade estável
 já escolhida pelo Apollo, sem consultas de fallback físico.
 
+A descoberta inicial ocorre depois da preparação do display e da prontidão da
+captura. Seu estado inicial é o que o Windows informa nesse momento, não um
+snapshot anterior à conexão. Encontrar uma janela no destino não comprova que o
+WSM a moveu: não conta movimento nem autoriza restauração. Uma minimização entre
+descoberta e execução invalida a elegibilidade da solicitação pendente. Os testes
+do controlador exercitam esses dois contratos sem simular a preparação de displays.
+Para isolar efeitos externos, compare a mesma sequência com o modo desativado
+aplicado pelo host; mudanças visíveis nessa condição não comprovam ação do WSM.
+
 `input.cpp` sinaliza atividade somente depois da validação estrutural e aceitação
 da permissão do pacote. O classificador de produção é testado com os headers
 fixados; eventos de controle de jogo e eventos desconhecidos não fornecem essa
@@ -286,6 +295,17 @@ Z-order quando a fixture é elegível. `SW_SHOWNA` mantém o estado corrente sem
 ativação; não se reaproveita o comando ativador `SW_SHOWMAXIMIZED` nem se usa
 `SW_SHOWNOACTIVATE`, que pode restaurar o estado normal. Com token elevado,
 esse teste continua relatando apenas recusa, não qualificação de movimentação.
+
+`WINDOWPLACEMENT.rcNormalPosition` descreve a posição restaurada, não a posição
+visível de uma janela maximizada. Conferir somente esse retângulo, inclusive em
+um teste no mesmo monitor, não qualifica transferência entre monitores. O
+controlador exige também a identidade do monitor observado. As referências
+[WINDOWPLACEMENT](https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-windowplacement)
+e [SetWindowPlacement](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowplacement)
+documentam as coordenadas workspace e os ajustes que o Windows pode aplicar.
+Não substitua essa confirmação por sucesso da chamada Win32 ou por um ciclo
+automático de minimizar/restaurar. Esse contrato não resolve, por si só, a
+movimentação de aplicações reais maximizadas.
 
 **Critérios de resiliência do gerenciamento de janelas.** Retomar observação não
 é o mesmo que recuperar ownership. Quando desktop, exclusividade, permissão e
@@ -402,6 +422,11 @@ as últimas linhas do log padrão em uma subpasta privada do backup, antes de re
 arquivos anteriores. Logs personalizados não são procurados automaticamente.
 A restauração dos arquivos e a confirmação do serviço anterior são etapas distintas;
 uma falha na segunda não significa, por si só, perda dos arquivos restaurados.
+O ensaio isolado do helper distribuído corrompe apenas o executável Apollo da
+fixture depois da preparação, exige recusa antes de iniciar o programa, verifica
+o diagnóstico persistido e restaura bytes, dados, preferência do serviço e login.
+Isso exercita falha/rollback do helper; não simula timeout de dispositivo nem
+qualifica a integração completa de drivers do wizard NSIS.
 
 Diagnóstico NVENC distingue timeout, falha Win32 e retorno inesperado da espera,
 sem alterar os 100 ms ou a recuperação. Os testes Windows usam eventos locais, não

@@ -74,7 +74,7 @@ function Start-OwnedApolloService {
     $service = Get-OwnedApolloService -OperationTimeoutSec ([int][Math]::Ceiling($Timeout.TotalSeconds))
     if (-not $service) { throw 'ApolloService is absent.' }
     if ($service.StartMode -eq 'Disabled') { throw 'ApolloService is disabled; refusing to override this preference.' }
-    Start-Service ApolloService -ErrorAction Stop
+    if ($clock.Elapsed -ge $Timeout) { throw 'Startup budget exhausted while identifying the owned service; no start was requested.' }
     $webPort = 47990
     $configPath = Join-Path $root 'config\sunshine.conf'
     if (Test-Path -LiteralPath $configPath) {
@@ -86,6 +86,8 @@ function Start-OwnedApolloService {
             }
         }
     }
+    if ($clock.Elapsed -ge $Timeout) { throw 'Startup budget exhausted before requesting the owned service to start.' }
+    Start-Service ApolloService -ErrorAction Stop
     Write-Output "Waiting for the owned Apollo host to listen on TCP port $webPort (startup budget: $($Timeout.TotalSeconds)s)."
     while ($clock.Elapsed -lt $Timeout) {
         $seconds = [Math]::Max(1, [int][Math]::Ceiling(($Timeout - $clock.Elapsed).TotalSeconds))

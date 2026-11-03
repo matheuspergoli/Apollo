@@ -91,7 +91,7 @@ function Get-CimInstance {
     if ($OperationTimeoutSec -lt 1) { throw 'Startup queries require finite timeouts.' }
     if ($ClassName -eq 'Win32_Service') {
         $script:queries++
-        if ($script:queries -gt 1 -and $script:queryDelay) { Start-Sleep -Milliseconds $script:queryDelay }
+        if (($script:queries -gt 1 -or $script:delayInitialQuery) -and $script:queryDelay) { Start-Sleep -Milliseconds $script:queryDelay }
         $pidValue = if ($script:queries -eq 1) { 0 } else { 501 }
         return [pscustomobject]@{ State = 'Running'; StartMode = 'Auto'; PathName = $script:owner; ProcessId = $pidValue }
     }
@@ -117,7 +117,7 @@ function Reset-StartupFixture {
     $script:owner = '"' + $serviceBinary + '"'
     $script:queries = 0; $script:starts = 0; $script:hostQueries = 0; $script:listenerQueries = 0
     $script:foreignParent = $false; $script:foreignListener = $false; $script:duplicateHost = $false
-    $script:queryDelay = 0
+    $script:queryDelay = 0; $script:delayInitialQuery = $false
 }
 Reset-StartupFixture
 Start-OwnedApolloService | Out-Null
@@ -137,6 +137,13 @@ $script:queryDelay = 150
 Assert-Fails { Start-OwnedApolloService -Timeout ([TimeSpan]::FromMilliseconds(50)) | Out-Null }
 if ($script:hostQueries -ne 0 -or $script:listenerQueries -ne 0) {
     throw 'An exhausted startup budget must not start more inspections.'
+}
+Reset-StartupFixture
+$script:delayInitialQuery = $true
+$script:queryDelay = 150
+Assert-Fails { Start-OwnedApolloService -Timeout ([TimeSpan]::FromMilliseconds(50)) | Out-Null }
+if ($script:starts -ne 0 -or $script:hostQueries -ne 0 -or $script:listenerQueries -ne 0) {
+    throw 'An initial query that exhausts the budget must not start the service or inspect endpoints.'
 }
 Reset-StartupFixture
 $script:owner = '"C:\Other installation\tools\sunshinesvc.exe"'

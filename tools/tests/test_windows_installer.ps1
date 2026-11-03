@@ -34,7 +34,7 @@ function Invoke-Installer([string]$Root, [switch]$NoIntegration) {
     }
     if ($process.ExitCode -ne 0) { throw "Installer integration failed or requires reboot: $($process.ExitCode)" }
 }
-function Invoke-ServiceHelper([string]$Mode, [switch]$UpdateState) {
+function Invoke-ServiceHelper([string]$Mode, [switch]$UpdateState, [switch]$ExpectFailure) {
     $arguments = @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File',
         (Join-Path $managed 'scripts\update-installation.ps1'), '-InstallDir', $managed, '-Mode', $Mode)
     if ($UpdateState) {
@@ -42,6 +42,10 @@ function Invoke-ServiceHelper([string]$Mode, [switch]$UpdateState) {
             '-ManifestPath', (Join-Path $managed 'installation-manifest.json'))
     }
     & powershell.exe @arguments
+    if ($ExpectFailure) {
+        if ($LASTEXITCODE -eq 0) { throw "Expected Apollo service helper to reject the test fault: $Mode" }
+        return
+    }
     if ($LASTEXITCODE -ne 0) { throw "Apollo service helper failed: $Mode" }
 }
 function Get-ServiceHost([string]$Root) {
@@ -174,6 +178,33 @@ try {
         if ((Get-FileHash $file).Hash -ne $dataHashes[$file]) { throw 'Managed repair changed existing state or credentials.' }
     }
     if ((Invoke-TestApi 'login' 'POST' $credentials $session).StatusCode -ne 200) { throw 'Repair invalidated the saved account.' }
+
+    # Exercise the shipped helper's failure/rollback path on this isolated copy.
+    # Corrupt only an Apollo-owned test binary after a verified stopped snapshot;
+    # never alter drivers or an existing installation to manufacture a failure.
+    Invoke-ServiceHelper 'Prepare' -UpdateState
+    $updateState = Get-Content -LiteralPath (Join-Path $work 'service-update.json') -Raw | ConvertFrom-Json
+    $program = Join-Path $managed 'sunshine.exe'
+    $programHash = (Get-FileHash -LiteralPath $program).Hash
+    $stream = [IO.File]::Open($program, 'Append', 'Write', 'None')
+    try { $stream.WriteByte(0); $stream.Flush() } finally { $stream.Dispose() }
+    Invoke-ServiceHelper 'Finish' -UpdateState -ExpectFailure
+    if ((Get-Service ApolloService).Status -ne 'Stopped') { throw 'Integrity failure must not start the corrupted test host.' }
+    $evidence = @(Get-ChildItem -LiteralPath $updateState.Snapshot.Backup -Directory -Filter 'failure-Finish-*')
+    if ($evidence.Count -ne 1 -or -not (Test-Path -LiteralPath (Join-Path $evidence[0].FullName 'failure.json'))) {
+        throw 'Failed helper did not retain its pre-rollback error in the private snapshot.'
+    }
+    $failureReport = Get-Content -LiteralPath (Join-Path $evidence[0].FullName 'failure.json') -Raw | ConvertFrom-Json
+    if ($failureReport.Mode -ne 'Finish' -or $failureReport.Error -notmatch 'sunshine\.exe') { throw 'Failure evidence did not identify the corrupted program.' }
+    Invoke-ServiceHelper 'Restore' -UpdateState
+    if ((Get-FileHash -LiteralPath $program).Hash -ne $programHash) { throw 'Rollback did not restore the previous executable bytes.' }
+    if ((Get-Service ApolloService).StartType -ne 'Manual') { throw 'Rollback changed the saved service start preference.' }
+    foreach ($file in $dataHashes.Keys) {
+        if ((Get-FileHash -LiteralPath $file).Hash -ne $dataHashes[$file]) { throw 'Rollback changed configuration or credentials.' }
+    }
+    if ((Invoke-TestApi 'login' 'POST' $credentials $session).StatusCode -ne 200) { throw 'Rollback did not return the previous responding host and account.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $evidence[0].FullName 'failure.json'))) { throw 'Rollback erased the failure report.' }
+    Write-Output 'Shipped update helper rejected a corrupt test program, retained failure evidence and restored executable/data/service/account contracts.'
     $before = Get-ServiceHost $managed
     $ack = Invoke-TestApi 'restart' 'POST' @{} $session
     if ($ack.StatusCode -ne 200 -or -not ($ack.Content | ConvertFrom-Json).accepted) { throw 'Service restart was not acknowledged.' }

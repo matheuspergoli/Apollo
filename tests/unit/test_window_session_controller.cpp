@@ -157,6 +157,46 @@ TEST_F(WindowControllerTest, UnconfirmedSubmissionTimesOutWithoutInventingOwners
   EXPECT_EQ(backend.operations.size(), 1u);
 }
 
+TEST_F(WindowControllerTest, WindowsAlreadyOnTargetBeforeDiscoveryAreNotClaimedOrRestored) {
+  // Another actor may reposition/show windows during display preparation, before
+  // capture and WSM discovery. Their presence on target does not prove our work.
+  auto &window = backend.windows.at(1);
+  window.origin = target;
+  window.area = {target.bounds, target.work, 96};
+  window.position = {{120, 100, 920, 700}, wm::show_state::maximized};
+  const auto external_position = window.position;
+  recover();
+  controller.event(1, wm::trigger::foreground, true, now + 100ms);
+  controller.tick(now + 150ms, true);
+  EXPECT_TRUE(backend.operations.empty());
+  EXPECT_EQ(controller.statistics().moved, 0u);
+  controller.begin_stop(now + 200ms, now + 1s);
+  controller.tick(now + 200ms, false);
+  EXPECT_TRUE(controller.stopped());
+  EXPECT_TRUE(backend.operations.empty());
+  EXPECT_EQ(controller.statistics().restored, 0u);
+  EXPECT_EQ(window.position, external_position);
+}
+
+TEST_F(WindowControllerTest, MinimizationDuringDiscoveryPreventsDelayedMovementAndRestoration) {
+  ASSERT_TRUE(controller.recover(wm::trigger::initial));
+  // Discovery runs before its debounced movement. Re-read the live state instead
+  // of replaying a normal-state snapshot after the user/app minimized the window.
+  controller.tick(now, false);
+  auto &window = backend.windows.at(1);
+  window.position.state = wm::show_state::minimized;
+  const auto minimized_position = window.position;
+  controller.tick(now + 50ms, false);
+  EXPECT_TRUE(backend.operations.empty());
+  EXPECT_EQ(window.position, minimized_position);
+  controller.begin_stop(now + 100ms, now + 1s);
+  controller.tick(now + 100ms, false);
+  EXPECT_TRUE(controller.stopped());
+  EXPECT_TRUE(backend.operations.empty());
+  EXPECT_EQ(controller.statistics().moved, 0u);
+  EXPECT_EQ(controller.statistics().restored, 0u);
+}
+
 TEST_F(WindowControllerTest, StopWaitsForExistingSubmissionWithinBudgetButStartsNoNewRecovery) {
   recover();
   controller.begin_stop(now + 60ms, now + 1s);
