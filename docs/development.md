@@ -214,6 +214,20 @@ acionar o ciclo existente de remoção/recriação do virtual; ausência de qual
 reenumeração não é um contrato. Nenhum desses caminhos autoriza o WSM a mudar
 modos, duplicação ou disposição dos monitores físicos.
 
+Após movimento confirmado, início de arraste ou divergência observada de posição/estado
+invalida a propriedade daquela janela. O controlador não submete restauração
+para ela, mesmo se outro aplicativo aparecer no destino ou receber foreground.
+Uma recusa intencional por `ownership_lost` pode incrementar restaurações não
+submetidas sem indicar falha: a escolha manual tem prioridade. O teste combinado
+do controlador verifica retorno manual ao monitor físico, geometria/estado
+preservados e ausência de ownership para outra janela exibida externamente.
+Não simula foco, Z-order ou minimização provocada pela retirada do monitor virtual.
+Uma janela encoberta por outra não comprova minimização; contadores durante a
+sessão não comprovam restauração depois de desconectar. Para atribuir a operação
+ao WSM, compare também os resumos `WSM:` da geração encerrada com a ordem dos
+eventos de teardown do display. Uma reposição feita pelo Windows após esse
+teardown não vira sucesso retroativo do gerenciador.
+
 Os chamadores de produção associam a geração ao lançamento/retomada e ao stream,
 antes de iniciar as threads de captura. Encerrar a sessão retira sua associação;
 encerrar o aplicativo aguarda o orçamento do WSM antes de comandos de undo e

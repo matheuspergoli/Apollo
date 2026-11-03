@@ -225,6 +225,58 @@ TEST_F(WindowControllerTest, ManualChangeIsNotOverwrittenByDisconnectOrFurtherFo
   EXPECT_EQ(backend.operations.size(), 1u);
 }
 
+TEST_F(WindowControllerTest, ShutdownPreservesManualReturnAndDoesNotClaimAnExternallyShownWindow) {
+  for (const auto final_state : {wm::show_state::normal, wm::show_state::minimized}) {
+    SCOPED_TRACE(static_cast<int>(final_state));
+    desktop_fixture fixture;
+    fixture.windows.at(1).position.state = wm::show_state::maximized;
+    fixture.windows.emplace(2, ordinary(2));
+    fixture.windows.at(2).position.state = wm::show_state::minimized;
+    wm::session_controller subject {fixture};
+    ASSERT_TRUE(subject.begin(options(), context(), target));
+    ASSERT_TRUE(subject.recover(wm::trigger::initial));
+    subject.tick(now, false);
+    subject.tick(now + 50ms, false);
+    ASSERT_EQ(fixture.operations.size(), 1u);
+    ASSERT_EQ(fixture.operations.front().handle, 1u);
+    fixture.complete(0);
+    subject.tick(now + 100ms, false);
+    ASSERT_EQ(subject.statistics().moved, 1u);
+
+    // An unrelated window appears on target without any WSM submission. Its
+    // visibility is not evidence of movement/ownership and must not cause undo.
+    auto &external = fixture.windows.at(2);
+    external.origin = target;
+    external.area = {target.bounds, target.work, 96};
+    external.position = {{100, 100, 900, 700}, wm::show_state::maximized};
+    const auto external_position = external.position;
+    subject.event(2, wm::trigger::shown, false, now + 120ms);
+
+    subject.user_move_started(1);
+    auto &manual = fixture.windows.at(1);
+    manual.origin = physical;
+    manual.area = {physical.bounds, physical.work, 96};
+    manual.position = {{-1700, 180, -1000, 680}, final_state};
+    const auto manual_position = manual.position;
+    subject.event(1, wm::trigger::location_changed, false, now + 150ms);
+    subject.event(1, wm::trigger::foreground, true, now + 160ms);
+    subject.tick(now + 220ms, true);
+    subject.begin_stop(now + 250ms, now + 1s);
+    subject.tick(now + 300ms, false);
+
+    EXPECT_TRUE(subject.stopped());
+    EXPECT_EQ(fixture.operations.size(), 1u);
+    EXPECT_EQ(manual.position, manual_position);
+    EXPECT_EQ(manual.origin.monitor_device_path, physical.monitor_device_path);
+    EXPECT_EQ(external.position, external_position);
+    EXPECT_EQ(external.origin.monitor_device_path, target.monitor_device_path);
+    EXPECT_EQ(subject.statistics().restored, 0u);
+    EXPECT_EQ(subject.statistics().failed, 0u);
+    EXPECT_EQ(subject.statistics().diagnostics.restoration_skips, 1u);
+    EXPECT_EQ(subject.statistics().diagnostics.last_reason, "ownership_lost");
+  }
+}
+
 TEST_F(WindowControllerTest, ExplicitManualRecoveryRebasesRestorationToTheLatestUserPosition) {
   recover();
   confirm();
