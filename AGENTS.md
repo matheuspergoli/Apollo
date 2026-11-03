@@ -25,6 +25,16 @@
 
 ## Test and infrastructure boundaries
 
+- Treat installation, updates, data preservation, CI and module responsibilities
+  as maintained product foundations, not recurring feature-specific workarounds.
+  A previously passing check is not evidence that a newly reported failure is fixed.
+- Keep configuration, operations, policy and platform effects in their respective
+  modules. Fix established causes at the owning boundary; do not accumulate legacy
+  paths, speculative fallbacks or parallel implementations to hide failures.
+- Prefer supported, current tooling through deliberate, scoped migrations with
+  behavioral regression coverage. Newer technology alone is not a quality argument;
+  do not turn release refinement into an unrelated stack rewrite or dependency upgrade.
+
 - Test Apollo-owned behavior and observable contracts: packaging, installation,
   updates, data preservation, authentication, API/UI behavior and error handling.
   Third-party internals and vendor installers are not our maintenance scope.
