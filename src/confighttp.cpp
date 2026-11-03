@@ -1237,7 +1237,10 @@ namespace confighttp {
     }
 
     print_req(request);
-    std::string content = file_handler::read_file(config::sunshine.log_file.c_str());
+    // Preserve the whole log: Windows text-mode streams interpret SUB (0x1a)
+    // as EOF and can hide later lifecycle/diagnostic records.
+    std::ifstream input(config::sunshine.log_file, std::ios::binary);
+    std::string content {(std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>()};
     SimpleWeb::CaseInsensitiveMultimap headers;
     std::string contentType = "text/plain";
   #ifdef _WIN32

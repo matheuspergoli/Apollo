@@ -48,6 +48,17 @@ sem estilos. Uma falha de recurso continua falhando o ensaio: não se contorna u
 camada modal com clique forçado, alteração do fornecedor ou repetição automática
 de ações. O mock de transporte não qualifica TLS nem o servidor nativo.
 
+O endpoint autenticado `/api/logs` lê o arquivo em modo binário, sem interpretar
+bytes de controle como fim do arquivo. No Windows, uma leitura em modo texto pode
+parar em SUB (`0x1a`) e ocultar registros posteriores mesmo com gravação correta.
+O ensaio HTTPS isolado gera esse byte pelo logging real do host, aguarda de forma
+limitada a gravação dos marcadores e exige que uma nova leitura retorne o marcador
+completo e um registro posterior. Não altera arquivos de uma instalação existente
+nem usa um leitor paralelo para substituir o endpoint. A leitura direta da fixture
+apenas confirma que o produtor já gravou os dados antes de testar o consumidor.
+Na interface, `Atualizar log` faz uma nova leitura; `Atualizar estado` do WSM atualiza
+somente o status de janelas. O log não é apresentado como um stream em tempo real.
+
 Antes do primeiro teste de navegador, execute
 `pnpm --dir dashboard exec playwright install --with-deps chromium`.
 Na instalação local, dependências de sistema podem exigir permissões.
