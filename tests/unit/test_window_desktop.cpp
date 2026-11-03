@@ -320,4 +320,67 @@ TEST_F(WindowDesktopTest, BackgroundMaximizedFixtureDoesNotActivateOrChangeZOrde
   EXPECT_EQ(GetActiveWindow(), foreground);
   EXPECT_EQ(GetWindow(window, GW_HWNDPREV), previous);
 }
+
+TEST_F(WindowDesktopTest, BackgroundMaximizedFrameTransfersAndReturnsAcrossExistingMonitors) {
+  std::vector<HMONITOR> monitors;
+  ASSERT_TRUE(EnumDisplayMonitors(nullptr, nullptr, [](HMONITOR monitor, HDC, LPRECT, LPARAM data) -> BOOL {
+    reinterpret_cast<std::vector<HMONITOR> *>(data)->push_back(monitor);
+    return TRUE;
+  },
+                                  reinterpret_cast<LPARAM>(&monitors)));
+  const auto source_monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONULL);
+  const auto other = std::find_if(monitors.begin(), monitors.end(), [&](HMONITOR monitor) {
+    return monitor != source_monitor;
+  });
+  if (other == monitors.end()) {
+    GTEST_SKIP() << "Two existing logical monitors are required; no display is created and cross-monitor placement remains untested.";
+  }
+  MONITORINFOEXW info {};
+  info.cbSize = sizeof(info);
+  ASSERT_TRUE(GetMonitorInfoW(*other, reinterpret_cast<MONITORINFO *>(&info)));
+  const auto resolved = native::origin_for_source(info.szDevice);
+  ASSERT_TRUE(resolved.target) << resolved.error;
+  const auto target_area = desktop->area(*resolved.target);
+  ASSERT_TRUE(target_area);
+
+  ShowWindow(window, SW_SHOWMAXIMIZED);
+  const auto before = inspect();
+  ASSERT_TRUE(before.window) << before.error;
+  ASSERT_EQ(before.window->position.state, wm::show_state::maximized);
+  auto foreground = CreateWindowExW(0, L"STATIC", L"Apollo cross-monitor foreground fixture", WS_OVERLAPPEDWINDOW, destination.work.left + 30, destination.work.top + 30, 200, 150, nullptr, nullptr, GetModuleHandleW(nullptr), nullptr);
+  ASSERT_NE(foreground, nullptr);
+  auxiliary.push_back(foreground);
+  ShowWindow(foreground, SW_SHOWNORMAL);
+  ASSERT_EQ(GetActiveWindow(), foreground);
+  const auto focus = GetForegroundWindow();
+  const auto previous = GetWindow(window, GW_HWNDPREV);
+  const auto desired = wm::plan_move(before.window->position, before.window->area, *target_area);
+  ASSERT_TRUE(desired);
+  const auto submitted = desktop->submit(*before.window, *desired, *resolved.target, true);
+  if (before.window->traits.elevated) {
+    RecordProperty("placement_coverage", "elevated-token-refusal-only");
+    EXPECT_EQ(submitted.status, native::placement_status::rejected);
+    EXPECT_EQ(MonitorFromWindow(window, MONITOR_DEFAULTTONULL), source_monitor);
+  } else {
+    RecordProperty("placement_coverage", "ordinary-background-maximized-cross-monitor-roundtrip");
+    ASSERT_EQ(submitted.status, native::placement_status::submitted) << submitted.error << ' ' << submitted.error_stage;
+    const auto moved = inspect();
+    ASSERT_TRUE(moved.window) << moved.error;
+    EXPECT_EQ(moved.window->position, *desired);
+    EXPECT_EQ(MonitorFromWindow(window, MONITOR_DEFAULTTONULL), *other);
+    EXPECT_EQ(moved.window->origin.monitor_device_path, resolved.target->monitor_device_path);
+    EXPECT_EQ(GetForegroundWindow(), focus);
+    EXPECT_EQ(GetWindow(window, GW_HWNDPREV), previous);
+    const auto restored = desktop->submit(*moved.window, before.window->position, destination, true);
+    ASSERT_EQ(restored.status, native::placement_status::submitted) << restored.error << ' ' << restored.error_stage;
+    const auto after = inspect();
+    ASSERT_TRUE(after.window) << after.error;
+    EXPECT_EQ(after.window->position, before.window->position);
+    EXPECT_EQ(MonitorFromWindow(window, MONITOR_DEFAULTTONULL), source_monitor);
+  }
+  EXPECT_TRUE(IsZoomed(window));
+  EXPECT_EQ(GetForegroundWindow(), focus);
+  EXPECT_EQ(GetActiveWindow(), foreground);
+  EXPECT_EQ(GetWindow(window, GW_HWNDPREV), previous);
+}
 #endif

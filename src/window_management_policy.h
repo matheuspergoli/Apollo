@@ -132,5 +132,9 @@ namespace window_management {
   // to be applied again by the adapter after Windows has processed WM_DPICHANGED.
   std::optional<placement> plan_move(placement current, const monitor_area &source, const monitor_area &target);
 
+  // The visible maximized frame is separate from the saved normal rectangle.
+  // Preserve its per-edge offsets from the work area, scaled once for target DPI.
+  std::optional<screen_rect> plan_maximized_frame(screen_rect frame, const monitor_area &source, const monitor_area &target);
+
   bool can_restore(const settings &options, const move_record &record, std::uint64_t generation, window_identity current_identity, placement current, bool origin_available);
 }  // namespace window_management

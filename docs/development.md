@@ -296,6 +296,23 @@ ativação; não se reaproveita o comando ativador `SW_SHOWMAXIMIZED` nem se usa
 `SW_SHOWNOACTIVATE`, que pode restaurar o estado normal. Com token elevado,
 esse teste continua relatando apenas recusa, não qualificação de movimentação.
 
+O caminho maximizado transfere também o quadro visível por `SetWindowPos`, com
+`SWP_NOACTIVATE`, `SWP_NOZORDER`, `SWP_NOOWNERZORDER` e solicitação assíncrona.
+O cálculo puro usa a área útil do destino e preserva os offsets de cada borda do
+quadro em relação à área útil de origem, escalados uma vez pelo DPI. Não confunde
+esse quadro com o retângulo restaurado, nem fixa bordas em pixels ou altera o
+estado para normal/minimizado. Depois atualiza o retângulo restaurado com
+`SetWindowPlacement`/`SW_SHOWNA`. As duas solicitações não são atômicas; falha ou
+interrupção entre elas não autoriza ownership nem restauração corretiva automática.
+A confirmação posterior continua exigindo estado, retângulo restaurado e monitor.
+Os testes portáteis cobrem cálculo, área útil deslocada, DPI, ida/volta e recusa
+de geometria inválida/overflow; não qualificam a execução das chamadas Win32.
+O ensaio nativo adicional cria apenas janelas próprias e usa dois monitores
+lógicos já existentes para conferir o quadro maximizado, o retângulo restaurado,
+foco e Z-order na ida/volta. Sem esses monitores registra ausência de cobertura;
+com token elevado verifica apenas recusa. Não instala drivers nem cria displays
+para satisfazer o teste, e não substitui aceitação com aplicações reais.
+
 `WINDOWPLACEMENT.rcNormalPosition` descreve a posição restaurada, não a posição
 visível de uma janela maximizada. Conferir somente esse retângulo, inclusive em
 um teste no mesmo monitor, não qualifica transferência entre monitores. O

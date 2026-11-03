@@ -452,10 +452,16 @@ namespace window_management::win32 {
       submitted = SetWindowPos(window, nullptr, desired.normal.left, desired.normal.top, static_cast<int>(width), static_cast<int>(height), SWP_ASYNCWINDOWPOS | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER);
     } else {
       const auto workspace = to_workspace(desired.normal, *target_area);
+      RECT actual {};
       WINDOWPLACEMENT native {};
       native.length = sizeof(native);
-      if (!workspace || !GetWindowPlacement(window, &native)) {
+      if (!workspace || !GetWindowPlacement(window, &native) || !GetWindowRect(window, &actual)) {
         return {placement_status::failed, ERROR_INVALID_DATA, "normal_geometry"};
+      }
+      const auto frame = plan_maximized_frame(screen(actual), rechecked.window->area, *target_area);
+      if (!frame || std::int64_t(frame->right) - frame->left > std::numeric_limits<int>::max() ||
+          std::int64_t(frame->bottom) - frame->top > std::numeric_limits<int>::max()) {
+        return {placement_status::rejected, ERROR_INVALID_DATA, "maximized_geometry"};
       }
       native.rcNormalPosition = {workspace->left, workspace->top, workspace->right, workspace->bottom};
       // Reusing SW_SHOWMAXIMIZED can activate a background window. SW_SHOWNA
@@ -463,6 +469,17 @@ namespace window_management::win32 {
       // is not equivalent, because that command can restore normal state.
       native.showCmd = SW_SHOWNA;
       native.flags |= WPF_ASYNCWINDOWPLACEMENT;
+      if (!impl_->available() || !impl_->admitted(restoration)) {
+        return {placement_status::rejected, ERROR_ACCESS_DENIED, "admission"};
+      }
+      // Changing rcNormalPosition alone can leave a maximized frame on the old
+      // monitor until a later user restore. Move the actual frame without changing
+      // show state/focus/Z-order, then set its separate future restore rectangle.
+      // These asynchronous requests are not an atomic transaction: only the
+      // controller's later observation can establish ownership/completion.
+      if (!SetWindowPos(window, nullptr, frame->left, frame->top, static_cast<int>(std::int64_t(frame->right) - frame->left), static_cast<int>(std::int64_t(frame->bottom) - frame->top), SWP_ASYNCWINDOWPOS | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER)) {
+        return {placement_status::failed, error_or(), "set_maximized_frame"};
+      }
       if (!impl_->available() || !impl_->admitted(restoration)) {
         return {placement_status::rejected, ERROR_ACCESS_DENIED, "admission"};
       }

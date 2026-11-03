@@ -176,6 +176,39 @@ TEST(WindowManagement, PlacementRemainsBoundedAndIdempotentAcrossDpiAndWorkAreas
   }
 }
 
+TEST(WindowManagement, MaximizedFrameMovesIndependentlyOfItsNormalRestoreRectangle) {
+  const wm::screen_rect frame {-1928, -8, 8, 1048};
+  const auto moved = wm::plan_maximized_frame(frame, physical, target);
+  ASSERT_TRUE(moved);
+  EXPECT_EQ(*moved, (wm::screen_rect {-8, -8, 1928, 1048}));
+  EXPECT_EQ(wm::plan_maximized_frame(*moved, target, physical), frame);
+  EXPECT_EQ(wm::plan_maximized_frame(frame, physical, physical), frame);
+  const auto normal = wm::plan_move({{-1800, 100, -1000, 700}, wm::show_state::maximized}, physical, target);
+  ASSERT_TRUE(normal);
+  EXPECT_NE(*moved, normal->normal);
+  EXPECT_EQ(normal->state, wm::show_state::maximized);
+}
+
+TEST(WindowManagement, MaximizedFrameUsesTargetWorkAreaAndScalesOnlyFrameOffsets) {
+  const wm::monitor_area source {{-1920, 0, 0, 1080}, {-1880, 40, 0, 1080}, 96};
+  const wm::monitor_area destination {{0, -1440, 2560, 0}, {0, -1380, 2560, -40}, 144};
+  const auto frame = wm::plan_maximized_frame({-1888, 32, 8, 1088}, source, destination);
+  ASSERT_TRUE(frame);
+  EXPECT_EQ(*frame, (wm::screen_rect {-12, -1392, 2572, -28}));
+  EXPECT_EQ(wm::plan_maximized_frame(*frame, destination, source), (wm::screen_rect {-1888, 32, 8, 1088}));
+}
+
+TEST(WindowManagement, MaximizedFrameRejectsInvalidAreasOffMonitorFramesAndOverflow) {
+  EXPECT_FALSE(wm::plan_maximized_frame({0, 0, 0, 10}, physical, target));
+  EXPECT_FALSE(wm::plan_maximized_frame({100, 100, 200, 200}, physical, target));
+  auto invalid = target;
+  invalid.dpi = 0;
+  EXPECT_FALSE(wm::plan_maximized_frame({-1928, -8, 8, 1048}, physical, invalid));
+  const auto hi = std::numeric_limits<std::int32_t>::max();
+  const wm::monitor_area edge {{hi - 1920, 0, hi, 1080}, {hi - 1920, 0, hi, 1040}, 96};
+  EXPECT_FALSE(wm::plan_maximized_frame({-1928, -8, 8, 1048}, physical, edge));
+}
+
 TEST(WindowManagement, InvalidGeometryAndOverflowNeverProducePlacement) {
   auto bad = target;
   bad.dpi = 0;

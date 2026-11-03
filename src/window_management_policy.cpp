@@ -127,6 +127,19 @@ namespace window_management {
     return placement {*rect, current.state};
   }
 
+  std::optional<screen_rect> plan_maximized_frame(screen_rect frame, const monitor_area &source, const monitor_area &target) {
+    if (!valid(frame) || !valid(source) || !valid(target) ||
+        frame.left >= source.work.right || frame.right <= source.work.left || frame.top >= source.work.bottom || frame.bottom <= source.work.top) {
+      return std::nullopt;
+    }
+    return rect_from(
+      coordinate(target.work.left) + scale(coordinate(frame.left) - source.work.left, source.dpi, target.dpi),
+      coordinate(target.work.top) + scale(coordinate(frame.top) - source.work.top, source.dpi, target.dpi),
+      coordinate(target.work.right) + scale(coordinate(frame.right) - source.work.right, source.dpi, target.dpi),
+      coordinate(target.work.bottom) + scale(coordinate(frame.bottom) - source.work.bottom, source.dpi, target.dpi)
+    );
+  }
+
   bool can_restore(const settings &options, const move_record &record, std::uint64_t generation, window_identity current_identity, placement current, bool origin_available) {
     const auto &identity = record.identity;
     return options.restore_positions && generation != 0 && record.generation == generation &&
