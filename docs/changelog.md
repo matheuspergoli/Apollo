@@ -4,7 +4,7 @@ As versões desta distribuição são publicadas em
 [matheuspergoli/Apollo](https://github.com/matheuspergoli/Apollo/releases).
 O histórico de outros projetos não representa os pacotes deste fork.
 
-- [1.0.5 — candidato em validação](releases/v1.0.5.md): gerenciamento de janelas
+- [1.0.5](releases/v1.0.5.md): gerenciamento de janelas
   de sessão no Windows, com seleção explícita de aplicativo e controles no painel.
 - [1.0.4](releases/v1.0.4.md): valida tamanhos de pacotes de entrada, libera
   referências de adaptadores DXGI e corrige booleanos com caixa mista.

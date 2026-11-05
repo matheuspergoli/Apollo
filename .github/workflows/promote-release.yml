@@ -1,0 +1,126 @@
+name: Promote accepted Windows release
+run-name: Promote Apollo ${{ inputs.version }} from run ${{ inputs.run_id }}
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Accepted version (without v)
+        required: true
+        type: string
+      run_id:
+        description: Successful Apollo Windows run containing accepted binaries
+        required: true
+        type: string
+      source_commit:
+        description: Full accepted source commit
+        required: true
+        type: string
+      installer_sha256:
+        description: Accepted Apollo.exe SHA-256
+        required: true
+        type: string
+      portable_sha256:
+        description: Accepted Apollo.zip SHA-256
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: release-promotion
+  cancel-in-progress: false
+jobs:
+  draft:
+    if: github.repository == 'matheuspergoli/Apollo'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: matheuspergoli/Apollo
+      VERSION: ${{ inputs.version }}
+      RUN_ID: ${{ inputs.run_id }}
+      SOURCE_COMMIT: ${{ inputs.source_commit }}
+      INSTALLER_SHA256: ${{ inputs.installer_sha256 }}
+      PORTABLE_SHA256: ${{ inputs.portable_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Release integrity guard regressions
+        run: python -m unittest discover -s tools/release -p 'test_*.py'
+      - name: Validate source run and accepted identity
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os, re, subprocess
+          from pathlib import Path
+          for key, pattern in {
+              "VERSION": r"\d+\.\d+\.\d+",
+              "RUN_ID": r"[1-9]\d*",
+              "SOURCE_COMMIT": r"[a-f0-9]{40}",
+              "INSTALLER_SHA256": r"[a-f0-9]{64}",
+              "PORTABLE_SHA256": r"[a-f0-9]{64}",
+          }.items():
+              if not re.fullmatch(pattern, os.environ[key]):
+                  raise SystemExit(f"Invalid {key}")
+          run = json.loads(subprocess.check_output([
+              "gh", "api", f"repos/{os.environ['GH_REPO']}/actions/runs/{os.environ['RUN_ID']}"
+          ]))
+          expected = {
+              "head_sha": os.environ["SOURCE_COMMIT"],
+              "status": "completed",
+              "conclusion": "success",
+              "path": ".github/workflows/apollo-windows.yml",
+          }
+          if any(run.get(key) != value for key, value in expected.items()):
+              raise SystemExit("Source run is not the successful accepted Windows build")
+          if run["head_repository"]["full_name"] != os.environ["GH_REPO"] or run["event"] == "pull_request":
+              raise SystemExit("Foreign or pull-request builds cannot be promoted")
+          notes = Path(f"docs/releases/v{os.environ['VERSION']}.md")
+          if not notes.is_file():
+              raise SystemExit("Release notes are missing")
+          PY
+      - name: Download accepted artifact on the isolated runner only
+        run: gh run download "$RUN_ID" --name apollo-windows-release --dir accepted
+      - name: Verify original files and prepare public assets
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, os
+          from pathlib import Path
+          root = Path("accepted")
+          commit = root / "SOURCE_COMMIT.txt"
+          if commit.read_text().strip() != os.environ["SOURCE_COMMIT"]:
+              raise SystemExit("Artifact source commit mismatch")
+          expected = {"Apollo.exe": os.environ["INSTALLER_SHA256"], "Apollo.zip": os.environ["PORTABLE_SHA256"]}
+          payload = {}
+          for name, digest in expected.items():
+              files = list(root.rglob(name))
+              if len(files) != 1 or hashlib.sha256(files[0].read_bytes()).hexdigest() != digest:
+                  raise SystemExit(f"Accepted hash mismatch or ambiguous file: {name}")
+              payload[name] = files[0]
+          # The build's checksum file must agree too; do not execute its paths.
+          entries = {}
+          for line in (root / "SHA256SUMS.txt").read_text().splitlines():
+              digest, name = line.split()
+              name = Path(name.lstrip("*")).name
+              if name in entries:
+                  raise SystemExit("Duplicate build checksum")
+              entries[name] = digest
+          if entries != expected:
+              raise SystemExit("Build checksums differ from accepted hashes")
+          public = Path("public")
+          public.mkdir()
+          for name, path in payload.items():
+              path.rename(public / name)
+          commit.rename(public / commit.name)
+          (public / "SHA256SUMS.txt").write_text("".join(f"{digest}  {name}\n" for name, digest in expected.items()))
+          print("Accepted commit and both binary hashes verified; no binaries rebuilt.")
+          PY
+      - name: Create new immutable source tag and draft only
+        shell: bash
+        run: |
+          gh api "repos/$GH_REPO/git/refs" --method POST -f "ref=refs/tags/v$VERSION" -f "sha=$SOURCE_COMMIT"
+          gh release create "v$VERSION" public/Apollo.exe public/Apollo.zip public/SHA256SUMS.txt public/SOURCE_COMMIT.txt --verify-tag --draft --title "Apollo $VERSION" --notes-file "docs/releases/v$VERSION.md"

@@ -569,6 +569,18 @@ Atualizações de dependência devem ser intencionais, com lockfile e testes no 
 commit. Não mova tags publicadas nem substitua binários de uma release durante
 manutenção do repositório.
 
+O workflow manual `promote-release.yml` promove um artefato Windows já aceito,
+sem compilar ou executar seus binários. Exige run concluído com sucesso no próprio
+fork, commit completo e hashes aceitos de ZIP/instalador; confere também o commit
+e checksums contidos no artefato. A transferência ocorre no runner, não em uma
+instalação do usuário. Cria somente uma tag nova no commit dos binários e uma
+release em rascunho. A publicação exige revisão separada dos assets, notas e hashes;
+não representa nova qualificação de hardware. Os testes de distribuição exercitam
+os validadores reais do workflow com metadados e payloads genéricos, incluindo
+recusa de fonte diferente, build malsucedido, arquivos ambíguos e bytes alterados.
+Uma revisão posterior apenas de documentação pode acompanhar a promoção sem
+recompilar os arquivos aceitos ou mover a tag para esse commit posterior.
+
 Falhas da suíte `dashboard/tests/browser` preservam screenshots e traces em
 `dashboard/test-results`; o CI os publica como diagnóstico temporário, sem retries
 automáticos. Esses testes usam fixtures genéricas. Traces podem conter respostas
