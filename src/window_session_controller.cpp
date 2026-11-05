@@ -245,30 +245,45 @@ namespace window_management {
     requests_.push_back({event.identity, window->position, *desired, window->origin.monitor_device_path, target.monitor_device_path, now + confirmation_timeout, false});
   }
 
-  void session_controller::confirm(clock::time_point now) {
+  session_controller::clock::time_point session_controller::current_time() const {
+    // Include time spent in backend calls, while retaining the caller's clock
+    // origin (also used by deterministic controller tests).
+    return tick_time_ + (clock::now() - tick_started_);
+  }
+
+  void session_controller::expire_confirmation(const request &request) {
+    ++statistics_.failed;
+    ++statistics_.diagnostics.confirmation_timeouts;
+    diagnose_confirmation(request, "confirmation_timeout");
+    auto &diagnostics = statistics_.diagnostics;
+    if (request.discrepancy == "state_mismatch") {
+      ++diagnostics.timeouts_state;
+    } else if (request.discrepancy == "position_mismatch") {
+      ++diagnostics.timeouts_position;
+    } else if (request.discrepancy == "destination_mismatch") {
+      ++diagnostics.timeouts_destination;
+    } else {
+      ++diagnostics.timeouts_unobserved;
+    }
+  }
+
+  void session_controller::confirm() {
     const auto count = std::min(requests_.size(), batch_limit);
     for (std::size_t i = 0; i < count; ++i) {
       auto request = std::move(requests_.front());
       requests_.pop_front();
-      if (now >= request.deadline) {
-        ++statistics_.failed;
-        ++statistics_.diagnostics.confirmation_timeouts;
-        diagnose_confirmation(request, "confirmation_timeout");
-        auto &diagnostics = statistics_.diagnostics;
-        if (request.discrepancy == "state_mismatch") {
-          ++diagnostics.timeouts_state;
-        } else if (request.discrepancy == "position_mismatch") {
-          ++diagnostics.timeouts_position;
-        } else if (request.discrepancy == "destination_mismatch") {
-          ++diagnostics.timeouts_destination;
-        } else {
-          ++diagnostics.timeouts_unobserved;
-        }
+      const auto deadline = stopping_ ? std::min(request.deadline, stop_deadline_) : request.deadline;
+      if (current_time() >= deadline) {
+        expire_confirmation(request);
         continue;
       }
       const auto entry = registry_.find(request.identity.handle);
       ++request.checks;
       const auto current = backend_.inspect(request.identity.handle, request.identity.incarnation);
+      if (current_time() >= deadline) {
+        expire_confirmation(request);
+        continue;
+      }
       if (entry == registry_.end() || entry->second.user_override || !current.window || current.window->identity != request.identity ||
           !window_allowed(current.window->traits)) {
         ++statistics_.failed;
@@ -336,6 +351,9 @@ namespace window_management {
       return;
     }
     for (std::size_t count = 0; count < batch_limit && !restoration_.empty() && requests_.size() < session_state::event_limit; ++count) {
+      if (current_time() >= stop_deadline_) {
+        return;
+      }
       auto record = std::move(restoration_.front());
       restoration_.pop_front();
       const auto entry = registry_.find(record.identity.handle);
@@ -361,6 +379,10 @@ namespace window_management {
         }
         continue;
       }
+      if (current_time() >= stop_deadline_) {
+        restoration_.push_front(std::move(record));
+        return;
+      }
       const auto result = backend_.submit(*current.window, record.original, *origin.target, true);
       if (result.status == placement_status::submitted) {
         requests_.push_back({record.identity, record.applied, record.original, {}, record.origin_device_id, stop_deadline_, true});
@@ -373,11 +395,8 @@ namespace window_management {
     }
   }
 
-  void session_controller::tick(clock::time_point now, bool recent_remote_input) {
-    if (stopped_) {
-      return;
-    }
-    if (stopping_ && now >= stop_deadline_) {
+  bool session_controller::stop_expired() {
+    if (stopping_ && current_time() >= stop_deadline_) {
       statistics_.failed += requests_.size() + restoration_.size();
       statistics_.diagnostics.shutdown_unfinished += requests_.size() + restoration_.size();
       if (!requests_.empty() || !restoration_.empty()) {
@@ -390,9 +409,24 @@ namespace window_management {
       restoration_.clear();
       state_.stop(context_.generation);
       stopped_ = true;
+      return true;
+    }
+    return false;
+  }
+
+  void session_controller::tick(clock::time_point now, bool recent_remote_input) {
+    if (stopped_) {
       return;
     }
-    confirm(now);
+    tick_time_ = now;
+    tick_started_ = clock::now();
+    if (stop_expired()) {
+      return;
+    }
+    confirm();
+    if (stop_expired()) {
+      return;
+    }
     if (stopping_) {
       if (!restoration_started_ && requests_.empty()) {
         auto records = state_.stop(context_.generation);
@@ -405,6 +439,9 @@ namespace window_management {
       }
       if (restoration_started_) {
         restore();
+        if (stop_expired()) {
+          return;
+        }
         stopped_ = requests_.empty() && restoration_.empty();
       }
       return;

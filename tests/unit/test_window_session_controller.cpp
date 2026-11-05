@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <gtest/gtest.h>
+#include <thread>
 #include <unordered_map>
 
 namespace {
@@ -40,6 +41,7 @@ namespace {
     unsigned long inspection_error = 0;
     std::uintptr_t uninspectable = 0;
     std::string_view inspection_stage = "none";
+    std::chrono::milliseconds inspection_delay {0};
 
     wm::window_inventory enumerate() override {
       wm::window_inventory inventory;
@@ -52,6 +54,10 @@ namespace {
     }
 
     wm::window_result inspect(std::uintptr_t handle, std::uint64_t incarnation) override {
+      // A bounded slow-backend fault, not a wait for an external condition.
+      if (inspection_delay.count()) {
+        std::this_thread::sleep_for(inspection_delay);
+      }
       if (handle == uninspectable) {
         return {{}, inspection_error, inspection_stage};
       }
@@ -540,6 +546,55 @@ TEST_F(WindowControllerTest, DeadlineDoesNotCountAnUnobservedLateRestorationAsSu
   EXPECT_TRUE(controller.stopped());
   EXPECT_EQ(controller.statistics().restored, 0u);
   EXPECT_GT(controller.statistics().failed, 0u);
+}
+
+TEST_F(WindowControllerTest, RestorationInspectionThatReturnsAfterTheDeadlineCannotCountAsSuccess) {
+  recover();
+  confirm();
+  controller.begin_stop(now + 150ms, now + 350ms);
+  controller.tick(now + 200ms, false);
+  ASSERT_EQ(backend.operations.size(), 2u);
+  backend.complete(1);
+  // The tick starts with 10 ms left; the native observation returns at least
+  // 20 ms later. Checking only the tick's entry time accepts a late result.
+  backend.inspection_delay = 20ms;
+  controller.tick(now + 340ms, false);
+  EXPECT_TRUE(controller.stopped());
+  EXPECT_EQ(controller.statistics().restored, 0u);
+  EXPECT_EQ(controller.statistics().failed, 1u);
+  EXPECT_EQ(controller.statistics().diagnostics.confirmation_timeouts, 1u);
+  EXPECT_EQ(controller.statistics().diagnostics.unconfirmed_operation, "confirm_restore");
+}
+
+TEST_F(WindowControllerTest, MovementInspectionThatReturnsAfterTheDeadlineCannotAcquireOwnership) {
+  recover();
+  ASSERT_EQ(backend.operations.size(), 1u);
+  backend.complete(0);
+  backend.inspection_delay = 20ms;
+  controller.tick(now + 440ms, false);
+  EXPECT_EQ(controller.statistics().moved, 0u);
+  EXPECT_EQ(controller.statistics().failed, 1u);
+  EXPECT_EQ(controller.statistics().diagnostics.confirmation_timeouts, 1u);
+  EXPECT_EQ(controller.statistics().diagnostics.unconfirmed_operation, "confirm_move");
+  controller.begin_stop(now + 500ms, now + 1s);
+  controller.tick(now + 550ms, false);
+  EXPECT_TRUE(controller.stopped());
+  EXPECT_EQ(backend.operations.size(), 1u);
+  EXPECT_EQ(controller.statistics().restored, 0u);
+}
+
+TEST_F(WindowControllerTest, SlowInspectionCannotStartARestorationAfterTheShutdownDeadline) {
+  recover();
+  confirm();
+  controller.begin_stop(now + 150ms, now + 350ms);
+  backend.inspection_delay = 20ms;
+  controller.tick(now + 340ms, false);
+  EXPECT_TRUE(controller.stopped());
+  EXPECT_EQ(backend.operations.size(), 1u);
+  EXPECT_EQ(controller.statistics().restored, 0u);
+  EXPECT_EQ(controller.statistics().failed, 1u);
+  EXPECT_EQ(controller.statistics().diagnostics.shutdown_unfinished, 1u);
+  EXPECT_EQ(controller.statistics().diagnostics.last_reason, "shutdown_deadline");
 }
 
 TEST_F(WindowControllerTest, SuspensionBeforeDiscoveryPreventsAnySubmission) {

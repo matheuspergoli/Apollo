@@ -344,7 +344,7 @@ namespace window_management::win32 {
                 verified_capture = revision;
               }
             }
-            controller->tick(now, recent);
+            controller->tick(clock::now(), recent);
           }
           if (controller->stopped()) {
             publish(ending ? runtime_phase::stopped : runtime_phase::failed, ending ? "stopped" : "target_unavailable", controller.get());

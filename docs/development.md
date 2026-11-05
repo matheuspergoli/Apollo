@@ -153,6 +153,17 @@ de autorização e perda do destino invalidam trabalho ou ownership; recuperaç�
 manual explícita pode estabelecer uma nova origem. O encerramento tem um prazo
 único e não considera uma conclusão observada depois dele como sucesso.
 
+Os prazos incluem o tempo gasto nas chamadas do backend dentro de cada tick, não
+somente o instante de entrada no controlador. A confirmação confere novamente o
+limite após a inspeção; a restauração confere antes de começar outro item e antes
+da submissão, preservando a contagem de trabalho incompleto. O worker fornece um
+horário atualizado ao entrar no controlador. As regressões injetam uma demora
+limitada de 20 ms na inspeção com 10 ms restantes: resultados tardios não contam
+como movimento/restauração e uma restauração ainda não submetida não é iniciada.
+Essa demora é uma falha controlada do backend de teste, não polling ou medição de
+latência Win32. Os limites de 400/750/1.000 ms não são ampliados, e uma chamada
+nativa já em andamento continua sem garantia de cancelamento atômico.
+
 A regressão de recuperação manual cobre uma janela inicialmente maximizada,
 devolvida manualmente ao monitor físico e deixada normal ou maximizada novamente.
 Sem recuperação explícita, foreground não a recolhe; após recuperação, a restauração

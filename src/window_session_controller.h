@@ -110,7 +110,10 @@ namespace window_management {
     };
 
     std::optional<observed_window> inspect(std::uintptr_t handle);
-    void confirm(clock::time_point now);
+    clock::time_point current_time() const;
+    bool stop_expired();
+    void expire_confirmation(const request &request);
+    void confirm();
     void move(const pending_event &event, const target_snapshot &target, monitor_area area, clock::time_point now, bool recent_remote_input);
     void restore();
     bool in_flight(std::uintptr_t handle) const;
@@ -133,5 +136,7 @@ namespace window_management {
     bool stopped_ = true;
     bool restore_enabled_ = true;
     clock::time_point stop_deadline_ {};
+    clock::time_point tick_time_ {};
+    clock::time_point tick_started_ {};
   };
 }  // namespace window_management
