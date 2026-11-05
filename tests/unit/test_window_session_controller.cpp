@@ -278,22 +278,66 @@ TEST_F(WindowControllerTest, ShutdownPreservesManualReturnAndDoesNotClaimAnExter
 }
 
 TEST_F(WindowControllerTest, ExplicitManualRecoveryRebasesRestorationToTheLatestUserPosition) {
-  recover();
-  confirm();
-  controller.user_move_started(1);
-  auto user_position = ordinary();
-  user_position.position.normal.top = 200;
-  backend.windows.at(1) = user_position;
-  ASSERT_TRUE(controller.recover(wm::trigger::manual));
-  controller.tick(now + 150ms, false);
-  controller.tick(now + 200ms, false);
-  ASSERT_EQ(backend.operations.size(), 2u);
-  backend.complete(1);
-  controller.tick(now + 250ms, false);
-  controller.begin_stop(now + 300ms, now + 1s);
-  controller.tick(now + 350ms, false);
-  ASSERT_EQ(backend.operations.size(), 3u);
-  EXPECT_EQ(backend.operations.back().desired, user_position.position);
+  for (const auto recovered_state : {wm::show_state::normal, wm::show_state::maximized}) {
+    SCOPED_TRACE(static_cast<int>(recovered_state));
+    desktop_fixture fixture;
+    fixture.windows.at(1).position.state = wm::show_state::maximized;
+    fixture.windows.emplace(2, ordinary(2));
+    fixture.windows.at(2).position.state = wm::show_state::minimized;
+    const auto minimized_position = fixture.windows.at(2).position;
+    wm::session_controller subject {fixture};
+    ASSERT_TRUE(subject.begin(options(), context(), target));
+    ASSERT_TRUE(subject.recover(wm::trigger::initial));
+    subject.tick(now, false);
+    subject.tick(now + 50ms, false);
+    ASSERT_EQ(fixture.operations.size(), 1u);
+    EXPECT_EQ(fixture.operations.front().desired.state, wm::show_state::maximized);
+    fixture.complete(0);
+    subject.tick(now + 100ms, false);
+    ASSERT_EQ(subject.statistics().moved, 1u);
+
+    // Dragging relinquishes ownership. Recovery must use the live normal or
+    // re-maximized state, not replay the initial maximized snapshot at shutdown.
+    subject.user_move_started(1);
+    auto user_position = ordinary();
+    user_position.position = {{-1700, 200, -900, 800}, recovered_state};
+    fixture.windows.at(1) = user_position;
+    subject.event(1, wm::trigger::location_changed, false, now + 120ms);
+    subject.event(1, wm::trigger::foreground, true, now + 130ms);
+    subject.tick(now + 200ms, true);
+    ASSERT_EQ(fixture.operations.size(), 1u);
+    EXPECT_EQ(fixture.windows.at(1).position, user_position.position);
+
+    ASSERT_TRUE(subject.recover(wm::trigger::manual));
+    subject.tick(now + 250ms, false);
+    subject.tick(now + 300ms, false);
+    ASSERT_EQ(fixture.operations.size(), 2u);
+    EXPECT_EQ(fixture.operations.back().handle, 1u);
+    EXPECT_EQ(fixture.operations.back().desired.state, recovered_state);
+    EXPECT_FALSE(fixture.operations.back().restoration);
+    fixture.complete(1);
+    subject.tick(now + 350ms, false);
+    ASSERT_EQ(subject.statistics().moved, 2u);
+
+    subject.begin_stop(now + 400ms, now + 1s);
+    subject.tick(now + 450ms, false);
+    ASSERT_EQ(fixture.operations.size(), 3u);
+    EXPECT_EQ(fixture.operations.back().handle, 1u);
+    EXPECT_TRUE(fixture.operations.back().restoration);
+    EXPECT_EQ(fixture.operations.back().destination.monitor_device_path, physical.monitor_device_path);
+    EXPECT_EQ(fixture.operations.back().desired, user_position.position);
+    EXPECT_FALSE(subject.stopped());
+    EXPECT_EQ(subject.statistics().restored, 0u);
+    fixture.complete(2);
+    subject.tick(now + 500ms, false);
+    EXPECT_TRUE(subject.stopped());
+    EXPECT_EQ(subject.statistics().restored, 1u);
+    EXPECT_EQ(subject.statistics().failed, 0u);
+    EXPECT_EQ(fixture.windows.at(1).position, user_position.position);
+    EXPECT_EQ(fixture.windows.at(1).origin.monitor_device_path, physical.monitor_device_path);
+    EXPECT_EQ(fixture.windows.at(2).position, minimized_position);
+    EXPECT_EQ(fixture.windows.at(2).origin.monitor_device_path, physical.monitor_device_path);
+  }
 }
 
 TEST_F(WindowControllerTest, StaleWindowIdentityAndDestroyedWindowsNeverReceiveRestoration) {

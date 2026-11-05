@@ -153,6 +153,13 @@ de autorização e perda do destino invalidam trabalho ou ownership; recuperaç�
 manual explícita pode estabelecer uma nova origem. O encerramento tem um prazo
 único e não considera uma conclusão observada depois dele como sucesso.
 
+A regressão de recuperação manual cobre uma janela inicialmente maximizada,
+devolvida manualmente ao monitor físico e deixada normal ou maximizada novamente.
+Sem recuperação explícita, foreground não a recolhe; após recuperação, a restauração
+confirmada usa a geometria e o estado dessa nova origem, não o snapshot inicial.
+Outra janela permanece minimizada e não recebe solicitações. Esse contrato do
+controlador não simula o arraste Win32, foco, Z-order ou ativação pela taskbar.
+
 Os contadores pertencem à geração de gerenciamento, não ao histórico do host nem
 ao número de aplicativos distintos. `moved`/`restored` exigem confirmação;
 `failed` inclui confirmações e trabalho incompleto; `skipped` inclui tentativas
@@ -160,6 +167,14 @@ não submetidas e restaurações recusadas, mas não é um censo de todas as jan
 inelegíveis. Os diagnósticos de enumeração, inspeção, submissão, confirmação,
 destino e restauração são ocorrências que podem se sobrepor. Uma inspeção
 recusada não prova que uma movimentação foi submetida ou falhou.
+
+Na inspeção Win32, `window_session`/5 é uma recusa agregada de identidade de
+thread/processo, consulta/igualdade de sessão ou desktop de entrada. Não identifica
+qual dessas condições falhou. `normal_geometry`/13 é atribuído pelo Apollo quando
+não consegue converter o retângulo restaurado de workspace para tela com a área
+de origem; não é um código retornado por `GetWindowPlacement`. Pode incluir
+retângulo degenerado, overflow ou área de monitor inválida. Esses resumos não
+identificam a janela nem a causa específica e não autorizam relaxar a validação.
 
 `last_error` é o código Win32 associado a `diagnostics.last_operation` e
 `last_reason`, não um código independente a ser atribuído a todas as falhas.
