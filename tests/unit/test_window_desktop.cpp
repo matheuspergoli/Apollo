@@ -19,6 +19,46 @@ namespace {
     return GetUserObjectInformationW(object, UOI_NAME, buffer.data(), sizeof(buffer), &returned) ? buffer.data() : L"";
   }
 
+  struct inspection_change {
+    HWND target = nullptr;
+    bool triggered = false;
+    BOOL moved = FALSE;
+    inline static thread_local inspection_change *current = nullptr;
+
+    static LRESULT CALLBACK on_create(int code, WPARAM window, LPARAM data) {
+      auto *change = current;
+      if (code == HCBT_CREATEWND && change && !change->triggered) {
+        const auto *creation = reinterpret_cast<CBT_CREATEWNDW *>(data)->lpcs;
+        // The production inspector creates an invisible DPI probe after reading
+        // placement. Change only our fixture at that exact, reentrant seam.
+        if ((creation->dwExStyle & (WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE)) == (WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE)) {
+          change->triggered = true;
+          RECT rect {};
+          if (GetWindowRect(change->target, &rect)) {
+            change->moved = SetWindowPos(change->target, nullptr, rect.left + 10, rect.top + 10, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOOWNERZORDER);
+          }
+        }
+      }
+      return CallNextHookEx(nullptr, code, window, data);
+    }
+  };
+
+  struct scoped_inspection_change {
+    explicit scoped_inspection_change(inspection_change &change) {
+      inspection_change::current = &change;
+      hook = SetWindowsHookExW(WH_CBT, inspection_change::on_create, nullptr, GetCurrentThreadId());
+    }
+
+    ~scoped_inspection_change() {
+      if (hook) {
+        UnhookWindowsHookEx(hook);
+      }
+      inspection_change::current = nullptr;
+    }
+
+    HHOOK hook = nullptr;
+  };
+
   class WindowDesktopTest: public testing::Test {
   protected:
     void SetUp() override {
@@ -126,6 +166,25 @@ TEST_F(WindowDesktopTest, RejectsZeroIdentityAndDestroyedWindows) {
   ASSERT_TRUE(DestroyWindow(window));
   window = nullptr;
   EXPECT_FALSE(desktop->inspect(reinterpret_cast<std::uintptr_t>(handle), 1).window);
+}
+
+TEST_F(WindowDesktopTest, PlacementChangeDuringInspectionCannotReturnAStaleSnapshot) {
+  inspection_change change {window};
+  native::window_result result;
+  {
+    scoped_inspection_change hook {change};
+    ASSERT_NE(hook.hook, nullptr);
+    result = inspect();
+  }
+  ASSERT_TRUE(change.triggered) << "The production DPI probe must exercise the inspection race.";
+  ASSERT_TRUE(change.moved);
+  EXPECT_FALSE(result.window) << "A snapshot assembled across a placement change must be rejected.";
+  EXPECT_EQ(result.error, ERROR_RETRY);
+  EXPECT_EQ(result.error_stage, "window_snapshot");
+  // Once the fixture settles, the same production inspector must work without
+  // waiting, retrying internally or changing the window to make it eligible.
+  const auto settled = inspect();
+  ASSERT_TRUE(settled.window) << settled.error << ' ' << settled.error_stage;
 }
 
 TEST_F(WindowDesktopTest, AdmissionCancellationRefusesSubmissionBeforeInspectingOrMoving) {
