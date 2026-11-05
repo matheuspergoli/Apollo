@@ -80,6 +80,30 @@ The latest unconfirmed operation is retained separately from later inspection
 errors. Timeout categories distinguish an unobserved result from the last
 observed state, geometry or monitor mismatch; none establishes movement ownership.
 
+### Windows window-location memory
+
+Windows has its own **Remember window locations based on monitor connection**
+and **Minimize windows when a monitor is disconnected** preferences under
+**System > Display > Multiple displays**. These are separate from Apollo's
+`wsm_restore_positions`. Windows can apply its saved window layout when the
+virtual display connects or disconnects, including outside the WSM lifetime.
+See [Microsoft's multiple-monitor documentation](https://support.microsoft.com/en-us/windows/hardware/display-graphics/how-to-use-multiple-monitors-in-windows).
+
+Initial WSM discovery uses the state observed after display preparation and
+capture authorization, not a pre-connection layout. Restoration confirmation
+records the state observed before display teardown, not a guarantee that Windows
+or an application will leave that state unchanged afterward. Explicit recovery
+uses the window's current state and establishes a new restoration origin; it
+does not reinstate a maximized state changed earlier during display preparation.
+
+Apollo does not change those Windows preferences, the physical display layout or
+duplication to make window management succeed. Disabling Windows layout memory
+is not an automatic fix or a requirement for Apollo generally. Coexistence with
+that behavior remains a compatibility limit of this candidate: do not interpret
+successful movement counters as end-to-end window-state preservation. WSM does
+not reapply a saved layout after shutdown to compete with Windows or overwrite
+later user changes.
+
 ## General
 
 The personal Apollo interface is fixed to Brazilian Portuguese (pt-BR).

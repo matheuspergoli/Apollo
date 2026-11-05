@@ -37,6 +37,20 @@ Se o controle aparece no Windows mas não no jogo, confira a configuração de e
 do jogo e do Steam e possíveis controles concorrentes. Não remova dispositivos
 ou drivers compartilhados indiscriminadamente.
 
+## Janelas da sessão
+
+Uma janela já pode ter mudado de estado durante a preparação do display, antes
+da primeira movimentação do WSM. O Windows também pode aplicar posições salvas
+quando o monitor virtual sai, depois da restauração confirmada pelo gerenciador.
+Por isso, `Falhas = 0` e `Restauradas > 0` não comprovam o estado final depois de
+toda a desconexão. Uma janela encoberta por outra não comprova minimização.
+
+As preferências do Windows para lembrar posições por monitor e minimizar na
+desconexão são independentes da restauração do Apollo. Não altere duplicação,
+Registro ou drivers para contornar esse comportamento. Consulte o
+[alcance e os limites do gerenciamento](configuration.md#windows-window-location-memory)
+antes de atribuir a mudança ao WSM ou considerar uma alteração global como reparo.
+
 ## Imagem, áudio e rede
 
 Separe captura, codificação, transporte e decodificação usando os logs e as

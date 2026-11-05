@@ -295,6 +295,18 @@ do controlador exercitam esses dois contratos sem simular a preparação de disp
 Para isolar efeitos externos, compare a mesma sequência com o modo desativado
 aplicado pelo host; mudanças visíveis nessa condição não comprovam ação do WSM.
 
+A preferência do Windows para lembrar posições por conexão de monitor pertence
+ao sistema operacional, não ao estado de ownership do WSM. A documentação de
+[configuração](configuration.md#windows-window-location-memory) delimita essa
+interação: observar uma restauração antes do teardown não comprova permanência
+do estado após a remoção do virtual. Comparações com essa preferência alterada
+não substituem a aceitação na configuração habitual nem autorizam modificá-la no
+produto. O resultado visual de uma aplicação não é uma prova sobre a identidade
+ou causa de cada operação anônima no log. Os contratos do controlador protegem
+perda de evidência antes da submissão, durante confirmação e após ownership
+estabelecido, incluindo recuperação explícita; não simulam a restauração de
+layouts feita pelo Windows.
+
 `input.cpp` sinaliza atividade somente depois da validação estrutural e aceitação
 da permissão do pacote. O classificador de produção é testado com os headers
 fixados; eventos de controle de jogo e eventos desconhecidos não fornecem essa

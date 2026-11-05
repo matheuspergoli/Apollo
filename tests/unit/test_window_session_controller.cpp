@@ -249,6 +249,47 @@ TEST_F(WindowControllerTest, InspectionGapCannotRestoreOwnershipEvenIfTheWindowR
   EXPECT_EQ(controller.statistics().diagnostics.restoration_skips, 1u);
 }
 
+TEST_F(WindowControllerTest, InspectionGapRejectsInFlightConfirmationWithoutHidingItsSubmission) {
+  recover();
+  ASSERT_EQ(backend.operations.size(), 1u);
+  backend.uninspectable = 1;
+  backend.inspection_error = 1237;
+  backend.inspection_stage = "window_snapshot";
+  controller.event(1, wm::trigger::location_changed, false, now + 75ms);
+  backend.uninspectable = 0;
+  backend.complete(0);
+  controller.tick(now + 100ms, false);
+  EXPECT_EQ(backend.operations.size(), 1u);
+  EXPECT_EQ(controller.statistics().moved, 0u);
+  EXPECT_EQ(controller.statistics().failed, 1u);
+  EXPECT_EQ(controller.statistics().diagnostics.confirmation_rejections, 1u);
+  EXPECT_EQ(controller.statistics().diagnostics.unconfirmed_reason, "ownership_lost");
+  EXPECT_EQ(controller.statistics().diagnostics.confirmed_total, 0u);
+  controller.begin_stop(now + 150ms, now + 1s);
+  controller.tick(now + 200ms, false);
+  EXPECT_TRUE(controller.stopped());
+  EXPECT_EQ(backend.operations.size(), 1u);
+  EXPECT_EQ(controller.statistics().restored, 0u);
+}
+
+TEST_F(WindowControllerTest, InspectionGapDropsDiscoveredButNotYetSubmittedWork) {
+  ASSERT_TRUE(controller.recover(wm::trigger::initial));
+  controller.tick(now, false);
+  ASSERT_TRUE(backend.operations.empty());
+  backend.uninspectable = 1;
+  backend.inspection_error = 1237;
+  backend.inspection_stage = "window_snapshot";
+  controller.event(1, wm::trigger::location_changed, false, now + 25ms);
+  backend.uninspectable = 0;
+  controller.tick(now + 50ms, false);
+  EXPECT_TRUE(backend.operations.empty());
+  EXPECT_EQ(controller.statistics().moved, 0u);
+  controller.begin_stop(now + 100ms, now + 1s);
+  controller.tick(now + 150ms, false);
+  EXPECT_TRUE(controller.stopped());
+  EXPECT_TRUE(backend.operations.empty());
+}
+
 TEST_F(WindowControllerTest, ShutdownPreservesManualReturnAndDoesNotClaimAnExternallyShownWindow) {
   for (const auto final_state : {wm::show_state::normal, wm::show_state::minimized}) {
     SCOPED_TRACE(static_cast<int>(final_state));
