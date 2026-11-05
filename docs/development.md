@@ -160,6 +160,14 @@ confirmada usa a geometria e o estado dessa nova origem, não o snapshot inicial
 Outra janela permanece minimizada e não recebe solicitações. Esse contrato do
 controlador não simula o arraste Win32, foco, Z-order ou ativação pela taskbar.
 
+Uma falha de inspeção de uma janela já conhecida invalida seu ownership e remove
+trabalho automático enfileirado. Voltar a observar a posição anteriormente
+confirmada não reconstitui a evidência perdida: a janela pode ter sido alterada e
+devolvida durante o intervalo. Solicitações nativas já submetidas continuam sendo
+acompanhadas para recusar a confirmação sem inventar sucesso. Recuperação manual
+explícita pode estabelecer nova origem após essa lacuna; não se eleva privilégio,
+relaxa a inspeção ou recolhe a janela automaticamente para fazê-la passar.
+
 Os contadores pertencem à geração de gerenciamento, não ao histórico do host nem
 ao número de aplicativos distintos. `moved`/`restored` exigem confirmação;
 `failed` inclui confirmações e trabalho incompleto; `skipped` inclui tentativas

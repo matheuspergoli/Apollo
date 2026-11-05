@@ -226,6 +226,29 @@ TEST_F(WindowControllerTest, ManualChangeIsNotOverwrittenByDisconnectOrFurtherFo
   EXPECT_EQ(backend.operations.size(), 1u);
 }
 
+TEST_F(WindowControllerTest, InspectionGapCannotRestoreOwnershipEvenIfTheWindowReturnsToItsConfirmedPosition) {
+  recover();
+  confirm();
+  const auto confirmed = backend.windows.at(1).position;
+  // A location notification arrived, but its new snapshot could not be read.
+  // Returning to the old placement later cannot prove uninterrupted ownership.
+  backend.uninspectable = 1;
+  backend.inspection_error = 1237;  // ERROR_RETRY from native snapshot validation.
+  backend.inspection_stage = "window_snapshot";
+  controller.event(1, wm::trigger::location_changed, false, now + 150ms);
+  backend.uninspectable = 0;
+  controller.event(1, wm::trigger::foreground, true, now + 200ms);
+  controller.tick(now + 250ms, true);
+  controller.begin_stop(now + 300ms, now + 1s);
+  controller.tick(now + 350ms, false);
+  EXPECT_TRUE(controller.stopped());
+  EXPECT_EQ(backend.operations.size(), 1u);
+  EXPECT_EQ(backend.windows.at(1).position, confirmed);
+  EXPECT_EQ(controller.statistics().restored, 0u);
+  EXPECT_EQ(controller.statistics().diagnostics.inspection_failures, 1u);
+  EXPECT_EQ(controller.statistics().diagnostics.restoration_skips, 1u);
+}
+
 TEST_F(WindowControllerTest, ShutdownPreservesManualReturnAndDoesNotClaimAnExternallyShownWindow) {
   for (const auto final_state : {wm::show_state::normal, wm::show_state::minimized}) {
     SCOPED_TRACE(static_cast<int>(final_state));
@@ -297,9 +320,17 @@ TEST_F(WindowControllerTest, ExplicitManualRecoveryRebasesRestorationToTheLatest
     subject.tick(now + 100ms, false);
     ASSERT_EQ(subject.statistics().moved, 1u);
 
-    // Dragging relinquishes ownership. Recovery must use the live normal or
-    // re-maximized state, not replay the initial maximized snapshot at shutdown.
-    subject.user_move_started(1);
+    // An inspection gap or dragging relinquishes ownership. Explicit recovery
+    // must use the live normal or re-maximized state, not the initial snapshot.
+    if (recovered_state == wm::show_state::normal) {
+      fixture.uninspectable = 1;
+      fixture.inspection_error = 1237;
+      fixture.inspection_stage = "window_snapshot";
+      subject.event(1, wm::trigger::location_changed, false, now + 110ms);
+      fixture.uninspectable = 0;
+    } else {
+      subject.user_move_started(1);
+    }
     auto user_position = ordinary();
     user_position.position = {{-1700, 200, -900, 800}, recovered_state};
     fixture.windows.at(1) = user_position;

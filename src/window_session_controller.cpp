@@ -100,6 +100,14 @@ namespace window_management {
     const auto incarnation = known == registry_.end() ? ++incarnation_ : known->second.identity.incarnation;
     auto result = backend_.inspect(handle, incarnation);
     if (!result.window) {
+      if (known != registry_.end()) {
+        // We received an event but cannot establish what happened to this
+        // incarnation. A later match is not evidence of uninterrupted ownership.
+        // Keep in-flight submissions tracked so confirmation can reject them;
+        // relinquish also drops queued automatic work for this window.
+        known->second.user_override = true;
+        state_.relinquish(context_.generation, known->second.identity);
+      }
       ++statistics_.diagnostics.inspection_failures;
       diagnose("inspect", "inspection_failed", result.error, result.error_stage);
       return {};
