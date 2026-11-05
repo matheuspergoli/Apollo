@@ -151,6 +151,7 @@ TEST_F(WindowControllerTest, UnconfirmedSubmissionTimesOutWithoutInventingOwners
   controller.tick(now + 600ms, false);
   EXPECT_EQ(controller.statistics().moved, 0u);
   EXPECT_EQ(controller.statistics().failed, 1u);
+  EXPECT_EQ(controller.statistics().diagnostics.confirmed_total, 0u);
   controller.begin_stop(now + 600ms, now + 1s);
   controller.tick(now + 650ms, false);
   EXPECT_TRUE(controller.stopped());
@@ -333,6 +334,25 @@ TEST_F(WindowControllerTest, ExplicitManualRecoveryRebasesRestorationToTheLatest
     EXPECT_TRUE(subject.stopped());
     EXPECT_EQ(subject.statistics().restored, 1u);
     EXPECT_EQ(subject.statistics().failed, 0u);
+    const auto &diagnostics = subject.statistics().diagnostics;
+    ASSERT_EQ(diagnostics.confirmed_total, 3u);
+    const auto &initial = diagnostics.confirmed_operations[0];
+    const auto &recovered = diagnostics.confirmed_operations[1];
+    const auto &restored = diagnostics.confirmed_operations[2];
+    EXPECT_NE(initial.window, 0u);
+    EXPECT_EQ(recovered.window, initial.window);
+    EXPECT_EQ(restored.window, initial.window);
+    EXPECT_FALSE(initial.restoration);
+    EXPECT_FALSE(recovered.restoration);
+    EXPECT_TRUE(restored.restoration);
+    EXPECT_EQ(initial.before, wm::show_state::maximized);
+    EXPECT_EQ(initial.requested, wm::show_state::maximized);
+    EXPECT_EQ(initial.observed, wm::show_state::maximized);
+    for (const auto *operation : {&recovered, &restored}) {
+      EXPECT_EQ(operation->before, recovered_state);
+      EXPECT_EQ(operation->requested, recovered_state);
+      EXPECT_EQ(operation->observed, recovered_state);
+    }
     EXPECT_EQ(fixture.windows.at(1).position, user_position.position);
     EXPECT_EQ(fixture.windows.at(1).origin.monitor_device_path, physical.monitor_device_path);
     EXPECT_EQ(fixture.windows.at(2).position, minimized_position);
@@ -693,6 +713,9 @@ TEST_F(WindowControllerTest, FailedRestorationConfirmationUsesTheRestorationStag
 }
 
 TEST_F(WindowControllerTest, NewGenerationDoesNotInheritDiagnosticsOrRecoveryRecommendation) {
+  recover();
+  confirm();
+  ASSERT_EQ(controller.statistics().diagnostics.confirmed_total, 1u);
   controller.suspend();
   backend.enumeration_error = 5;
   EXPECT_FALSE(controller.recover(wm::trigger::manual));
@@ -709,7 +732,43 @@ TEST_F(WindowControllerTest, NewGenerationDoesNotInheritDiagnosticsOrRecoveryRec
   EXPECT_EQ(stats.diagnostics.last_operation, "none");
   EXPECT_EQ(stats.diagnostics.unconfirmed_operation, "none");
   EXPECT_EQ(stats.diagnostics.unconfirmed_checks, 0u);
+  EXPECT_EQ(stats.diagnostics.confirmed_total, 0u);
   EXPECT_EQ(stats.diagnostics.timeouts_unobserved, 0u);
+}
+
+TEST_F(WindowControllerTest, ConfirmationHistoryIsBoundedAndDoesNotIncludeUnobservedSubmissions) {
+  recover();
+  EXPECT_EQ(controller.statistics().diagnostics.confirmed_total, 0u);
+  confirm();
+  const auto window_number = controller.statistics().diagnostics.confirmed_operations[0].window;
+  for (std::size_t i = 1; i < 20; ++i) {
+    const auto time = now + std::chrono::milliseconds {static_cast<int>(i) * 200};
+    controller.user_move_started(1);
+    backend.windows.at(1) = ordinary();
+    backend.windows.at(1).position.state = i % 2 ? wm::show_state::maximized : wm::show_state::normal;
+    ASSERT_TRUE(controller.recover(wm::trigger::manual));
+    controller.tick(time, false);
+    controller.tick(time + 50ms, false);
+    ASSERT_EQ(backend.operations.size(), i + 1);
+    EXPECT_EQ(controller.statistics().diagnostics.confirmed_total, i);
+    backend.complete(i);
+    controller.tick(time + 100ms, false);
+  }
+  const auto &diagnostics = controller.statistics().diagnostics;
+  ASSERT_EQ(diagnostics.confirmed_total, 20u);
+  EXPECT_EQ(diagnostics.confirmed_operations.size(), 16u);
+  for (std::size_t sequence = 4; sequence < 20; ++sequence) {
+    const auto &operation = diagnostics.confirmed_operations[sequence % 16];
+    EXPECT_EQ(operation.window, window_number);
+    EXPECT_FALSE(operation.restoration);
+    EXPECT_EQ(operation.observed, sequence % 2 ? wm::show_state::maximized : wm::show_state::normal);
+  }
+  backend.uninspectable = 99;
+  backend.inspection_error = 13;
+  backend.inspection_stage = "normal_geometry";
+  controller.event(99, wm::trigger::location_changed, false, now + 5s);
+  EXPECT_EQ(diagnostics.confirmed_total, 20u);
+  EXPECT_EQ(diagnostics.confirmed_operations[19 % 16].window, window_number);
 }
 
 TEST_F(WindowControllerTest, LaterInspectionNoiseCannotEraseTheUnconfirmedMovementEvidence) {

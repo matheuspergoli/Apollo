@@ -209,6 +209,16 @@ alteração manual isolada continua protegida e não gera automaticamente esse
 aviso de interrupção. O worker registra transições/resumos por geração no log,
 sem emitir uma linha para cada evento ou consulta do painel.
 
+Os resumos de ciclo de vida incluem `confirmed_total` e as últimas 16 operações
+confirmadas, em ordem, com sequência, número anônimo de janela e estados anterior,
+solicitado e observado. O número é a incarnation local do executor, não HWND/PID;
+não inclui títulos ou caminhos. A mesma sequência pode reaparecer em resumos
+posteriores da geração. O total explicita a perda das entradas mais antigas;
+submissão sem confirmação não entra nesse histórico. Ruído de inspeção não o apaga
+e uma nova geração começa sem histórico. Isso distingue restauração confirmada em
+estado normal de maximizada, mas não observa mudanças posteriores ao encerramento
+do WSM nem comprova qual componente as provocou durante o teardown do display.
+
 `src/window_runtime_state.*` coordena associação de streams, exclusividade,
 permissões e gerações por uma interface de executor. Os testes exercitam essa
 implementação de produção com executor controlado: mensagens de uma geração

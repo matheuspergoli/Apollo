@@ -4,6 +4,7 @@
 #include "src/logging.h"
 #include "window_desktop.h"
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <mutex>
@@ -15,6 +16,18 @@ namespace window_management::win32 {
   namespace {
     using clock = session_controller::clock;
     constexpr auto shutdown_budget = std::chrono::milliseconds {750};
+
+    const char *state_name(show_state state) {
+      switch (state) {
+        case show_state::normal:
+          return "normal";
+        case show_state::maximized:
+          return "maximized";
+        case show_state::minimized:
+          return "minimized";
+      }
+      return "unknown";
+    }
 
     std::wstring wide(const std::string &text) {
       if (text.empty() || text.size() > 32767) {
@@ -137,7 +150,20 @@ namespace window_management::win32 {
                         << " unconfirmed_state=" << stats.diagnostics.unconfirmed_state
                         << " unconfirmed_checks=" << stats.diagnostics.unconfirmed_checks
                         << " unconfirmed_stage=" << stats.diagnostics.unconfirmed_stage
-                        << " unconfirmed_win32=" << stats.diagnostics.unconfirmed_error;
+                        << " unconfirmed_win32=" << stats.diagnostics.unconfirmed_error
+                        << " confirmed_total=" << stats.diagnostics.confirmed_total;
+        // Bounded confirmation evidence, emitted only with lifecycle summaries.
+        // Window numbers are executor-local incarnations, not HWNDs/process IDs.
+        const auto &diagnostics = stats.diagnostics;
+        const auto retained = std::min<std::uint64_t>(diagnostics.confirmed_total, diagnostics.confirmed_operations.size());
+        for (auto sequence = diagnostics.confirmed_total - retained; sequence < diagnostics.confirmed_total; ++sequence) {
+          const auto &operation = diagnostics.confirmed_operations[sequence % diagnostics.confirmed_operations.size()];
+          BOOST_LOG(info) << "WSM: generation=" << context.generation << " phase=" << phase_name(phase)
+                          << " confirmation=" << sequence + 1 << " window=" << operation.window
+                          << " operation=" << (operation.restoration ? "restore" : "move")
+                          << " before=" << state_name(operation.before) << " requested=" << state_name(operation.requested)
+                          << " observed=" << state_name(operation.observed);
+        }
       }
     }
 

@@ -7,9 +7,18 @@
 #include "window_backend.h"
 #include "window_session_state.h"
 
+#include <array>
 #include <deque>
 
 namespace window_management {
+  struct confirmed_operation {
+    std::uint64_t window = 0;  // Executor-local incarnation, never a native handle.
+    bool restoration = false;
+    show_state before = show_state::normal;
+    show_state requested = show_state::normal;
+    show_state observed = show_state::normal;
+  };
+
   // Counts describe observations/attempts, not distinct windows. Inspection and
   // refusal diagnostics do not imply that an OS movement was submitted.
   struct controller_diagnostics {
@@ -38,6 +47,10 @@ namespace window_management {
     std::string unconfirmed_stage = "none";
     std::uint64_t unconfirmed_checks = 0;
     unsigned long unconfirmed_error = 0;
+    // Keep the latest confirmations, not a growing event log. The total exposes
+    // eviction and supplies sequence numbers when lifecycle summaries repeat.
+    std::array<confirmed_operation, 16> confirmed_operations {};
+    std::uint64_t confirmed_total = 0;
   };
 
   struct controller_statistics {

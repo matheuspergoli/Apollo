@@ -287,7 +287,17 @@ namespace window_management {
           ++statistics_.failed;
           ++statistics_.diagnostics.confirmation_rejections;
           diagnose_confirmation(request, "ownership_not_recorded");
+          continue;
         }
+        auto &diagnostics = statistics_.diagnostics;
+        diagnostics.confirmed_operations[diagnostics.confirmed_total % diagnostics.confirmed_operations.size()] = {
+          request.identity.incarnation,
+          request.restoration,
+          request.original.state,
+          request.desired.state,
+          current.window->position.state
+        };
+        ++diagnostics.confirmed_total;
       } else {
         if (current.window->position.state != request.desired.state) {
           request.discrepancy = "state_mismatch";
