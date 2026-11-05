@@ -381,6 +381,22 @@ namespace window_management::win32 {
     if (GetWindowThreadProcessId(window, &final_pid) != thread_id || final_pid != process_id) {
       return {{}, ERROR_INVALID_WINDOW_HANDLE, "window_identity"};
     }
+    // Monitor/DPI/security queries are not an atomic window snapshot. In
+    // particular, creating a DPI probe can dispatch reentrant window work.
+    // Never pair old placement/monitor data with a newer show state, or let a
+    // confirmation treat that mixed observation as completed placement.
+    RECT final_rect {};
+    WINDOWPLACEMENT final_placement {};
+    final_placement.length = sizeof(final_placement);
+    if (!GetWindowRect(window, &final_rect) || !GetWindowPlacement(window, &final_placement)) {
+      return {{}, ERROR_INVALID_WINDOW_HANDLE, "window_geometry"};
+    }
+    if (screen(final_rect) != screen(actual) || screen(final_placement.rcNormalPosition) != screen(native.rcNormalPosition) ||
+        final_placement.showCmd != native.showCmd ||
+        static_cast<bool>(IsIconic(window)) != (state == show_state::minimized) ||
+        static_cast<bool>(IsZoomed(window)) != (state == show_state::maximized)) {
+      return {{}, ERROR_RETRY, "window_snapshot"};
+    }
     return {std::move(observed), ERROR_SUCCESS};
   }
 

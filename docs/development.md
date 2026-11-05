@@ -331,6 +331,15 @@ de registrar ownership/restauração. Aplicações podem negar, ajustar ou atras
 operação; não se promete cancelamento atômico de uma solicitação já entregue ao
 Windows nem suporte universal a aplicações não responsivas.
 
+A inspeção nativa relê o quadro visível, o retângulo restaurado e o estado ao
+final das consultas de identidade/monitor/DPI. Se mudaram durante a leitura, recusa
+o snapshot com `window_snapshot`/`ERROR_RETRY`, sem repetir internamente, esperar
+estabilização ou impor um estado à janela. A regressão Windows muda somente uma
+janela própria durante a criação da sonda DPI do inspetor de produção e verifica
+a recusa do snapshot antigo e a leitura seguinte da janela estabilizada. Isso
+protege também a observação usada para confirmar operações; não transforma as
+consultas Win32 em uma transação nem qualifica o ciclo de hotplug de um display.
+
 Os contratos de `test_window_desktop.cpp` criam somente janelas próprias. A falta
 de sessão interativa/CCD é registrada como não testada, não contornada por drivers
 ou alterações no runner. Com token elevado, os testes exercitam recusa, não
