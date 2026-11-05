@@ -146,12 +146,12 @@ namespace window_management {
     return true;
   }
 
-  bool session_state::observe(std::uint64_t generation, window_identity identity, placement current) {
+  bool session_state::observe(std::uint64_t generation, window_identity identity, placement current, bool on_target) {
     if (!active(generation)) {
       return false;
     }
     const auto found = records_.find(identity.handle);
-    if (found != records_.end() && found->second.identity == identity && found->second.applied != current) {
+    if (found != records_.end() && found->second.identity == identity && (!on_target || found->second.applied != current)) {
       found->second.user_override = true;
       pending_.erase(identity.handle);
       return true;

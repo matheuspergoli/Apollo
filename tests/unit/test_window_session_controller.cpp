@@ -610,6 +610,115 @@ TEST_F(WindowControllerTest, MatchingCoordinatesOnAnotherMonitorDoNotProveRestor
   EXPECT_EQ(backend.operations.size(), 1u);
 }
 
+TEST_F(WindowControllerTest, MonitorChangeWithoutRestoreRectangleChangeCannotReclaimOrRegainOwnership) {
+  for (const auto reason : {wm::trigger::foreground, wm::trigger::shown, wm::trigger::location_changed}) {
+    SCOPED_TRACE(static_cast<int>(reason));
+    desktop_fixture fixture;
+    fixture.windows.at(1).position.state = wm::show_state::maximized;
+    wm::session_controller subject {fixture};
+    ASSERT_TRUE(subject.begin(options(), context(), target));
+    ASSERT_TRUE(subject.recover(wm::trigger::initial));
+    subject.tick(now, false);
+    subject.tick(now + 50ms, false);
+    ASSERT_EQ(fixture.operations.size(), 1u);
+    fixture.complete(0);
+    subject.tick(now + 100ms, false);
+    ASSERT_EQ(subject.statistics().moved, 1u);
+    const auto applied = fixture.windows.at(1).position;
+
+    // A maximized frame can leave the captured monitor without changing its
+    // future normal restore rectangle. Geometry/state equality is insufficient.
+    auto &window = fixture.windows.at(1);
+    window.origin = physical;
+    window.area = {physical.bounds, physical.work, 96};
+    subject.event(1, reason, true, now + 150ms);
+    subject.tick(now + 200ms, true);
+    EXPECT_EQ(fixture.operations.size(), 1u);
+    EXPECT_EQ(window.position, applied);
+
+    // Returning to the previous target must not erase the intervening override.
+    window.origin = target;
+    window.area = {target.bounds, target.work, 96};
+    subject.event(1, wm::trigger::location_changed, false, now + 210ms);
+    subject.begin_stop(now + 250ms, now + 1s);
+    subject.tick(now + 300ms, false);
+    EXPECT_TRUE(subject.stopped());
+    EXPECT_EQ(fixture.operations.size(), 1u);
+    EXPECT_EQ(subject.statistics().restored, 0u);
+  }
+}
+
+TEST_F(WindowControllerTest, DelayedMovementRechecksMonitorOwnershipWithoutALocationNotification) {
+  backend.windows.at(1).position.state = wm::show_state::maximized;
+  recover();
+  confirm();
+  controller.event(1, wm::trigger::foreground, true, now + 150ms);
+  auto &window = backend.windows.at(1);
+  window.origin = physical;
+  window.area = {physical.bounds, physical.work, 96};
+  controller.tick(now + 200ms, true);
+  EXPECT_EQ(backend.operations.size(), 1u);
+  controller.begin_stop(now + 250ms, now + 1s);
+  controller.tick(now + 300ms, false);
+  EXPECT_TRUE(controller.stopped());
+  EXPECT_EQ(backend.operations.size(), 1u);
+  EXPECT_EQ(controller.statistics().restored, 0u);
+}
+
+TEST_F(WindowControllerTest, MonitorOverrideDuringBatchedShutdownSurvivesReturnToTheCapturedMonitor) {
+  for (std::uintptr_t handle = 2; handle <= wm::session_controller::batch_limit + 1; ++handle) {
+    backend.windows.emplace(handle, ordinary(handle));
+  }
+  for (auto &[handle, window] : backend.windows) {
+    window.position.state = wm::show_state::maximized;
+  }
+  const auto window_count = backend.windows.size();
+  ASSERT_TRUE(controller.recover(wm::trigger::initial));
+  controller.tick(now, false);
+  controller.tick(now + 50ms, false);
+  controller.tick(now + 100ms, false);
+  ASSERT_EQ(backend.operations.size(), window_count);
+  for (std::size_t i = 0; i < window_count; ++i) {
+    backend.complete(i);
+  }
+  controller.tick(now + 150ms, false);
+  controller.tick(now + 200ms, false);
+  ASSERT_EQ(controller.statistics().moved, window_count);
+  controller.begin_stop(now + 250ms, now + 1s);
+  controller.tick(now + 300ms, false);
+  ASSERT_EQ(backend.operations.size(), window_count + wm::session_controller::batch_limit);
+
+  // One restoration remains queued after state_.stop retired the live records.
+  // An intervening monitor change still invalidates it, even if it returns.
+  std::uintptr_t queued = 0;
+  for (const auto &[handle, window] : backend.windows) {
+    const auto submitted = std::any_of(backend.operations.begin(), backend.operations.end(), [handle](const auto &operation) {
+      return operation.restoration && operation.handle == handle;
+    });
+    if (!submitted) {
+      queued = handle;
+    }
+  }
+  ASSERT_NE(queued, 0u);
+  auto &window = backend.windows.at(queued);
+  window.origin = physical;
+  window.area = {physical.bounds, physical.work, 96};
+  controller.event(queued, wm::trigger::location_changed, false, now + 310ms);
+  window.origin = target;
+  window.area = {target.bounds, target.work, 96};
+  controller.event(queued, wm::trigger::location_changed, false, now + 320ms);
+  controller.tick(now + 350ms, false);
+  ASSERT_EQ(backend.operations.size(), window_count + wm::session_controller::batch_limit);
+  for (std::size_t i = window_count; i < backend.operations.size(); ++i) {
+    backend.complete(i);
+  }
+  controller.tick(now + 400ms, false);
+  EXPECT_TRUE(controller.stopped());
+  EXPECT_EQ(controller.statistics().restored, wm::session_controller::batch_limit);
+  EXPECT_EQ(controller.statistics().diagnostics.restoration_skips, 1u);
+  EXPECT_EQ(window.origin.monitor_device_path, target.monitor_device_path);
+}
+
 TEST_F(WindowControllerTest, TimeoutNeverInheritsAnUnrelatedInspectionError) {
   recover();
   backend.uninspectable = 99;

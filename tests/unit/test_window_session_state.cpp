@@ -106,8 +106,8 @@ TEST(WindowSessionState, DoesNotRestoreOrFightAUserChangeEvenIfWindowReturnsToAp
   ASSERT_TRUE(state.record_move(moved()));
   auto changed = moved().applied;
   ++changed.normal.left;
-  state.observe(1, identity(), changed);
-  state.observe(1, identity(), moved().applied);
+  state.observe(1, identity(), changed, true);
+  state.observe(1, identity(), moved().applied, true);
   EXPECT_FALSE(state.can_record(1, identity()));
   EXPECT_FALSE(state.enqueue(1, identity(), wm::trigger::manual, true, {}));
   auto records = state.stop(1);
@@ -181,7 +181,7 @@ TEST(WindowSessionState, DisabledRestorationDoesNotDisableOwnershipAndUserOverri
   ASSERT_TRUE(state.record_move(moved()));
   auto changed = moved().applied;
   changed.state = wm::show_state::minimized;
-  state.observe(1, identity(), changed);
+  state.observe(1, identity(), changed, true);
   const auto records = state.stop(1);
   ASSERT_EQ(records.size(), 1u);
   EXPECT_TRUE(records.front().user_override);

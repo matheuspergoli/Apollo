@@ -40,7 +40,8 @@ namespace window_management {
     bool can_record(std::uint64_t generation, window_identity identity) const;
     bool record_move(move_record record);
     // Only observe settled state, never an intermediate asynchronous move.
-    bool observe(std::uint64_t generation, window_identity identity, placement current);
+    // Matching restore coordinates do not imply the frame is still on target.
+    bool observe(std::uint64_t generation, window_identity identity, placement current, bool on_target);
     void destroyed(std::uint64_t generation, window_identity identity);
     std::vector<move_record> stop(std::uint64_t generation);
 

@@ -258,8 +258,9 @@ acionar o ciclo existente de remoção/recriação do virtual; ausência de qual
 reenumeração não é um contrato. Nenhum desses caminhos autoriza o WSM a mudar
 modos, duplicação ou disposição dos monitores físicos.
 
-Após movimento confirmado, início de arraste ou divergência observada de posição/estado
-invalida a propriedade daquela janela. O controlador não submete restauração
+Após um movimento confirmado, o início de arraste ou uma divergência observada de
+posição, estado ou identidade do monitor invalida o controle daquela janela.
+O controlador não submete restauração
 para ela, mesmo se outro aplicativo aparecer no destino ou receber foreground.
 Uma recusa intencional por `ownership_lost` pode incrementar restaurações não
 submetidas sem indicar falha: a escolha manual tem prioridade. O teste combinado
@@ -271,6 +272,15 @@ sessão não comprovam restauração depois de desconectar. Para atribuir a oper
 ao WSM, compare também os resumos `WSM:` da geração encerrada com a ordem dos
 eventos de teardown do display. Uma reposição feita pelo Windows após esse
 teardown não vira sucesso retroativo do gerenciador.
+
+Uma janela maximizada pode mudar de monitor sem alterar o retângulo usado quando
+voltar ao estado normal. Por isso, a observação de ownership inclui a presença no
+destino capturado, não apenas igualdade de geometria/estado. A mesma verificação
+vale ao executar trabalho atrasado e ao observar restaurações ainda enfileiradas
+durante o encerramento em lotes. Voltar depois ao destino anterior não apaga a
+mudança intermediária nem autoriza recolhimento por foreground/show. As regressões
+exercitam esses eventos, mudança sem notificação antes da submissão e mudança de
+monitor durante a fila de restauração, sem simular configuração de displays.
 
 Os chamadores de produção associam a geração ao lançamento/retomada e ao stream,
 antes de iniciar as threads de captura. Encerrar a sessão retira sua associação;

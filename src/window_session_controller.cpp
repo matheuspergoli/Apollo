@@ -140,15 +140,16 @@ namespace window_management {
     if (!window) {
       return;
     }
-    if (!in_flight(handle) && state_.observe(context_.generation, window->identity, window->position)) {
+    if (!in_flight(handle) && state_.observe(context_.generation, window->identity, window->position, window->origin.monitor_device_path == target_.monitor_device_path)) {
       user_move_started(handle);
       window->traits.user_override = true;
     }
     if (reason == trigger::location_changed) {
       if (!in_flight(handle)) {
-        const auto changed = state_.observe(context_.generation, window->identity, window->position) ||
+        const auto changed = state_.observe(context_.generation, window->identity, window->position, window->origin.monitor_device_path == target_.monitor_device_path) ||
                              std::any_of(restoration_.begin(), restoration_.end(), [&](const auto &record) {
-                               return record.identity == window->identity && record.applied != window->position;
+                               return record.identity == window->identity &&
+                                      (record.applied != window->position || window->origin.monitor_device_path != target_.monitor_device_path);
                              });
         if (changed) {
           user_move_started(handle);
@@ -215,7 +216,7 @@ namespace window_management {
     }
     auto window = inspect(handle);
     auto entry = registry_.find(handle);
-    if (window && state_.observe(context_.generation, window->identity, window->position)) {
+    if (window && state_.observe(context_.generation, window->identity, window->position, window->origin.monitor_device_path == target_.monitor_device_path)) {
       user_move_started(handle);
       window->traits.user_override = true;
     }
