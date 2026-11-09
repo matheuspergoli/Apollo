@@ -174,9 +174,7 @@ export function CoverPicker({
 				<DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-3xl">
 					<DialogHeader>
 						<DialogTitle>Capas para {name}</DialogTitle>
-						<DialogDescription>
-							Escolha uma imagem para baixar no host. O aplicativo só é atualizado ao salvar.
-						</DialogDescription>
+						<DialogDescription>Escolha uma capa para o aplicativo.</DialogDescription>
 					</DialogHeader>
 					<RequestError error={search.error || upload.error} />
 					{search.isPending && <p role="status">Consultando catálogo…</p>}

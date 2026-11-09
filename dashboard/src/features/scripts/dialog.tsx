@@ -181,8 +181,8 @@ export function ScriptsDialog({
 							{selected.target
 								? "Os aplicativos permanecem nas versões que já utilizam."
 								: onSelect
-									? "O vínculo será aplicado ao rascunho. O aplicativo só muda ao salvar."
-									: "O script só executa quando estiver vinculado a uma ação de aplicativo."}
+									? "Script selecionado para este comando."
+									: "Vincule este script a um comando de aplicativo."}
 						</p>
 					</div>
 				) : (

@@ -97,6 +97,10 @@ um marcador temporário próprio: confirma que o lançamento retorna antes do fi
 do monitor, que encerrar/remover o aplicativo não o mata e que a revisão continua
 protegida contra escrita/exclusão até a saída do processo. Os testes de navegador
 exercitam substituição, ordem, revisão, campos manuais e largura mobile.
+Scripts desanexados gerenciados registram a identidade da revisão e o código de
+saída no log do host; criar o processo não significa que o script concluiu sua
+tarefa. O ensaio HTTPS inclui uma saída não zero para proteger esse diagnóstico.
+O campo de saída do aplicativo continua disponível para stdout/stderr do PowerShell.
 
 ### Verificações do frontend
 

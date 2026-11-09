@@ -187,8 +187,7 @@ function AppEditor({
 					<CardHeader>
 						<CardTitle>Inicialização</CardTitle>
 						<CardDescription>
-							O arquivo é alterado somente ao salvar. Nenhum aplicativo é iniciado
-							automaticamente.
+							Programa, diretório de trabalho e opções de execução do aplicativo.
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
@@ -432,8 +431,7 @@ function AppEditor({
 					<DialogHeader>
 						<DialogTitle>Salvar vínculos de scripts?</DialogTitle>
 						<DialogDescription>
-							{text(draft.name)} · os scripts executarão nos eventos configurados, não ao
-							salvar.
+							{text(draft.name)} · os scripts executarão nos eventos configurados.
 						</DialogDescription>
 					</DialogHeader>
 					<RequestError error={mutation.error} />

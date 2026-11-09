@@ -538,11 +538,19 @@ namespace proc {
           // A detached monitor may outlive the application/session. Observe its
           // exit off-thread solely to retain the immutable script files; do not
           // join it to the application's process group or terminate it on close.
-          std::thread([child = std::move(child), lifetime = _app.script_lifetime]() mutable {
+          const auto &reference = _app.script_definition.at("detached").at(index).at("cmd-script");
+          std::thread([child = std::move(child), lifetime = _app.script_lifetime, script_id = reference.at("id").get<std::string>(), revision = reference.at("revision").get<std::string>()]() mutable {
             std::error_code wait_error;
             child.wait(wait_error);
             if (wait_error) {
-              BOOST_LOG(warning) << "Detached script exit observation failed: " << wait_error.message();
+              BOOST_LOG(warning) << "Managed detached script [" << script_id << "] revision [" << revision << "] exit observation failed: " << wait_error.message();
+            } else {
+              const auto code = child.exit_code();
+              if (code != 0) {
+                BOOST_LOG(warning) << "Managed detached script [" << script_id << "] revision [" << revision << "] exited with code [" << code << "]. Review the application's output file for PowerShell diagnostics.";
+              } else {
+                BOOST_LOG(info) << "Managed detached script [" << script_id << "] revision [" << revision << "] exited with code [0].";
+              }
             }
             child.detach();
           }).detach();

@@ -124,7 +124,7 @@ export function ApplicationConfigurationControls({
 					<ConfirmedAction
 						label="Exportar aplicativo do editor"
 						disabled={disabled || busy}
-						description="Exporta o rascunho deste editor, inclusive alterações ainda não salvas. O ZIP não é criptografado e pode conter comandos e caminhos privados. Não inclui UUID, estado de execução, dados do host ou campos desconhecidos. Não transfere a capa ou o executável e não salva a biblioteca."
+						description="Exporta o rascunho deste editor, inclusive alterações ainda não salvas. O ZIP não é criptografado e pode conter comandos, scripts e caminhos privados. Não inclui UUID, estado de execução, dados do host ou campos desconhecidos. Capas e executáveis não são transferidos."
 						execute={exportCurrent}
 					/>
 					<Button
@@ -179,8 +179,7 @@ export function ApplicationConfigurationControls({
 					/>
 				</div>
 				<p className="text-muted-foreground text-xs">
-					O ZIP inclui aplicativo.json, documentação e schema.json. Importe apenas o JSON.
-					Campos ausentes mantêm o rascunho; a biblioteca só muda em Salvar aplicativo.
+					Extraia o ZIP e importe aplicativo.json. Campos ausentes preservam os valores atuais.
 				</p>
 				{busy && (
 					<p role="status" className="text-xs">
@@ -199,9 +198,8 @@ export function ApplicationConfigurationControls({
 					<DialogHeader>
 						<DialogTitle>Revisar importação de aplicativo</DialogTitle>
 						<DialogDescription>
-							{filename}: {changes.length} opções diferentes. Nenhum comando será executado ou
-							arquivo gravado agora. A identidade do aplicativo editado permanece intacta; ao
-							criar, o host gera uma identidade nova somente ao salvar.
+							{filename}: {changes.length} opções diferentes. A identidade do aplicativo
+							editado será preservada.
 						</DialogDescription>
 					</DialogHeader>
 					<Alert>

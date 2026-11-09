@@ -206,7 +206,7 @@ export function SettingControl({
 	onChange: (value: unknown) => void
 	platform: string
 }) {
-	const help = `${field.key}-help`
+	const help = field.description ? `${field.key}-help` : undefined
 	if (field.key === "wsm_application_uuid")
 		return <WindowApplicationSelector field={field} value={value} onChange={onChange} />
 	let options = settingOptions(field, platform)
@@ -229,10 +229,9 @@ export function SettingControl({
 		>
 			<div className="min-w-0 flex-1 space-y-2">
 				<FieldLabel htmlFor={field.key}>{field.label}</FieldLabel>
-				<FieldDescription id={help}>
-					{field.description ||
-						"Opção do host Apollo. Alterações são gravadas somente ao salvar."}
-				</FieldDescription>
+				{field.description && (
+					<FieldDescription id={help}>{field.description}</FieldDescription>
+				)}
 				<p className="font-mono text-[11px] text-muted-foreground">{field.key}</p>
 				{invalidWindowToggle && (
 					<p role="alert" className="text-destructive text-sm">

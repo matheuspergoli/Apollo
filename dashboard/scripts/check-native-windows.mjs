@@ -369,6 +369,12 @@ try {
 					file: { name: "monitor.ps1", data: monitorBytes.toString("base64") },
 					arguments: [detachedStarted, detachedRelease, detachedFinished]
 				}
+			},
+			{
+				cmd: "",
+				"cmd-script": {
+					file: { name: "failure.ps1", data: Buffer.from("exit 23\r\n").toString("base64") }
+				}
 			}
 		]
 	}
@@ -382,6 +388,7 @@ try {
 	assert.equal(savedDetached.cmd, "")
 	assert.equal(savedDetached.detached[0], detachedApp.detached[0])
 	const monitorReference = savedDetached.detached[1]["cmd-script"]
+	const failedReference = savedDetached.detached[2]["cmd-script"]
 	const monitorPath = resolve(
 		home,
 		"config/scripts",
@@ -412,6 +419,21 @@ try {
 				{ timeout: 10000 }
 			)
 			.toBe("started")
+		await expect
+			.poll(
+				async () => {
+					const log = await http("/api/logs", { cookie })
+					assert.equal(log.status, 200)
+					return log.content.includes(
+						`Managed detached script [${failedReference.id}] revision [${failedReference.revision}] exited with code [23]`
+					)
+				},
+				{
+					timeout: 10000,
+					message: "A failed detached script must report its identity, revision and exit code"
+				}
+			)
+			.toBe(true)
 		assert.equal(
 			(await http("/api/apps/close", { method: "POST", cookie, data: {} })).status,
 			200
@@ -486,6 +508,17 @@ try {
 				method: "POST",
 				cookie,
 				data: { id: monitorReference.id }
+			})
+		).status,
+		200
+	)
+
+	assert.equal(
+		(
+			await http("/api/scripts/delete", {
+				method: "POST",
+				cookie,
+				data: { id: failedReference.id }
 			})
 		).status,
 		200

@@ -148,8 +148,8 @@ export function DeviceConfigurationControls({
 					/>
 				</div>
 				<p className="text-muted-foreground text-xs">
-					ZIP com dispositivo.json, guia e schema.json. Importe apenas o JSON; somente Salvar
-					dispositivo grava no host. Campos ausentes permanecem intactos.
+					Extraia o ZIP e importe dispositivo.json. Campos ausentes preservam os valores
+					atuais.
 				</p>
 				{busy && <p role="status">Preparando arquivo…</p>}
 				<RequestError error={pending ? null : error} />
@@ -168,7 +168,7 @@ export function DeviceConfigurationControls({
 						<DialogTitle>Revisar importação de permissões</DialogTitle>
 						<DialogDescription>
 							{changes.length} opções diferentes. A identidade, o nome e o pareamento
-							permanecem intactos. Nada é gravado ou executado agora.
+							permanecem intactos.
 						</DialogDescription>
 					</DialogHeader>
 					<Alert>
