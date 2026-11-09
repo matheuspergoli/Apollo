@@ -89,11 +89,19 @@ function http(path, { method = "GET", data, cookie } = {}) {
 				})
 			}
 		)
-		const libraryWrite =
+		// Closing an application also refreshes the runtime library. Give these
+		// bounded lifecycle operations the same budget; ordinary reads stay short.
+		const libraryOperation =
 			method === "POST" &&
-			["/api/apps", "/api/apps/reorder", "/api/apps/delete", "/api/apps/launch"].includes(path)
-		request.setTimeout(libraryWrite ? 30_000 : 3000, () =>
-			request.destroy(new Error("Native request timeout"))
+			[
+				"/api/apps",
+				"/api/apps/reorder",
+				"/api/apps/delete",
+				"/api/apps/launch",
+				"/api/apps/close"
+			].includes(path)
+		request.setTimeout(libraryOperation ? 30_000 : 3000, () =>
+			request.destroy(new Error(`Native request timeout: ${method} ${path}`))
 		)
 		request.on("error", reject)
 		request.end(body)
