@@ -310,3 +310,35 @@ test("production artifacts contain neither the prototype entry nor its executabl
 		expect(content).not.toContain("sample-script")
 	}
 })
+
+test("touch navigation keeps package review and source selection usable without a desktop pointer", async ({
+	browser
+}) => {
+	const context = await browser.newContext({
+		viewport: { width: 390, height: 844 },
+		hasTouch: true,
+		isMobile: true,
+		reducedMotion: "reduce"
+	})
+	try {
+		const page = await context.newPage()
+		const evidence = await openPreview(page)
+		await page.getByRole("button", { name: "Revisar pacote de exemplo", exact: true }).tap()
+		const dialog = page.getByRole("dialog", { name: "Revisar pacote de exemplo", exact: true })
+		await dialog.getByRole("button", { name: "Aplicar pacote ao rascunho", exact: true }).tap()
+		await expect(page.getByLabel("Nome do aplicativo", { exact: true })).toHaveValue(
+			"Aplicativo importado"
+		)
+		await page.getByRole("tab", { name: "Recursos", exact: true }).tap()
+		await expect(
+			page.getByRole("heading", { name: "Preparar exemplo.ps1", exact: true })
+		).toBeVisible()
+		await page.getByRole("tab", { name: "Editor do aplicativo", exact: true }).tap()
+		await expect(
+			page.getByRole("combobox", { name: "Origem de preparação", exact: true })
+		).toContainText("Script do Apollo")
+		expect(evidence).toEqual({ api: [], errors: [] })
+	} finally {
+		await context.close()
+	}
+})

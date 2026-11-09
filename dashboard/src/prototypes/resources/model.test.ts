@@ -18,7 +18,7 @@ import {
 const bytes = (text: string) => new TextEncoder().encode(text)
 
 describe("isolated resource UX model", () => {
-	it("retains exact BOM, CRLF and signed-script bytes while decoding only for preview", async () => {
+	it("retains exact BOM, CRLF and signature-like text bytes while decoding only for preview", async () => {
 		const input = bytes('\uFEFF# Signature block\r\nWrite-Output "exemplo"\r\n')
 		const file = await inspectScript("Exemplo ç.ps1", input)
 		expect(file.bytes).toEqual(input)

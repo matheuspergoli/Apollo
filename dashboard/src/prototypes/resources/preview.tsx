@@ -292,7 +292,9 @@ export function ResourcesPreview({ initial }: { initial: PrototypeState }) {
 					<TabsContent value="editor" className="mt-4 min-w-0 space-y-6">
 						<Card>
 							<CardHeader>
-								<CardTitle>Arquivo do aplicativo</CardTitle>
+								<CardTitle>
+									<h2>Arquivo do aplicativo</h2>
+								</CardTitle>
 								<CardDescription>
 									O fluxo de JSON atual permanece intacto. Aqui, apenas a revisão de um pacote
 									de exemplo é simulada.
@@ -306,7 +308,9 @@ export function ResourcesPreview({ initial }: { initial: PrototypeState }) {
 						</Card>
 						<Card>
 							<CardHeader>
-								<CardTitle>Aplicativo de exemplo</CardTitle>
+								<CardTitle>
+									<h2>Aplicativo de exemplo</h2>
+								</CardTitle>
 								<CardDescription>
 									Recorte do editor existente; não substitui as opções atuais de dispositivos,
 									configuração ou automação.
@@ -356,8 +360,8 @@ export function ResourcesPreview({ initial }: { initial: PrototypeState }) {
 									</FieldLabel>
 								</div>
 								<p className="text-muted-foreground text-xs">
-									Elevação nunca é concedida por importar um arquivo. O protótipo não executa
-									comandos nem altera políticas do Windows.
+									Importar não altera as opções de elevação. Revise-as antes de salvar vínculos
+									de scripts. O protótipo não executa comandos nem altera políticas do Windows.
 								</p>
 								<div className="space-y-5">
 									{slots.map((slot) => (
@@ -440,7 +444,9 @@ export function ResourcesPreview({ initial }: { initial: PrototypeState }) {
 							return (
 								<Card key={resource.id}>
 									<CardHeader>
-										<CardTitle className="break-all">{resource.name}</CardTitle>
+										<CardTitle className="break-all">
+											<h2>{resource.name}</h2>
+										</CardTitle>
 										<CardDescription>
 											PowerShell ·{" "}
 											{resource.provisional ? "Somente no rascunho" : "Biblioteca simulada"}.

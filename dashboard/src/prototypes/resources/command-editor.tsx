@@ -145,7 +145,7 @@ export function CommandEditor({
 							Ver conteúdo de {label}
 						</Button>
 						<Button variant="outline" onClick={() => onFile(slot)}>
-							Adicionar arquivo à {label}
+							Adicionar arquivo para {label}
 						</Button>
 					</div>
 					<Field>

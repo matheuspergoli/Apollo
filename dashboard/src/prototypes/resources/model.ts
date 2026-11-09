@@ -76,9 +76,16 @@ export function revisionFor(resources: Resource[], command: CommandDraft) {
 }
 
 export function validateDraft(state: PrototypeState) {
-	if (!state.draft.name.trim()) throw new Error("Preencha o nome do aplicativo.")
+	if (
+		!state.draft.name.trim() ||
+		state.draft.name.length > 256 ||
+		/[\0\r\n]/.test(state.draft.name)
+	)
+		throw new Error("Preencha o nome do aplicativo em uma linha, com até 256 caracteres.")
 	for (const slot of slots) {
 		const command = state.draft.commands[slot]
+		if (command.manual.length > 16384 || command.manual.includes("\0"))
+			throw new Error(`${slotNames[slot]}: o comando manual excede os limites da amostra.`)
 		if (command.source !== "script") continue
 		const revision = revisionFor(state.resources, command)
 		if (!revision?.available)
