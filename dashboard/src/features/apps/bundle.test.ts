@@ -59,6 +59,7 @@ it("rejects host-local references, identity transfer, unsupported versions and m
 it("roundtrips detached script bytes, arguments and ordering without widening the legacy format", async () => {
 	const reference = {
 		file: { name: "monitor.ps1", data: btoa("# Test-owned monitor\r\n") },
+		"execution-policy": "bypass" as const,
 		arguments: ["literal"]
 	}
 	const detached = ["manual before", { cmd: "", "cmd-script": reference }, "manual after"]

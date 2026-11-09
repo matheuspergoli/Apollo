@@ -49,7 +49,7 @@ import { appDraft, launcherFile, validateApp } from "@/features/apps/model"
 import { ScriptCommand } from "@/features/scripts/command"
 import { DetachedCommands } from "@/features/scripts/detached"
 import { ScriptsDialog } from "@/features/scripts/dialog"
-import { applicationScripts } from "@/features/scripts/model"
+import { applicationScripts, requiresScriptApproval } from "@/features/scripts/model"
 import { comparable } from "@/features/settings/model"
 import { ApiError } from "@/lib/api"
 import { action, applicationsOptions, bool, type Document, text } from "@/lib/documents"
@@ -100,11 +100,17 @@ function AppEditor({
 	const [reviewScripts, setReviewScripts] = useState(false)
 	const [validationError, setValidationError] = useState<Error | null>(null)
 	const mutation = useMutation({
-		mutationFn: () =>
-			action("apps", {
-				...validateApp(draft),
-				...(applicationScripts(draft).length ? { "scripts-approved": true } : {})
-			}),
+		mutationFn: (approved: boolean) => {
+			const payload = validateApp(draft)
+			delete payload["scripts-approved"]
+			return action("apps", {
+				...payload,
+				...(approved ? { "scripts-approved": true } : {})
+			})
+		},
+		onError: (error) => {
+			if (error instanceof ApiError && error.status === 409) setReviewScripts(true)
+		},
 		onSuccess: async () => {
 			await onSaved()
 			onClose()
@@ -171,8 +177,8 @@ function AppEditor({
 						try {
 							validateApp(draft)
 							setValidationError(null)
-							if (applicationScripts(draft).length) setReviewScripts(true)
-							else mutation.mutate()
+							if (requiresScriptApproval(draft, original)) setReviewScripts(true)
+							else mutation.mutate(false)
 						} catch (error) {
 							setValidationError(
 								error instanceof Error
@@ -449,6 +455,12 @@ function AppEditor({
 										Privilégios elevados:{" "}
 										{bool(key === "cmd" ? draft.elevated : owner.elevated) ? "sim" : "não"}
 									</p>
+									<p className="text-muted-foreground text-xs">
+										Política de execução:{" "}
+										{reference["execution-policy"] === "bypass"
+											? "permitir neste processo"
+											: "respeitar a configuração do Windows"}
+									</p>
 									{reference.arguments?.length ? (
 										<p className="break-all font-mono text-xs">
 											Argumentos: {JSON.stringify(reference.arguments)}
@@ -470,7 +482,7 @@ function AppEditor({
 						<Button
 							type="button"
 							disabled={mutation.isPending}
-							onClick={() => mutation.mutate()}
+							onClick={() => mutation.mutate(true)}
 						>
 							{mutation.isPending ? "Salvando…" : "Salvar aplicativo"}
 						</Button>

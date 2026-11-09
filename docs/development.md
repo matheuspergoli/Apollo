@@ -53,7 +53,12 @@ Responsabilidades:
   recusam vínculos de scripts em vez de descartá-los silenciosamente.
 
 Selecionar um arquivo no editor apenas altera o rascunho. **Salvar aplicativo**
-exige revisão explícita; `scripts-approved` é transitório e não é persistido.
+exige revisão explícita para vínculos novos ou alterados; `scripts-approved` é
+transitório e não é persistido. A comparação considera slot/ordem, revisão,
+argumentos, elevação, diretório de trabalho e política de execução, não nome ou
+metadados de apresentação. O backend compara com o aplicativo salvo, sob a mesma
+exclusão mútua da gravação. Uma divergência que exige revisão responde HTTP 409;
+o editor abre a revisão sem repetir a solicitação automaticamente.
 Adicionar um script pela biblioteca é uma gravação explícita e independente.
 Adicionar versões nunca atualiza automaticamente os vínculos existentes.
 Comandos desanexados preservam sua ordem e os privilégios globais do aplicativo.
@@ -72,7 +77,14 @@ uma linha, não vazios, sem NUL ou aspas duplas, até 1024 bytes cada. Os script
 devem ser ASCII ou UTF-8 com BOM quando contêm caracteres não ASCII, por causa da
 decodificação do Windows PowerShell 5.1. BOM e finais de linha são preservados.
 O executor usa o caminho absoluto de Windows PowerShell, com
-`-NoLogo -NoProfile -NonInteractive -File`, sem contornar a política de execução.
+`-NoLogo -NoProfile -NonInteractive -File`, respeitando a política de execução por
+padrão. **Permitir execução neste processo** é uma autorização explícita por
+vínculo, representada por `"execution-policy":"bypass"`. Só nesse caso o comando
+inclui `-ExecutionPolicy Bypass`, limitado à chamada e suas sessões descendentes;
+não modifica políticas persistentes e não prevalece sobre políticas de grupo.
+Ativar/desativar essa autorização exige revisão. Exportação/importação preserva
+a escolha e uma cópia importada exige nova revisão. ACLs e integridade continuam
+obrigatórias, independentemente dessa opção.
 
 O armazenamento cria ACLs protegidas; execução elevada recusa arquivos graváveis
 por identidades não privilegiadas. Links, junções, hard links e alterações de
@@ -89,8 +101,10 @@ essas integrações exigem validação Windows isolada nos runners guardados do 
 O ensaio HTTPS existente exercita autenticação, upload pendente, aprovação,
 revisões e exclusão pela API real, além de iniciar um script benigno pelo endpoint
 de lançamento do Apollo e conferir um arquivo de saída na pasta temporária do
-teste. Não inicia streaming, não instala drivers nem contorna políticas de
-PowerShell. O teste de dados da instalação inclui metadados e bytes de scripts
+teste. Não inicia streaming nem instala drivers. O host isolado recebe uma política
+restritiva apenas em seu ambiente de processo: o ensaio verifica a recusa sem
+opt-in, a execução com opt-in e a preservação das políticas do ambiente externo.
+O teste de dados da instalação inclui metadados e bytes de scripts
 na preservação e restauração; isso não substitui aceitação de uma atualização real.
 O mesmo ensaio inicia um monitor desanexado com saída limitada por prazo e por
 um marcador temporário próprio: confirma que o lançamento retorna antes do fim

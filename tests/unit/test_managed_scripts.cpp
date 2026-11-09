@@ -224,5 +224,73 @@ namespace {
     invalid["revision"] = std::string(64, '0');
     EXPECT_THROW(save({{"cmd-script", invalid}}, true), std::exception);
   }
+
+  TEST_F(ManagedScriptsTest, ProcessPolicyRequiresOptInAndSurvivesPendingImport) {
+    json application {{"name", "Example"}, {"cmd", ""}, {"scripts-approved", true}, {"cmd-script", {{"file", file()}, {"execution-policy", "bypass"}}}};
+    json saved;
+    managed_scripts::store(home).save_application(application, [&](const auto &value) {
+      saved = value;
+    });
+    EXPECT_EQ(saved.at("cmd-script").at("execution-policy"), "bypass");
+    auto plan = managed_scripts::store(home).resolve(saved);
+    EXPECT_NE(plan.application.at("cmd").get<std::string>().find(" -ExecutionPolicy Bypass -File "), std::string::npos);
+    auto inherit = saved;
+    inherit["cmd-script"].erase("execution-policy");
+    auto default_plan = managed_scripts::store(home).resolve(inherit);
+    EXPECT_EQ(default_plan.application.at("cmd").get<std::string>().find("ExecutionPolicy"), std::string::npos);
+    for (const auto &policy : json::array({"unrestricted", "inherit", true, nullptr})) {
+      auto invalid = saved;
+      invalid["cmd-script"]["execution-policy"] = policy;
+      EXPECT_THROW(managed_scripts::store(home).resolve(invalid), std::exception);
+    }
+  }
+
+  TEST_F(ManagedScriptsTest, UnchangedBindingsDoNotRequireApprovalButExecutionChangesDo) {
+    const auto reference = managed_scripts::store(home).put(file());
+    json previous {{"uuid", "generic-app"}, {"name", "Example"}, {"cmd", "example.exe"}, {"detached", json::array({json {{"cmd", ""}, {"cmd-script", reference}}})}};
+    auto renamed = previous;
+    renamed["name"] = "Renamed";
+    renamed["detached"][0]["cmd-script"]["name"] = "Display-only metadata";
+    bool persisted = false;
+    EXPECT_NO_THROW(managed_scripts::store(home).save_application(renamed, [&](const auto &) {
+      persisted = true;
+    },
+                                                                  previous));
+    EXPECT_TRUE(persisted);
+    for (const auto &kind : {"policy", "arguments", "elevation", "event", "working-dir", "revision"}) {
+      auto changed = previous;
+      const std::string change = kind;
+      if (change == "policy") {
+        changed["detached"][0]["cmd-script"]["execution-policy"] = "bypass";
+      }
+      if (change == "arguments") {
+        changed["detached"][0]["cmd-script"]["arguments"] = json::array({"changed"});
+      }
+      if (change == "elevation") {
+        changed["elevated"] = true;
+      }
+      if (change == "working-dir") {
+        changed["working-dir"] = "C:\\Example";
+      }
+      if (change == "revision") {
+        changed["detached"][0]["cmd-script"]["revision"] = std::string(64, '0');
+      }
+      if (change == "event") {
+        changed["prep-cmd"] = json::array({{{"do", ""}, {"do-script", reference}}});
+        changed["detached"] = json::array();
+      }
+      persisted = false;
+      EXPECT_THROW(managed_scripts::store(home).save_application(changed, [&](const auto &) {
+        persisted = true;
+      },
+                                                                 previous),
+                   std::exception);
+      EXPECT_FALSE(persisted);
+    }
+    EXPECT_TRUE(managed_scripts::requires_approval(previous, json::object()));
+    auto removed = previous;
+    removed["detached"] = json::array();
+    EXPECT_FALSE(managed_scripts::requires_approval(removed, previous));
+  }
 }  // namespace
 #endif

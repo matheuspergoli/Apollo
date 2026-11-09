@@ -111,7 +111,10 @@ namespace managed_scripts {
     }
 
     void reference_valid(const json &reference, bool pending) {
-      fields(reference, {"id", "revision", "arguments", "name", "number", "file"});
+      fields(reference, {"id", "revision", "arguments", "name", "number", "file", "execution-policy"});
+      if (reference.contains("execution-policy") && reference.at("execution-policy") != "bypass") {
+        throw std::runtime_error("Politica de execucao de script invalida.");
+      }
       if (reference.contains("file")) {
         if (!pending || reference.contains("id") || reference.contains("revision")) {
           throw std::runtime_error("Referencia de script pendente invalida.");
@@ -290,7 +293,7 @@ namespace managed_scripts {
     template<class Function>
     void visit(json &app, Function function) {
       if (app.contains("cmd-script")) {
-        function(app["cmd-script"], app["cmd"], app.value("elevated", false));
+        function(app["cmd-script"], app["cmd"], app.value("elevated", false), std::string("cmd"));
       }
       for (const auto *key : {"prep-cmd", "state-cmd"}) {
         if (!app.contains(key)) {
@@ -299,14 +302,15 @@ namespace managed_scripts {
         if (!app.at(key).is_array() || app.at(key).size() > 256) {
           throw std::runtime_error("Lista de etapas invalida.");
         }
-        for (auto &step : app[key]) {
+        for (std::size_t index = 0; index < app[key].size(); ++index) {
+          auto &step = app[key][index];
           if (!step.is_object()) {
             throw std::runtime_error("Etapa de aplicativo invalida.");
           }
           for (const auto *part : {"do", "undo"}) {
             const auto field = std::string(part) + "-script";
             if (step.contains(field)) {
-              function(step[field], step[part], step.value("elevated", false));
+              function(step[field], step[part], step.value("elevated", false), std::string(key) + "/" + std::to_string(index) + "/" + part);
             }
           }
         }
@@ -315,7 +319,8 @@ namespace managed_scripts {
         if (!app.at("detached").is_array() || app.at("detached").size() > 256) {
           throw std::runtime_error("Lista de comandos desanexados invalida.");
         }
-        for (auto &command : app["detached"]) {
+        for (std::size_t index = 0; index < app["detached"].size(); ++index) {
+          auto &command = app["detached"][index];
           if (command.is_string()) {
             continue;
           }
@@ -323,7 +328,7 @@ namespace managed_scripts {
           if (!command.contains("cmd-script")) {
             throw std::runtime_error("Comando desanexado sem referencia de script.");
           }
-          function(command["cmd-script"], command["cmd"], app.value("elevated", false));
+          function(command["cmd-script"], command["cmd"], app.value("elevated", false), "detached/" + std::to_string(index));
         }
       }
     }
@@ -333,7 +338,11 @@ namespace managed_scripts {
       const auto info = metadata(root / reference.at("id").get<std::string>());
       for (const auto &revision : info.at("revisions")) {
         if (revision.at("revision") == reference.at("revision")) {
-          return {{"id", reference.at("id")}, {"revision", reference.at("revision")}, {"name", info.at("name")}, {"number", revision.at("number")}, {"arguments", reference.value("arguments", json::array())}};
+          json normalized {{"id", reference.at("id")}, {"revision", reference.at("revision")}, {"name", info.at("name")}, {"number", revision.at("number")}, {"arguments", reference.value("arguments", json::array())}};
+          if (reference.contains("execution-policy")) {
+            normalized["execution-policy"] = reference.at("execution-policy");
+          }
+          return normalized;
         }
       }
       throw std::runtime_error("A revisao do script nao esta mais disponivel.");
@@ -458,6 +467,42 @@ namespace managed_scripts {
 
   store::store(fs::path data):
       root_(fs::absolute(data).lexically_normal() / L"scripts") {}
+
+  bool requires_approval(json application, json previous) {
+    if (!has_scripts(application)) {
+      return false;
+    }
+    const auto bindings = [](json value, bool pending) {
+      json result = json::object();
+      if (!has_scripts(value)) {
+        return result;
+      }
+      visit(value, [&](auto &reference, auto &, bool elevated, const std::string &slot) {
+        reference_valid(reference, pending);
+        json binding {{"arguments", reference.value("arguments", json::array())}, {"elevated", elevated}, {"execution-policy", reference.value("execution-policy", "inherit")}, {"working-dir", value.value("working-dir", "")}};
+        if (reference.contains("file")) {
+          binding["file"] = reference.at("file");
+        } else {
+          binding["id"] = reference.at("id");
+          binding["revision"] = reference.at("revision");
+        }
+        result[slot] = std::move(binding);
+      });
+      return result;
+    };
+    json old = json::object();
+    try {
+      old = bindings(std::move(previous), false);
+    } catch (const std::exception &) { /* Malformed previous data never authorizes a new binding. */
+    }
+    const auto current = bindings(std::move(application), true);
+    for (const auto &[slot, binding] : current.items()) {
+      if (!old.contains(slot) || old.at(slot) != binding) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   json store::list(const json &applications) {
     std::lock_guard lock(mutex());
@@ -641,19 +686,19 @@ namespace managed_scripts {
     }
   }
 
-  void store::save_application(json application, const std::function<void(const json &)> &persist) {
+  void store::save_application(json application, const std::function<void(const json &)> &persist, const json &previous) {
     std::lock_guard lock(mutex());
     if (!has_scripts(application)) {
       application.erase("scripts-approved");
       persist(application);
       return;
     }
-    if (has_scripts(application) && (!application.contains("scripts-approved") || application.at("scripts-approved") != true)) {
+    if (requires_approval(application, previous) && (!application.contains("scripts-approved") || application.at("scripts-approved") != true)) {
       throw std::runtime_error("Revise os scripts e seus privilegios antes de salvar o aplicativo.");
     }
     application.erase("scripts-approved");
     std::size_t count = 0;
-    visit(application, [&](auto &reference, auto &command, bool) {
+    visit(application, [&](auto &reference, auto &command, bool, const auto &) {
       if (++count > 32) {
         throw std::runtime_error("Use ate 32 vinculos de scripts por aplicativo.");
       }
@@ -669,12 +714,16 @@ namespace managed_scripts {
     std::vector<fs::path> created;
     bool persisting = false;
     try {
-      visit(application, [&](auto &reference, auto &, bool) {
+      visit(application, [&](auto &reference, auto &, bool, const auto &) {
         const auto args = reference.value("arguments", json::array());
+        const bool bypass = reference.contains("execution-policy");
         if (reference.contains("file")) {
           reference = put(reference.at("file"));
           created.push_back(root_ / reference.at("id").template get<std::string>());
           reference["arguments"] = args;
+          if (bypass) {
+            reference["execution-policy"] = "bypass";
+          }
         } else {
           reference = checked_revision(root_, reference);
         }
@@ -704,7 +753,7 @@ namespace managed_scripts {
       return {std::move(application), lifetime};
     }
     bool pinned = false;
-    visit(application, [&](auto &reference, auto &command, bool elevated) {
+    visit(application, [&](auto &reference, auto &command, bool elevated, const auto &) {
       reference_valid(reference, false);
       if (!command.is_null() && command != "") {
         throw std::runtime_error("Comando manual e script no mesmo campo. Execucao recusada.");
@@ -733,7 +782,11 @@ namespace managed_scripts {
       if (!fs::is_regular_file(executable)) {
         throw std::runtime_error("Windows PowerShell nao encontrado.");
       }
-      std::string line = quote(utf8(executable.wstring())) + " -NoLogo -NoProfile -NonInteractive -File " + quote(utf8((directory / (reference.at("revision").template get<std::string>() + ".ps1")).wstring()));
+      std::string line = quote(utf8(executable.wstring())) + " -NoLogo -NoProfile -NonInteractive";
+      if (reference.contains("execution-policy")) {
+        line += " -ExecutionPolicy Bypass";
+      }
+      line += " -File " + quote(utf8((directory / (reference.at("revision").template get<std::string>() + ".ps1")).wstring()));
       for (const auto &arg : reference.value("arguments", json::array())) {
         line += " " + quote(arg.template get<std::string>());
       }

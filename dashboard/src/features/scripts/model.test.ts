@@ -1,8 +1,47 @@
 import { expect, it } from "vitest"
 import { appDraft, validateApp } from "@/features/apps/model"
-import { applicationScripts, readScriptFile, validateApplicationScripts } from "./model"
+import {
+	applicationScripts,
+	readScriptFile,
+	requiresScriptApproval,
+	validateApplicationScripts
+} from "./model"
 
 const reference = { id: "a".repeat(32), revision: "b".repeat(64), name: "example.ps1" }
+
+it("reviews only new or changed execution bindings, not names or display metadata", () => {
+	const original = appDraft({
+		name: "Example",
+		detached: [{ cmd: "", "cmd-script": reference }]
+	})
+	expect(requiresScriptApproval(original, original)).toBe(false)
+	expect(requiresScriptApproval({ ...original, name: "Renamed" }, original)).toBe(false)
+	expect(
+		requiresScriptApproval(
+			{
+				...original,
+				detached: [
+					{
+						cmd: "",
+						"cmd-script": { ...reference, name: "Metadata", number: 2, arguments: [] }
+					}
+				]
+			},
+			original
+		)
+	).toBe(false)
+	for (const patch of [
+		{ elevated: true },
+		{ "working-dir": "C:\\Example" },
+		{ detached: [{ cmd: "", "cmd-script": { ...reference, "execution-policy": "bypass" } }] },
+		{ detached: [{ cmd: "", "cmd-script": { ...reference, arguments: ["changed"] } }] },
+		{ detached: [{ cmd: "", "cmd-script": { ...reference, revision: "c".repeat(64) } }] },
+		{ detached: ["manual", ...(original.detached as unknown[])] }
+	])
+		expect(requiresScriptApproval({ ...original, ...patch }, original)).toBe(true)
+	expect(requiresScriptApproval({ ...original, detached: [] }, original)).toBe(false)
+	expect(requiresScriptApproval(original, {})).toBe(true)
+})
 
 it("keeps managed bindings in each supported command slot and preserves unknown app data", () => {
 	const app = appDraft({

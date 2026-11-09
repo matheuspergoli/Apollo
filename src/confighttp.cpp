@@ -679,11 +679,26 @@ namespace confighttp {
       // Migrate/merge the new app into the file tree.
       BOOST_LOG(debug) << "SaveApp: merging application entry"sv;
 #ifdef _WIN32
+      nlohmann::json previous = nlohmann::json::object();
+      const auto app_uuid = inputTree.value("uuid", "");
+      if (!app_uuid.empty() && fileTree.contains("apps") && fileTree.at("apps").is_array()) {
+        for (const auto &app : fileTree.at("apps")) {
+          if (app.is_object() && app.value("uuid", "") == app_uuid) {
+            previous = app;
+            break;
+          }
+        }
+      }
+      if (inputTree.value("scripts-approved", false) != true && managed_scripts::requires_approval(inputTree, previous)) {
+        response->write(SimpleWeb::StatusCode::client_error_conflict, nlohmann::json {{"status", false}, {"reason", "scripts_review_required"}}.dump(), {{"Content-Type", "application/json"}});
+        return;
+      }
       managed_scripts::store(platf::appdata()).save_application(std::move(inputTree), [&](const nlohmann::json &normalized) {
         auto candidate = normalized;
         proc::migrate_apps(&fileTree, &candidate);
         managed_scripts::atomic_write(config::stream.file_apps, fileTree.dump(4));
-      });
+      },
+                                                                previous);
 #else
       bool has_scripts = inputTree.contains("cmd-script");
       if (inputTree.contains("detached") && inputTree.at("detached").is_array()) {

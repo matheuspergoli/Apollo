@@ -42,7 +42,9 @@ export async function request(
 						: reason === "session_expired"
 							? "A sessão expirou. Entre novamente."
 							: "Acesso não autorizado. Entre novamente para continuar."
-					: `O host recusou a solicitação (${response.status}).`,
+					: path === "apps" && response.status === 409
+						? "Os vínculos de scripts mudaram no host. Revise antes de salvar."
+						: `O host recusou a solicitação (${response.status}).`,
 				reason
 			)
 		}

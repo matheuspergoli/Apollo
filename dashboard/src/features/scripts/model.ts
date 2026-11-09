@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query"
 import { z } from "zod"
 import { request } from "@/lib/api"
-import { action, type Document } from "@/lib/documents"
+import { action, bool, type Document, text } from "@/lib/documents"
 
 export const scriptLimit = 128 * 1024
 const argumentsSchema = z
@@ -30,6 +30,7 @@ export const scriptFileSchema = z.strictObject({
 export const scriptReferenceSchema = z.union([
 	z.strictObject({
 		file: scriptFileSchema,
+		"execution-policy": z.literal("bypass").optional(),
 		arguments: z.array(z.string()).max(16).optional()
 	}),
 	z.strictObject({
@@ -37,6 +38,7 @@ export const scriptReferenceSchema = z.union([
 		revision: z.string().regex(/^[a-f0-9]{64}$/),
 		name: z.string().max(180).optional(),
 		number: z.number().int().min(1).max(16).optional(),
+		"execution-policy": z.literal("bypass").optional(),
 		arguments: z.array(z.string()).max(16).optional()
 	})
 ])
@@ -110,8 +112,8 @@ export async function loadScript(reference: ScriptReference): Promise<ScriptFile
 }
 
 export function scriptSlots(app: Document) {
-	const result: { owner: Document; key: string; label: string }[] = [
-		{ owner: app, key: "cmd", label: "Inicialização" }
+	const result: { owner: Document; key: string; label: string; slot: string }[] = [
+		{ owner: app, key: "cmd", label: "Inicialização", slot: "cmd" }
 	]
 	for (const [key, label] of [
 		["prep-cmd", "Preparação"],
@@ -124,6 +126,7 @@ export function scriptSlots(app: Document) {
 						result.push({
 							owner: row as Document,
 							key: part,
+							slot: `${key}/${index}/${part}`,
 							label: `${label}, etapa ${index + 1}: ${part === "do" ? "executar" : "desfazer"}`
 						})
 			})
@@ -134,6 +137,7 @@ export function scriptSlots(app: Document) {
 				result.push({
 					owner: row as Document,
 					key: "cmd",
+					slot: `detached/${index}`,
 					label: `Desanexado, comando ${index + 1}`
 				})
 		})
@@ -147,6 +151,32 @@ export function applicationScripts(app: Document) {
 			...slot,
 			reference: scriptReferenceSchema.parse(slot.owner[`${slot.key}-script`])
 		}))
+}
+
+export function requiresScriptApproval(application: Document, previous: Document) {
+	if (applicationScripts(application).some(({ reference }) => "file" in reference)) return true
+	const bindings = (app: Document) =>
+		new Map(
+			applicationScripts(app).map(({ slot, owner, key, reference }) => [
+				slot,
+				JSON.stringify({
+					...("file" in reference
+						? { file: reference.file }
+						: { id: reference.id, revision: reference.revision }),
+					arguments: reference.arguments || [],
+					"execution-policy": reference["execution-policy"] || "inherit",
+					elevated: bool(key === "cmd" ? app.elevated : owner.elevated),
+					"working-dir": text(app["working-dir"])
+				})
+			])
+		)
+	let old = new Map<string, string>()
+	try {
+		old = bindings(previous)
+	} catch {
+		/* An invalid previous binding cannot approve a new one. */
+	}
+	return [...bindings(application)].some(([slot, binding]) => old.get(slot) !== binding)
 }
 
 export function validateApplicationScripts(app: Document) {

@@ -1,6 +1,101 @@
 import { expect, test } from "@playwright/test"
 import { mockHost } from "../fixtures/mock-api"
 
+const savedReference = {
+	id: "a".repeat(32),
+	revision: "b".repeat(64),
+	name: "monitor.ps1",
+	number: 1,
+	arguments: []
+}
+
+test("unchanged script bindings save without a repeated review", async ({ page }) => {
+	const host = await mockHost(page)
+	host.scriptsSupported = true
+	host.apps[0].detached = [{ cmd: "", "cmd-script": savedReference }]
+	await page.goto("/apps")
+	await page.getByRole("button", { name: "Editar", exact: true }).click()
+	await page.getByLabel("Nome", { exact: true }).fill("Renamed game")
+	await page.getByRole("button", { name: "Salvar aplicativo", exact: true }).click()
+	await expect(page.getByRole("heading", { name: "Aplicativos", exact: true })).toBeVisible()
+	const writes = host.calls.filter((call) => call.method === "POST" && call.path === "apps")
+	expect(writes).toHaveLength(1)
+	expect(writes[0].body).not.toHaveProperty("scripts-approved")
+	expect(writes[0].body.detached).toEqual([{ cmd: "", "cmd-script": savedReference }])
+})
+
+test("process-only policy opt-in is explicit, reviewed and retained without repeated approval", async ({
+	page
+}) => {
+	const host = await mockHost(page)
+	host.scriptsSupported = true
+	host.apps[0].detached = [{ cmd: "", "cmd-script": savedReference }]
+	await page.goto("/apps")
+	await page.getByRole("button", { name: "Editar", exact: true }).click()
+	const policy = page.getByRole("switch", {
+		name: "Permitir execução neste processo",
+		exact: true
+	})
+	await expect(policy).not.toBeChecked()
+	await policy.click()
+	await page.getByRole("button", { name: "Salvar aplicativo", exact: true }).click()
+	const review = page.getByRole("dialog", { name: "Salvar vínculos de scripts?", exact: true })
+	await expect(
+		review.getByText("Política de execução: permitir neste processo", { exact: true })
+	).toBeVisible()
+	expect(host.calls.some((call) => call.method === "POST")).toBe(false)
+	await review.getByRole("button", { name: "Salvar aplicativo", exact: true }).click()
+	await expect(page.getByRole("heading", { name: "Aplicativos", exact: true })).toBeVisible()
+	expect(
+		host.calls.filter((call) => call.path === "apps" && call.method === "POST")[0].body[
+			"scripts-approved"
+		]
+	).toBe(true)
+	await page.getByRole("button", { name: "Editar", exact: true }).click()
+	await expect(
+		page.getByRole("switch", { name: "Permitir execução neste processo", exact: true })
+	).toBeChecked()
+	await page.getByRole("button", { name: "Salvar aplicativo", exact: true }).click()
+	await expect(page.getByRole("heading", { name: "Aplicativos", exact: true })).toBeVisible()
+	const writes = host.calls.filter((call) => call.path === "apps" && call.method === "POST")
+	expect(writes).toHaveLength(2)
+	expect(writes[1].body).not.toHaveProperty("scripts-approved")
+	expect((writes[1].body.detached as Record<string, unknown>[])[0]["cmd-script"]).toEqual({
+		...savedReference,
+		"execution-policy": "bypass"
+	})
+})
+
+test("a host-side binding conflict opens review without automatically repeating the write", async ({
+	page
+}) => {
+	const host = await mockHost(page)
+	host.scriptsSupported = true
+	host.apps[0].detached = [{ cmd: "", "cmd-script": savedReference }]
+	let writes = 0
+	await page.route("**/api/apps", async (route) => {
+		if (route.request().method() === "POST" && ++writes === 1)
+			return route.fulfill({
+				status: 409,
+				json: { status: false, reason: "scripts_review_required" }
+			})
+		return route.fallback()
+	})
+	await page.goto("/apps")
+	await page.getByRole("button", { name: "Editar", exact: true }).click()
+	await page.getByRole("button", { name: "Salvar aplicativo", exact: true }).click()
+	const review = page.getByRole("dialog", { name: "Salvar vínculos de scripts?", exact: true })
+	await expect(
+		review.getByText("Os vínculos de scripts mudaram no host. Revise antes de salvar.", {
+			exact: true
+		})
+	).toBeVisible()
+	expect(writes).toBe(1)
+	await review.getByRole("button", { name: "Salvar aplicativo", exact: true }).click()
+	await expect(page.getByRole("heading", { name: "Aplicativos", exact: true })).toBeVisible()
+	expect(writes).toBe(2)
+})
+
 test("replacing a detached command preserves the launcher, other commands and ordering", async ({
 	page
 }) => {

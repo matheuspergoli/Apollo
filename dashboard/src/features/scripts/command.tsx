@@ -1,6 +1,8 @@
 import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { ScriptsDialog } from "./dialog"
 import { type ScriptReference, scriptName, scriptReferenceSchema } from "./model"
@@ -89,6 +91,26 @@ export function ScriptCommand({
 					)}
 					{script && (
 						<div className="space-y-2">
+							<div className="flex items-center gap-2">
+								<Switch
+									id={`${id}-execution-policy`}
+									checked={script["execution-policy"] === "bypass"}
+									disabled={disabled}
+									onCheckedChange={(checked) => {
+										const next = { ...script }
+										if (checked) next["execution-policy"] = "bypass"
+										else delete next["execution-policy"]
+										onChange("", next)
+									}}
+								/>
+								<Label htmlFor={`${id}-execution-policy`}>
+									Permitir execução neste processo
+								</Label>
+							</div>
+							<p className="text-muted-foreground text-xs">
+								Ignora a política de execução apenas nesta chamada do PowerShell. Políticas de
+								grupo continuam valendo.
+							</p>
 							{(script.arguments || []).map((argument, index) => (
 								<div key={argumentIds[index]} className="flex gap-2">
 									<Input

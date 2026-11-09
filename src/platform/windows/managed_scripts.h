@@ -19,6 +19,7 @@ namespace managed_scripts {
   void validate_file(const std::string &name, const std::string &bytes);
   void atomic_write(const std::filesystem::path &path, const std::string &bytes);
   bool has_scripts(const nlohmann::json &application);
+  bool requires_approval(nlohmann::json application, nlohmann::json previous);
 
   struct execution {
     nlohmann::json application;
@@ -36,7 +37,7 @@ namespace managed_scripts {
     void remove(const std::string &id, const nlohmann::json &applications);
     // All input is validated before importing pending files. Copies are retained
     // if application persistence is uncertain, never deleted behind a live ref.
-    void save_application(nlohmann::json application, const std::function<void(const nlohmann::json &)> &persist);
+    void save_application(nlohmann::json application, const std::function<void(const nlohmann::json &)> &persist, const nlohmann::json &previous = nlohmann::json::object());
     execution resolve(nlohmann::json application);
 
   private:

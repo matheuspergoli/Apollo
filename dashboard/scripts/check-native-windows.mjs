@@ -38,8 +38,18 @@ await writeFile(
 )
 const base = "https://127.0.0.1:50990"
 const log = createWriteStream(resolve(process.cwd(), "native-test.log"))
+const policyQuery = [
+	"-NoProfile",
+	"-NonInteractive",
+	"-Command",
+	"Get-ExecutionPolicy -List | Select-Object Scope,ExecutionPolicy | ConvertTo-Json -Compress"
+]
+const policiesBefore = execFileSync("powershell.exe", policyQuery, { encoding: "utf8" }).trim()
 const child = spawn(resolve(home, "sunshine.exe"), [config], {
 	cwd: home,
+	// Restrict only this isolated host's process environment. Managed scripts
+	// must require explicit opt-in; never change the runner's persistent policy.
+	env: { ...process.env, PSExecutionPolicyPreference: "Restricted" },
 	windowsHide: true,
 	stdio: ["ignore", "pipe", "pipe"]
 })
@@ -226,7 +236,11 @@ try {
 		uuid: "f8a87b43-6d25-4a8b-87e1-8e3ca052d327",
 		name: "Managed script contract",
 		cmd: "",
-		"cmd-script": { file: pendingScript, arguments: [scriptResult, literalArgument] },
+		"cmd-script": {
+			file: pendingScript,
+			arguments: [scriptResult, literalArgument],
+			"execution-policy": "bypass"
+		},
 		"virtual-display": false,
 		"use-app-identity": false,
 		"exclude-global-prep-cmd": true,
@@ -235,7 +249,7 @@ try {
 	const appBytesBefore = await readFile(resolve(home, "config/apps.json"))
 	assert.equal(
 		(await http("/api/apps", { method: "POST", cookie, data: scriptApp })).status,
-		400
+		409
 	)
 	assert.deepEqual(await readFile(resolve(home, "config/apps.json")), appBytesBefore)
 	assert.equal(
@@ -258,6 +272,26 @@ try {
 	assert(savedScriptApp)
 	assert(!Object.hasOwn(savedScriptApp, "scripts-approved"))
 	const scriptReference = savedScriptApp["cmd-script"]
+	assert.equal(scriptReference["execution-policy"], "bypass")
+	// Harmless edits retain approved bindings without a fresh approval token.
+	assert.equal(
+		(
+			await http("/api/apps", {
+				method: "POST",
+				cookie,
+				data: { ...savedScriptApp, name: "Renamed script contract" }
+			})
+		).status,
+		200
+	)
+	const savedBeforePolicyChange = await readFile(resolve(home, "config/apps.json"))
+	const unapprovedPolicyChange = structuredClone(savedScriptApp)
+	delete unapprovedPolicyChange["cmd-script"]["execution-policy"]
+	assert.equal(
+		(await http("/api/apps", { method: "POST", cookie, data: unapprovedPolicyChange })).status,
+		409
+	)
+	assert.deepEqual(await readFile(resolve(home, "config/apps.json")), savedBeforePolicyChange)
 	assert(!Object.hasOwn(scriptReference, "file"))
 	const scriptRead = await http("/api/scripts/read", {
 		method: "POST",
@@ -349,6 +383,7 @@ try {
 	const detachedStarted = resolve(work, "detached-started.txt")
 	const detachedRelease = resolve(work, "detached-release.txt")
 	const detachedFinished = resolve(work, "detached-finished.txt")
+	const unapprovedResult = resolve(work, "unapproved-script-result.txt")
 	const monitorBytes = Buffer.from(
 		"param([string]$Started, [string]$Release, [string]$Finished)\r\n[IO.File]::WriteAllText($Started, 'started')\r\n$deadline = [DateTime]::UtcNow.AddSeconds(120)\r\nwhile (-not (Test-Path -LiteralPath $Release) -and [DateTime]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 200 }\r\nif (-not (Test-Path -LiteralPath $Release)) { exit 2 }\r\n[IO.File]::WriteAllText($Finished, 'finished')\r\n"
 	)
@@ -366,6 +401,7 @@ try {
 			{
 				cmd: "",
 				"cmd-script": {
+					"execution-policy": "bypass",
 					file: { name: "monitor.ps1", data: monitorBytes.toString("base64") },
 					arguments: [detachedStarted, detachedRelease, detachedFinished]
 				}
@@ -373,7 +409,20 @@ try {
 			{
 				cmd: "",
 				"cmd-script": {
+					"execution-policy": "bypass",
 					file: { name: "failure.ps1", data: Buffer.from("exit 23\r\n").toString("base64") }
+				}
+			},
+			{
+				cmd: "",
+				"cmd-script": {
+					file: {
+						name: "no-opt-in.ps1",
+						data: Buffer.from(
+							"param([string]$Result)\r\n[IO.File]::WriteAllText($Result, 'must not execute')\r\n"
+						).toString("base64")
+					},
+					arguments: [unapprovedResult]
 				}
 			}
 		]
@@ -389,6 +438,7 @@ try {
 	assert.equal(savedDetached.detached[0], detachedApp.detached[0])
 	const monitorReference = savedDetached.detached[1]["cmd-script"]
 	const failedReference = savedDetached.detached[2]["cmd-script"]
+	const unapprovedReference = savedDetached.detached[3]["cmd-script"]
 	const monitorPath = resolve(
 		home,
 		"config/scripts",
@@ -434,6 +484,23 @@ try {
 				}
 			)
 			.toBe(true)
+		await expect
+			.poll(
+				async () => {
+					const log = await http("/api/logs", { cookie })
+					assert.equal(log.status, 200)
+					return log.content.includes(
+						`Managed detached script [${unapprovedReference.id}] revision [${unapprovedReference.revision}] exited with code [1]`
+					)
+				},
+				{
+					timeout: 10000,
+					message:
+						"Without opt-in a managed script must respect the restricted host process policy"
+				}
+			)
+			.toBe(true)
+		await assert.rejects(readFile(unapprovedResult), (failure) => failure.code === "ENOENT")
 		assert.equal(
 			(await http("/api/apps/close", { method: "POST", cookie, data: {} })).status,
 			200
@@ -522,6 +589,22 @@ try {
 			})
 		).status,
 		200
+	)
+
+	assert.equal(
+		(
+			await http("/api/scripts/delete", {
+				method: "POST",
+				cookie,
+				data: { id: unapprovedReference.id }
+			})
+		).status,
+		200
+	)
+	assert.equal(
+		execFileSync("powershell.exe", policyQuery, { encoding: "utf8" }).trim(),
+		policiesBefore,
+		"Managed script opt-in must not change the persistent execution policy"
 	)
 
 	// Exercise the actual diagnostic log reader, not a parallel file-read mock.

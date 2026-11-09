@@ -17,6 +17,7 @@ import { applicationOptionsSchema } from "./schema"
 export const applicationBundleLimit = 2 * 1024 * 1024
 const pendingScript = z.strictObject({
 	file: scriptFileSchema,
+	"execution-policy": z.literal("bypass").optional(),
 	arguments: z.array(z.string()).max(16).optional()
 })
 const step = z.strictObject({
@@ -69,6 +70,9 @@ export async function exportedApplicationBundle(draft: Document): Promise<Applic
 	for (const [index, slot] of scripts.entries())
 		slot.owner[`${slot.key}-script`] = {
 			file: files[index],
+			...(slot.reference["execution-policy"]
+				? { "execution-policy": slot.reference["execution-policy"] }
+				: {}),
 			arguments: slot.reference.arguments || []
 		}
 	const bundle = applicationBundleSchema.parse({
