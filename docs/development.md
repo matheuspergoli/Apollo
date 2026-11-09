@@ -22,6 +22,91 @@ precisem executar código na instalação exigem revisão explícita, não liber
 
 ## Comandos
 
+### Protótipo de recursos gerenciados
+
+`resources-preview.html` é uma entrada HTML separada, disponível somente no Vite
+de desenvolvimento. Com `pnpm dev`, abra
+`http://127.0.0.1:5174/resources-preview.html`. Não é uma rota do painel nativo,
+não aparece no menu distribuído e não é entrada do build de produção. Nenhuma
+versão publicada é substituída por esse protótipo.
+
+O escopo é validar três percursos: selecionar scripts no editor de aplicativo,
+revisar um pacote de exemplo e administrar recursos/revisões. O recorte contém
+inicialização e um par de preparação/desfazer. Não é uma substituição do editor
+atual nem uma implementação de comandos globais, comandos de dispositivos,
+eventos de sessão ou processos desanexados. O par de preparação/desfazer compartilha
+sua opção de elevação; inicialização possui a opção própria, preservando a
+distinção do executor existente.
+
+O estado inteiro é simulado em memória. Não há transporte HTTP para o host,
+execução de código, leitura da instalação, persistência da biblioteca ou
+armazenamento dos scripts no navegador. O seletor de tema existente mantém sua
+preferência normal. Uma faixa permanente identifica a simulação e cada gravação
+ou exclusão se declara simulada. Atualizar a página reinicia as amostras.
+
+Responsabilidades:
+
+- `src/prototypes/resources/model.ts`: transições da amostra, referências por ID e
+  revisão, verificação limitada de arquivo e preservação de rascunhos. Não é um
+  contrato de armazenamento ou pacote aceito pelo backend.
+- `command-editor.tsx`: seleção entre comando manual e script, mantendo o texto
+  manual ao alternar. Não muda o `CommandList` compartilhado pelo painel atual.
+- `preview.tsx`: composição com os elementos existentes de shadcn/Base UI, revisão,
+  consulta de vínculos, exclusão confirmada e cenários de falha. Sem novos tokens,
+  estilos globais, dependências, gerenciador de estado ou executor.
+- `main.tsx`: montagem isolada, usando os providers de tema e tooltip existentes;
+  recusa execução fora do modo de desenvolvimento.
+
+Decisões de interação exercitadas:
+
+| Ação | Efeito na amostra |
+| --- | --- |
+| Selecionar arquivo | Lê do dispositivo que abriu o navegador; não explora o disco do host. |
+| Aplicar script ou pacote ao rascunho | Cria referências provisórias em memória, sem alterar o aplicativo salvo. |
+| Descartar rascunho | Retorna à versão salva e remove recursos provisórios; mantém recursos adicionados explicitamente à biblioteca. |
+| Adicionar revisão | Preserva revisões e vínculos anteriores; não atualiza aplicativos automaticamente. |
+| Revisar gravação | Exibe conteúdo, eventos, revisão, argumentos e privilégios; exige confirmação explícita dos vínculos de scripts. |
+| Excluir recurso | Exige confirmação e ausência de vínculos salvos ou no rascunho. |
+| Sessão expirada | Mantém o rascunho, bloqueia nova gravação e oferece revalidação sem replay. |
+| Conflito | Simula edição externa, mantém o rascunho e exige consulta explícita antes de outra tentativa. Não mescla valores automaticamente. |
+| Gravação sem confirmação | Pode ter alterado a cópia salva na memória; exige consulta, nunca repetição automática. |
+
+Os limites desta amostra são deliberadamente pequenos: `.ps1` UTF-8, até 128 KiB,
+32 recursos e 16 revisões por recurso. O conteúdo é apenas apresentado como texto;
+SHA-256 identifica bytes, não autenticidade, confiança, aprovação de segurança ou
+assinatura válida. Os bytes originais, BOM e finais de linha são preservados em
+memória; a decodificação é só para leitura. O editor demonstra um argumento literal,
+não uma linha de shell ou uma implementação de parsing PowerShell.
+
+"Revisar pacote de exemplo" usa dados genéricos internos. Não importa ZIPs nem
+define extensão, manifesto, resolução de dependências ou formato final de pacote.
+Aplicar o exemplo preserva UUID local, inicialização, desfazer e opções de
+elevação; mudanças propostas ficam explícitas na revisão. JSONs, templates,
+exportações e atalhos Artemis existentes não são modificados.
+
+Os testes do modelo exercitam as mesmas transições usadas pela interface. O
+Playwright existente também abre um Vite de desenvolvimento para exercitar a
+entrada isolada; os outros servidores de preview e host empacotado permanecem.
+Os testes verificam rascunhos, aprovação, falhas sem replay, revisões, exclusão,
+conteúdo somente para leitura e ausência de chamadas `/api`. Há verificações de
+largura, temas e foco em 390, 768 e 1440 px, além da inspeção dos artefatos para
+excluir a entrada e o JavaScript do protótipo da distribuição. O artefato de
+diagnóstico já existente do dashboard retém também capturas genéricas desses
+percursos quando os testes passam, permitindo revisão visual sem forçar falhas.
+Viewport reduzido e navegação por teclado não qualificam, sozinhos, teclado
+virtual, leitores de tela ou gestos num dispositivo real.
+
+Antes de uma implementação nativa, ainda são contratos a definir e comprovar no
+módulo proprietário: armazenamento persistente e publicação consistente de
+arquivos/vínculos; autenticação e autorização; ACLs e proteção contra links e
+troca de arquivo; passagem de argumentos sem injeção; aprovação vinculada à
+revisão e privilégios; retenção enquanto ações assíncronas usam uma revisão;
+limites de upload e expansão de pacotes; compatibilidade/exportação sem perda de
+referências; e preservação/recuperação pelo instalador. O protótipo não demonstra
+esses contratos e não habilita execução, elevação ou bypass de políticas.
+
+### Verificações do frontend
+
 ```sh
 pnpm check          # Biome
 pnpm typecheck     # geração de rotas e TypeScript estrito

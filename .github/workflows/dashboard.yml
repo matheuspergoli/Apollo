@@ -48,7 +48,7 @@ jobs:
         working-directory: .
       - run: pnpm verify
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: failure()
+        if: always()
         with:
           name: apollo-browser-diagnostics
           path: dashboard/test-results/

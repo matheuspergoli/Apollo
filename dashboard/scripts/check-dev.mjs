@@ -14,6 +14,8 @@ try {
 	const origin = `http://127.0.0.1:${address.port}`
 	for (const path of [
 		"/",
+		"/resources-preview.html",
+		"/src/prototypes/resources/main.tsx",
 		"/src/styles.css",
 		"/src/routeTree.gen.ts",
 		"/src/routes/_host.config.tsx",
