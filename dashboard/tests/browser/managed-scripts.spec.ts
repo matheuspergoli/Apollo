@@ -18,7 +18,9 @@ test("script uploads stay in the app draft until explicit save review", async ({
 	await expect(selected.getByLabel("Conteúdo do script")).toHaveValue("# Test-owned content\n")
 	await selected.getByRole("button", { name: "Usar script", exact: true }).click()
 	await page.getByRole("button", { name: "Adicionar argumento", exact: true }).click()
-	await page.getByLabel("Argumento 1 de inicialização").fill("literal with spaces")
+	await page
+		.getByRole("textbox", { name: "Argumento 1 de inicialização", exact: true })
+		.fill("literal with spaces")
 	expect(host.calls.filter((call) => call.method === "POST")).toHaveLength(0)
 	await page.getByRole("button", { name: "Salvar aplicativo", exact: true }).click()
 	const review = page.getByRole("dialog", { name: "Salvar vínculos de scripts?" })
