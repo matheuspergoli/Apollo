@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { execFileSync, spawn } from "node:child_process"
 import { createWriteStream } from "node:fs"
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, open, readFile, writeFile } from "node:fs/promises"
 import https from "node:https"
 import { dirname, resolve } from "node:path"
 import { chromium, expect } from "@playwright/test"
@@ -342,6 +342,153 @@ try {
 	assert.equal(
 		(await http("/api/scripts", { cookie })).json.scripts.length,
 		scriptsBefore.json.scripts.length
+	)
+
+	// A detached monitor must not block launch or be killed by application close.
+	// Its pinned revision must also survive beyond that application's lifetime.
+	const detachedStarted = resolve(work, "detached-started.txt")
+	const detachedRelease = resolve(work, "detached-release.txt")
+	const detachedFinished = resolve(work, "detached-finished.txt")
+	const monitorBytes = Buffer.from(
+		"param([string]$Started, [string]$Release, [string]$Finished)\r\n[IO.File]::WriteAllText($Started, 'started')\r\n$deadline = [DateTime]::UtcNow.AddSeconds(120)\r\nwhile (-not (Test-Path -LiteralPath $Release) -and [DateTime]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 200 }\r\nif (-not (Test-Path -LiteralPath $Release)) { exit 2 }\r\n[IO.File]::WriteAllText($Finished, 'finished')\r\n"
+	)
+	const detachedApp = {
+		uuid: "cf41c34a-fb65-465f-9a45-a15ae66b5477",
+		name: "Detached monitor contract",
+		cmd: "",
+		"virtual-display": false,
+		"use-app-identity": false,
+		"exclude-global-prep-cmd": true,
+		"exclude-global-state-cmd": true,
+		"scripts-approved": true,
+		detached: [
+			"cmd.exe /c exit 0",
+			{
+				cmd: "",
+				"cmd-script": {
+					file: { name: "monitor.ps1", data: monitorBytes.toString("base64") },
+					arguments: [detachedStarted, detachedRelease, detachedFinished]
+				}
+			}
+		]
+	}
+	assert.equal(
+		(await http("/api/apps", { method: "POST", cookie, data: detachedApp })).status,
+		200
+	)
+	const savedDetached = (await http("/api/apps", { cookie })).json.apps.find(
+		(app) => app.uuid === detachedApp.uuid
+	)
+	assert.equal(savedDetached.cmd, "")
+	assert.equal(savedDetached.detached[0], detachedApp.detached[0])
+	const monitorReference = savedDetached.detached[1]["cmd-script"]
+	const monitorPath = resolve(
+		home,
+		"config/scripts",
+		monitorReference.id,
+		`${monitorReference.revision}.ps1`
+	)
+	try {
+		assert.equal(
+			(
+				await http("/api/apps/launch", {
+					method: "POST",
+					cookie,
+					data: { uuid: detachedApp.uuid }
+				})
+			).status,
+			200
+		)
+		await expect
+			.poll(
+				async () => {
+					try {
+						return await readFile(detachedStarted, "utf8")
+					} catch (failure) {
+						if (failure.code === "ENOENT") return null
+						throw failure
+					}
+				},
+				{ timeout: 10000 }
+			)
+			.toBe("started")
+		assert.equal(
+			(await http("/api/apps/close", { method: "POST", cookie, data: {} })).status,
+			200
+		)
+		assert.equal(
+			(
+				await http("/api/apps/delete", {
+					method: "POST",
+					cookie,
+					data: { uuid: detachedApp.uuid }
+				})
+			).status,
+			200
+		)
+		await assert.rejects(
+			async () => {
+				const file = await open(monitorPath, "r+")
+				await file.close()
+			},
+			(failure) => ["EBUSY", "EACCES", "EPERM"].includes(failure.code),
+			"A running detached script must remain pinned after app close"
+		)
+		assert.equal(
+			(
+				await http("/api/scripts/delete", {
+					method: "POST",
+					cookie,
+					data: { id: monitorReference.id }
+				})
+			).status,
+			400
+		)
+	} finally {
+		// Only this test's marker controls this bounded test-owned monitor.
+		await writeFile(detachedRelease, "release")
+	}
+	await expect
+		.poll(
+			async () => {
+				try {
+					return await readFile(detachedFinished, "utf8")
+				} catch (failure) {
+					if (failure.code === "ENOENT") return null
+					throw failure
+				}
+			},
+			{
+				timeout: 10000,
+				message: "Closing Apollo's app must not terminate its detached script"
+			}
+		)
+		.toBe("finished")
+	await expect
+		.poll(
+			async () => {
+				try {
+					const file = await open(monitorPath, "r+")
+					await file.close()
+					return true
+				} catch (failure) {
+					if (["EBUSY", "EACCES", "EPERM"].includes(failure.code)) return false
+					throw failure
+				}
+			},
+			{ timeout: 10000, message: "Exited detached scripts must release their revision leases" }
+		)
+		.toBe(true)
+	assert.deepEqual(await readFile(monitorPath), monitorBytes)
+	assert.equal(
+		(
+			await http("/api/scripts/delete", {
+				method: "POST",
+				cookie,
+				data: { id: monitorReference.id }
+			})
+		).status,
+		200
 	)
 
 	// Exercise the actual diagnostic log reader, not a parallel file-read mock.

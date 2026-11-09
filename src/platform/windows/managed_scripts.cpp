@@ -311,6 +311,21 @@ namespace managed_scripts {
           }
         }
       }
+      if (app.contains("detached")) {
+        if (!app.at("detached").is_array() || app.at("detached").size() > 256) {
+          throw std::runtime_error("Lista de comandos desanexados invalida.");
+        }
+        for (auto &command : app["detached"]) {
+          if (command.is_string()) {
+            continue;
+          }
+          fields(command, {"cmd", "cmd-script"});
+          if (!command.contains("cmd-script")) {
+            throw std::runtime_error("Comando desanexado sem referencia de script.");
+          }
+          function(command["cmd-script"], command["cmd"], app.value("elevated", false));
+        }
+      }
     }
 
     json checked_revision(const fs::path &root, const json &reference) {
@@ -431,6 +446,13 @@ namespace managed_scripts {
         }
       }
     }
+    if (application.contains("detached") && application.at("detached").is_array()) {
+      for (const auto &command : application.at("detached")) {
+        if (command.is_object()) {
+          return true;
+        }
+      }
+    }
     return false;
   }
 
@@ -468,6 +490,13 @@ namespace managed_scripts {
             }
           };
           scan(app, "cmd-script");
+          if (app.contains("detached") && app.at("detached").is_array()) {
+            for (const auto &command : app.at("detached")) {
+              if (command.is_object()) {
+                scan(command, "cmd-script");
+              }
+            }
+          }
           for (const auto *key : {"prep-cmd", "state-cmd"}) {
             if (app.contains(key) && app.at(key).is_array()) {
               for (const auto &step : app.at(key)) {

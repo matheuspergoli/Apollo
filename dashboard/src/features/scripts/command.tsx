@@ -1,6 +1,7 @@
 import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { ScriptsDialog } from "./dialog"
 import { type ScriptReference, scriptName, scriptReferenceSchema } from "./model"
 
@@ -10,7 +11,8 @@ export function ScriptCommand({
 	value,
 	reference,
 	onChange,
-	disabled = false
+	disabled = false,
+	multiline = false
 }: {
 	id: string
 	label: string
@@ -18,11 +20,13 @@ export function ScriptCommand({
 	reference: unknown
 	onChange: (value: string, reference?: ScriptReference) => void
 	disabled?: boolean
+	multiline?: boolean
 }) {
 	const [open, setOpen] = useState(false)
 	const manual = useRef(value)
 	const parsed = reference === undefined ? null : scriptReferenceSchema.safeParse(reference)
 	const script = parsed?.success ? parsed.data : null
+	const ManualInput = multiline ? Textarea : Input
 	const [argumentIds, setArgumentIds] = useState(() =>
 		Array.from({ length: 16 }, () => crypto.randomUUID())
 	)
@@ -30,7 +34,7 @@ export function ScriptCommand({
 		<div className="min-w-0 space-y-3">
 			{reference === undefined ? (
 				<div className="flex flex-wrap gap-2">
-					<Input
+					<ManualInput
 						id={id}
 						className="min-w-0 flex-1 font-mono"
 						autoComplete="off"
@@ -46,7 +50,10 @@ export function ScriptCommand({
 						type="button"
 						variant="outline"
 						disabled={disabled}
-						onClick={() => setOpen(true)}
+						onClick={() => {
+							manual.current = value
+							setOpen(true)
+						}}
 					>
 						Usar script
 					</Button>

@@ -128,6 +128,15 @@ export function scriptSlots(app: Document) {
 						})
 			})
 	}
+	if (Array.isArray(app.detached))
+		app.detached.forEach((row, index) => {
+			if (row && typeof row === "object" && !Array.isArray(row))
+				result.push({
+					owner: row as Document,
+					key: "cmd",
+					label: `Desanexado, comando ${index + 1}`
+				})
+		})
 	return result
 }
 
@@ -141,6 +150,22 @@ export function applicationScripts(app: Document) {
 }
 
 export function validateApplicationScripts(app: Document) {
+	if (Array.isArray(app.detached)) {
+		if (app.detached.length > 256) throw new Error("Use até 256 comandos desanexados.")
+		for (const row of app.detached) {
+			if (typeof row === "string") continue
+			if (
+				!row ||
+				typeof row !== "object" ||
+				Array.isArray(row) ||
+				!Object.hasOwn(row, "cmd-script") ||
+				Object.keys(row).some((key) => !["cmd", "cmd-script"].includes(key))
+			)
+				throw new Error(
+					"Revise os comandos desanexados: use um comando manual ou um vínculo de script."
+				)
+		}
+	}
 	const scripts = applicationScripts(app)
 	if (scripts.length > 32) throw new Error("Use até 32 vínculos de scripts por aplicativo.")
 	for (const { owner, key, label, reference } of scripts) {

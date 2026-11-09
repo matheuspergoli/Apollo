@@ -47,6 +47,31 @@ it("does not quietly ignore invalid references", () => {
 		expect(() => validateApplicationScripts({ "cmd-script": value })).toThrow()
 })
 
+it("preserves ordered manual and managed detached commands without changing the main executable", () => {
+	const detached = [
+		"first manual",
+		{ cmd: "", "cmd-script": { ...reference, arguments: ["literal"] } },
+		"last manual"
+	]
+	const app = appDraft({
+		name: "Example",
+		cmd: "C:\\Example\\launcher.exe",
+		elevated: true,
+		detached
+	})
+	expect(validateApp(app).detached).toEqual(detached)
+	expect(validateApp(app).cmd).toBe("C:\\Example\\launcher.exe")
+	expect(applicationScripts(app).map(({ label }) => label)).toEqual(["Desanexado, comando 2"])
+	for (const command of [
+		null,
+		42,
+		{},
+		{ cmd: "manual", "cmd-script": reference },
+		{ cmd: "", "cmd-script": reference, elevated: true }
+	])
+		expect(() => validateApp(appDraft({ name: "Example", detached: [command] }))).toThrow()
+})
+
 it("preserves BOM and line endings exactly and rejects ambiguous PowerShell encodings", async () => {
 	const bytes = Uint8Array.from([239, 187, 191, ...new TextEncoder().encode("# ação\r\n")])
 	const file = await readScriptFile(new File([bytes], "example.ps1"))

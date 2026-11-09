@@ -212,15 +212,31 @@ namespace proc {
     if (scripts) {
       const auto &definition = scripts->application;
       _app.script_lifetime = scripts->lifetime;
-      if (definition.contains("cmd-script")) _app.cmd = definition.at("cmd").get<std::string>();
+      if (definition.contains("cmd-script")) {
+        _app.cmd = definition.at("cmd").get<std::string>();
+      }
+      if (definition.contains("detached")) {
+        for (std::size_t index = 0; index < definition.at("detached").size(); ++index) {
+          const auto &command = definition.at("detached").at(index);
+          if (command.is_object()) {
+            _app.detached.at(index) = command.at("cmd").get<std::string>();
+          }
+        }
+      }
       for (const auto *key : {"prep-cmd", "state-cmd"}) {
-        if (!definition.contains(key)) continue;
+        if (!definition.contains(key)) {
+          continue;
+        }
         auto &commands = std::string_view(key) == "prep-cmd" ? _app.prep_cmds : _app.state_cmds;
         const auto offset = std::string_view(key) == "prep-cmd" ? _app.script_prep_offset : _app.script_state_offset;
         for (std::size_t index = 0; index < definition.at(key).size(); ++index) {
           const auto &step = definition.at(key).at(index);
-          if (step.contains("do-script")) commands.at(offset + index).do_cmd = step.at("do").get<std::string>();
-          if (step.contains("undo-script")) commands.at(offset + index).undo_cmd = step.at("undo").get<std::string>();
+          if (step.contains("do-script")) {
+            commands.at(offset + index).do_cmd = step.at("do").get<std::string>();
+          }
+          if (step.contains("undo-script")) {
+            commands.at(offset + index).undo_cmd = step.at("undo").get<std::string>();
+          }
         }
       }
     }
@@ -507,7 +523,8 @@ namespace proc {
 
     _env["APOLLO_APP_STATUS"] = "RUNNING";
 
-    for (auto &cmd : _app.detached) {
+    for (std::size_t index = 0; index < _app.detached.size(); ++index) {
+      auto &cmd = _app.detached[index];
       boost::filesystem::path working_dir = _app.working_dir.empty() ?
                                               find_working_directory(cmd, _env) :
                                               boost::filesystem::path(_app.working_dir);
@@ -516,7 +533,24 @@ namespace proc {
       if (ec) {
         BOOST_LOG(warning) << "Couldn't spawn ["sv << cmd << "]: System: "sv << ec.message();
       } else {
-        child.detach();
+#ifdef _WIN32
+        if (_app.script_lifetime && _app.script_definition.contains("detached") && _app.script_definition.at("detached").at(index).is_object()) {
+          // A detached monitor may outlive the application/session. Observe its
+          // exit off-thread solely to retain the immutable script files; do not
+          // join it to the application's process group or terminate it on close.
+          std::thread([child = std::move(child), lifetime = _app.script_lifetime]() mutable {
+            std::error_code wait_error;
+            child.wait(wait_error);
+            if (wait_error) {
+              BOOST_LOG(warning) << "Detached script exit observation failed: " << wait_error.message();
+            }
+            child.detach();
+          }).detach();
+        } else
+#endif
+        {
+          child.detach();
+        }
       }
     }
 
@@ -1393,13 +1427,22 @@ namespace proc {
           std::vector<std::string> detached;
           if (app_node.contains("detached") && app_node["detached"].is_array()) {
             for (auto &detached_val : app_node["detached"]) {
+#ifdef _WIN32
+              if (detached_val.is_object()) {
+                // Resolve before launch, never treat an invalid binding as a
+                // manual command or an empty desktop fallback.
+                detached.emplace_back("");
+                continue;
+              }
+#endif
               detached.emplace_back(parse_env_val(this_env, detached_val.get<std::string>()));
             }
           }
 
           // Process other fields.
-          if (app_node.contains("output"))
+          if (app_node.contains("output")) {
             ctx.output = parse_env_val(this_env, app_node.value("output", ""));
+          }
           std::string name = parse_env_val(this_env, app_node.value("name", ""));
           if (app_node.contains("cmd"))
             ctx.cmd = parse_env_val(this_env, app_node.value("cmd", ""));

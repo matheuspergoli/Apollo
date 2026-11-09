@@ -29,7 +29,15 @@ const step = z.strictObject({
 const options = applicationOptionsSchema.extend({
 	"cmd-script": pendingScript.optional(),
 	"prep-cmd": z.array(step).max(256),
-	"state-cmd": z.array(step).max(256)
+	"state-cmd": z.array(step).max(256),
+	detached: z
+		.array(
+			z.union([
+				z.string().max(16384),
+				z.strictObject({ cmd: z.literal("").optional(), "cmd-script": pendingScript })
+			])
+		)
+		.max(256)
 })
 export const applicationBundleSchema = z.strictObject({
 	$schema: z.string().optional(),

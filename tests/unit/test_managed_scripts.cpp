@@ -190,5 +190,39 @@ namespace {
     }
     EXPECT_TRUE(preserved);
   }
+
+  TEST_F(ManagedScriptsTest, DetachedBindingsPreserveManualCommandsOrderAndMainExecutable) {
+    const auto reference = managed_scripts::store(home).put(file());
+    json application {{"name", "Example"}, {"cmd", "example.exe"}, {"scripts-approved", true}, {"detached", json::array({"manual before", json {{"cmd", ""}, {"cmd-script", reference}}, "manual after"})}};
+    json saved;
+    managed_scripts::store(home).save_application(application, [&](const auto &value) {
+      saved = value;
+    });
+    EXPECT_EQ(saved.at("cmd"), "example.exe");
+    EXPECT_EQ(saved.at("detached"), application.at("detached"));
+    EXPECT_FALSE(saved.contains("scripts-approved"));
+    const auto plan = managed_scripts::store(home).resolve(saved);
+    EXPECT_EQ(plan.application.at("detached").at(0), "manual before");
+    EXPECT_EQ(plan.application.at("detached").at(2), "manual after");
+    EXPECT_NE(plan.application.at("detached").at(1).at("cmd").get<std::string>().find(" -File "), std::string::npos);
+    const auto library = managed_scripts::store(home).list({{"apps", json::array({saved})}});
+    EXPECT_EQ(library.at(0).at("uses").size(), 1u);
+    EXPECT_THROW(managed_scripts::store(home).remove(reference.at("id"), {{"apps", json::array({saved})}}), std::exception);
+  }
+
+  TEST_F(ManagedScriptsTest, DetachedBindingsRequireApprovalAndRejectMixedOrMalformedCommands) {
+    const auto reference = managed_scripts::store(home).put(file());
+    const auto save = [&](json command, bool approved) {
+      managed_scripts::store(home).save_application({{"name", "Example"}, {"scripts-approved", approved}, {"detached", json::array({command})}}, [](const auto &) {
+      });
+    };
+    EXPECT_THROW(save({{"cmd-script", reference}}, false), std::exception);
+    EXPECT_THROW(save({{"cmd", "manual"}, {"cmd-script", reference}}, true), std::exception);
+    EXPECT_THROW(save({{"cmd", ""}}, true), std::exception);
+    EXPECT_THROW(save({{"cmd-script", reference}, {"elevated", true}}, true), std::exception);
+    auto invalid = reference;
+    invalid["revision"] = std::string(64, '0');
+    EXPECT_THROW(save({{"cmd-script", invalid}}, true), std::exception);
+  }
 }  // namespace
 #endif

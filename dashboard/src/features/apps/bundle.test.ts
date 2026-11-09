@@ -5,7 +5,7 @@ import {
 	exportedApplicationBundle,
 	parseApplicationBundle
 } from "./bundle"
-import { exportedApplication } from "./configuration"
+import { exportedApplication, parseApplicationFile } from "./configuration"
 import { appDraft } from "./model"
 
 it("roundtrips original script bytes and arguments without exporting local identities", async () => {
@@ -54,4 +54,29 @@ it("rejects host-local references, identity transfer, unsupported versions and m
 		}
 	])
 		expect(() => parseApplicationBundle(JSON.stringify(value))).toThrow()
+})
+
+it("roundtrips detached script bytes, arguments and ordering without widening the legacy format", async () => {
+	const reference = {
+		file: { name: "monitor.ps1", data: btoa("# Test-owned monitor\r\n") },
+		arguments: ["literal"]
+	}
+	const detached = ["manual before", { cmd: "", "cmd-script": reference }, "manual after"]
+	const draft = appDraft({ name: "Example", cmd: "example.exe", detached })
+	const bundle = await exportedApplicationBundle(draft)
+	expect(parseApplicationBundle(JSON.stringify(bundle)).application.detached).toEqual(detached)
+	expect(bundle.application.cmd).toBe("example.exe")
+	expect(() => exportedApplication(draft)).toThrow("preservar os vínculos")
+	expect(
+		parseApplicationFile(
+			JSON.stringify({
+				format: "apollo-application",
+				version: 1,
+				kind: "application",
+				application: { name: "Edited name" }
+			}),
+			draft
+		).application
+	).toEqual({ name: "Edited name" })
+	expect(draft.detached).toEqual(detached)
 })

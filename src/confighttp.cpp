@@ -686,6 +686,13 @@ namespace confighttp {
       });
 #else
       bool has_scripts = inputTree.contains("cmd-script");
+      if (inputTree.contains("detached") && inputTree.at("detached").is_array()) {
+        for (const auto &command : inputTree.at("detached")) {
+          if (command.is_object()) {
+            has_scripts = true;
+          }
+        }
+      }
       for (const auto *key : {"prep-cmd", "state-cmd"}) {
         if (!inputTree.contains(key) || !inputTree.at(key).is_array()) {
           continue;

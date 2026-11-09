@@ -58,11 +58,15 @@ export function parseApplicationFile(raw: string, current: Document): Applicatio
 	const candidate: Document = { ...current, ...parsed.application }
 	if (Object.hasOwn(parsed.application, "cmd")) delete candidate["cmd-script"]
 	const merged = validateApp(candidate)
-	parseContract(
-		applicationOptionsSchema,
-		knownOptions(merged),
-		"Revise o aplicativo resultante"
+	// Validate the remaining legacy options without treating existing, separately
+	// validated script bindings as foreign fields. This view is never persisted
+	// or exported; partial imports must leave untouched bindings in the draft.
+	const legacyOptions = structuredClone(knownOptions(merged))
+	for (const { owner, key } of scriptSlots(legacyOptions)) delete owner[`${key}-script`]
+	legacyOptions.detached = (legacyOptions.detached as (string | Document)[]).map((command) =>
+		typeof command === "string" ? command : (command.cmd ?? "")
 	)
+	parseContract(applicationOptionsSchema, legacyOptions, "Revise o aplicativo resultante")
 	return parsed
 }
 

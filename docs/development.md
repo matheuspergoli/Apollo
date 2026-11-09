@@ -25,9 +25,10 @@ precisem executar código na instalação exigem revisão explícita, não liber
 ### Scripts gerenciados de aplicativos
 
 No host Windows, **Aplicativos → Scripts** administra a biblioteca real.
-**Usar script** vincula uma revisão à inicialização, preparação/desfazer ou
-conexão/desconexão de sessão. Comandos globais, de dispositivos e desanexados
-mantêm seu funcionamento anterior. Não há protocolo de URL registrado no sistema.
+**Usar script** vincula uma revisão à inicialização, preparação/desfazer,
+conexão/desconexão de sessão ou a um comando desanexado. Comandos globais e de
+dispositivos mantêm seu funcionamento anterior. Não há protocolo de URL registrado
+no sistema.
 
 Responsabilidades:
 
@@ -41,7 +42,10 @@ Responsabilidades:
   O armazenamento fica em `config/scripts` no diretório de dados existente.
 - `src/process.*`: resolução antes de encerrar o aplicativo atual e execução pelo
   executor nativo existente; mantém os arquivos e diretórios abertos durante seu
-  uso, inclusive por comandos assíncronos de sessão.
+  uso, inclusive por comandos assíncronos de sessão. Para scripts desanexados,
+  enquanto o host está ativo, mantém a revisão até o processo PowerShell terminar,
+  mesmo após encerrar o aplicativo. Observar a saída não bloqueia a inicialização nem vincula o monitor
+  ao grupo de processos do aplicativo.
 - `dashboard/src/features/apps/bundle.ts`: formato separado
   `apollo-application-bundle`, versão 1, com scripts embutidos como arquivos
   pendentes. Não transfere IDs de recursos nem identidade do aplicativo. O JSON
@@ -52,6 +56,12 @@ Selecionar um arquivo no editor apenas altera o rascunho. **Salvar aplicativo**
 exige revisão explícita; `scripts-approved` é transitório e não é persistido.
 Adicionar um script pela biblioteca é uma gravação explícita e independente.
 Adicionar versões nunca atualiza automaticamente os vínculos existentes.
+Comandos desanexados preservam sua ordem e os privilégios globais do aplicativo.
+Strings manuais em `detached` permanecem strings; apenas vínculos gerenciados usam
+`{"cmd":"","cmd-script":{...}}`. O editor permite substituir cada comando sem
+alterar o executável principal. Não há migração automática de comandos PowerShell
+existentes nem de seus parâmetros (como bypass de política). Um monitor desanexado
+deve definir seu próprio critério de saída: encerrar a sessão não o encerra.
 Scripts usados por aplicativos salvos ou com arquivos em uso não são excluídos.
 Uma falha depois de iniciada a persistência do aplicativo retém os recursos novos:
 uma referência possivelmente salva não pode perder seu arquivo por limpeza.
@@ -82,6 +92,11 @@ de lançamento do Apollo e conferir um arquivo de saída na pasta temporária do
 teste. Não inicia streaming, não instala drivers nem contorna políticas de
 PowerShell. O teste de dados da instalação inclui metadados e bytes de scripts
 na preservação e restauração; isso não substitui aceitação de uma atualização real.
+O mesmo ensaio inicia um monitor desanexado com saída limitada por prazo e por
+um marcador temporário próprio: confirma que o lançamento retorna antes do fim
+do monitor, que encerrar/remover o aplicativo não o mata e que a revisão continua
+protegida contra escrita/exclusão até a saída do processo. Os testes de navegador
+exercitam substituição, ordem, revisão, campos manuais e largura mobile.
 
 ### Verificações do frontend
 

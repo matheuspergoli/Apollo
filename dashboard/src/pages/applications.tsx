@@ -47,6 +47,7 @@ import { ApplicationConfigurationControls } from "@/features/apps/configuration-
 import { CoverPicker } from "@/features/apps/covers"
 import { appDraft, launcherFile, validateApp } from "@/features/apps/model"
 import { ScriptCommand } from "@/features/scripts/command"
+import { DetachedCommands } from "@/features/scripts/detached"
 import { ScriptsDialog } from "@/features/scripts/dialog"
 import { applicationScripts } from "@/features/scripts/model"
 import { comparable } from "@/features/settings/model"
@@ -303,6 +304,11 @@ function AppEditor({
 										? "Preparação e desfazer"
 										: "Conectar e desconectar sessão"}
 								</h2>
+								<p className="text-muted-foreground text-xs">
+									{key === "prep-cmd"
+										? "Antes de iniciar o aplicativo; aguarda cada ação terminar."
+										: "Executa a cada conexão e desconexão da sessão."}
+								</p>
 								<CommandList
 									id={key}
 									value={draft[key]}
@@ -333,15 +339,27 @@ function AppEditor({
 							</section>
 						))}
 						<Field>
-							<FieldLabel htmlFor="app-detached">Comandos desanexados</FieldLabel>
-							<Textarea
-								id="app-detached"
-								value={Array.isArray(draft.detached) ? draft.detached.join("\n") : ""}
-								onChange={(event) => set("detached", event.target.value.split("\n"))}
-								className="min-h-28 font-mono"
-							/>
+							{scriptsSupported ? (
+								<h2 className="font-medium">Comandos desanexados</h2>
+							) : (
+								<FieldLabel htmlFor="app-detached">Comandos desanexados</FieldLabel>
+							)}
+							{scriptsSupported ? (
+								<DetachedCommands
+									value={draft.detached}
+									onChange={(value) => set("detached", value)}
+									disabled={mutation.isPending}
+								/>
+							) : (
+								<Textarea
+									id="app-detached"
+									value={Array.isArray(draft.detached) ? draft.detached.join("\n") : ""}
+									onChange={(event) => set("detached", event.target.value.split("\n"))}
+									className="min-h-28 font-mono"
+								/>
+							)}
 							<FieldDescription>
-								Um comando por linha, na ordem de execução. Não são aguardados pelo host.
+								Iniciam em paralelo, sem aguardar o término. Usam os privilégios do aplicativo.
 							</FieldDescription>
 						</Field>
 					</CardContent>
