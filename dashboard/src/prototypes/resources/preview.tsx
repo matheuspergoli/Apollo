@@ -105,8 +105,12 @@ export function ResourcesPreview({ initial }: { initial: PrototypeState }) {
 	const [selectedRevisions, setSelectedRevisions] = useState<Record<string, number>>({})
 	const fileInput = useRef<HTMLInputElement>(null)
 	const returnFocus = useRef<HTMLElement | null>(null)
+	const errorFocus = useRef<HTMLDivElement | null>(null)
 	const reading = useRef(0)
 	const dirty = draftChanged(state)
+	useEffect(() => {
+		if (error && !modal) errorFocus.current?.focus()
+	}, [error, modal])
 	useEffect(() => {
 		if (!dirty) return
 		const guard = (event: BeforeUnloadEvent) => event.preventDefault()
@@ -238,7 +242,12 @@ export function ResourcesPreview({ initial }: { initial: PrototypeState }) {
 					</p>
 				)}
 				{error && !modal && (
-					<Alert variant="destructive">
+					<Alert
+						ref={errorFocus}
+						tabIndex={-1}
+						variant="destructive"
+						className="focus-visible:outline-2 focus-visible:outline-ring"
+					>
 						<AlertTitle>Revise a operação</AlertTitle>
 						<AlertDescription>{error}</AlertDescription>
 					</Alert>
@@ -254,6 +263,7 @@ export function ResourcesPreview({ initial }: { initial: PrototypeState }) {
 							className="mt-3"
 							onClick={() => {
 								setSessionExpired(false)
+								setError("")
 								setScenario("success")
 								setNotice("Sessão revalidada na simulação. Nenhuma operação foi repetida.")
 							}}
@@ -274,6 +284,7 @@ export function ResourcesPreview({ initial }: { initial: PrototypeState }) {
 							onClick={() => {
 								setState((previous) => ({ ...previous, baseVersion: previous.version }))
 								setNeedsRead(false)
+								setError("")
 								setScenario("success")
 								setNotice(
 									`Versão salva consultada: ${state.saved.name}. O rascunho foi preservado; nenhuma gravação foi repetida.`
@@ -590,7 +601,7 @@ export function ResourcesPreview({ initial }: { initial: PrototypeState }) {
 				}}
 			>
 				<DialogContent
-					finalFocus={returnFocus}
+					finalFocus={error && !modal ? errorFocus : returnFocus}
 					showCloseButton={!busy}
 					className="max-h-[85dvh] overflow-y-auto overscroll-contain sm:max-w-2xl"
 				>

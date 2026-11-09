@@ -89,7 +89,8 @@ Playwright existente também abre um Vite de desenvolvimento para exercitar a
 entrada isolada; os outros servidores de preview e host empacotado permanecem.
 Os testes verificam rascunhos, aprovação, falhas sem replay, revisões, exclusão,
 conteúdo somente para leitura e ausência de chamadas `/api`. Há verificações de
-largura, temas e foco em 390, 768 e 1440 px, navegação com toque emulado, além da inspeção dos artefatos para
+largura, temas e foco em 390, 768 e 1440 px, navegação com toque emulado e foco no
+erro de um vínculo incompleto, além da inspeção dos artefatos para
 excluir a entrada e o JavaScript do protótipo da distribuição. O artefato de
 diagnóstico já existente do dashboard retém também capturas genéricas desses
 percursos quando os testes passam, permitindo revisão visual sem forçar falhas.

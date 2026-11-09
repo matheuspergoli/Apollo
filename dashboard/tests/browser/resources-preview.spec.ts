@@ -75,6 +75,23 @@ test("manual editing and source changes preserve commands, require review and ne
 	expect(evidence).toEqual({ api: [], errors: [] })
 })
 
+test("an incomplete script binding focuses its error rather than hiding a failure above the editor", async ({
+	page
+}) => {
+	await page.setViewportSize({ width: 390, height: 844 })
+	const evidence = await openPreview(page)
+	await page.getByRole("combobox", { name: "Origem de preparação", exact: true }).click()
+	await page.getByRole("option", { name: "Script do Apollo", exact: true }).click()
+	await page
+		.getByRole("button", { name: "Revisar e salvar na simulação", exact: true })
+		.click()
+	const error = page.getByRole("alert").filter({ hasText: "selecione uma revisão disponível" })
+	await expect(error).toBeFocused()
+	await expect(error).toBeInViewport()
+	await expect(page.getByRole("dialog")).toHaveCount(0)
+	expect(evidence).toEqual({ api: [], errors: [] })
+})
+
 test("package cancellation and draft discard leave saved resources untouched", async ({
 	page
 }) => {
