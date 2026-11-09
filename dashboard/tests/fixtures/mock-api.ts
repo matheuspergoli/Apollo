@@ -10,6 +10,9 @@ export type MockHost = {
 	authorized: boolean
 	windowStatus: Item
 	calls: { path: string; method: string; body: Item }[]
+	scriptsSupported: boolean
+	scripts: Item[]
+	scriptFiles: Record<string, { name: string; data: string }>
 }
 
 export async function mockHost(page: Page): Promise<MockHost> {
@@ -94,7 +97,10 @@ export async function mockHost(page: Page): Promise<MockHost> {
 			]
 		},
 		logs: "[test]: Info: ready\n[test]: Warning: test warning\n[test]: Error: <script>window.injected=true</script>\n",
-		calls: []
+		calls: [],
+		scriptsSupported: false,
+		scripts: [],
+		scriptFiles: {}
 	}
 	await page.route("**/api/**", async (route) => {
 		const path = new URL(route.request().url()).pathname.slice(5)
@@ -137,8 +143,20 @@ export async function mockHost(page: Page): Promise<MockHost> {
 				apps: state.apps,
 				current_app: state.current,
 				host_uuid: "test-host",
-				host_name: "Test host"
+				host_name: "Test host",
+				scripts_supported: state.scriptsSupported
 			})
+		if (path === "scripts" && method === "GET")
+			return json({ status: true, supported: state.scriptsSupported, scripts: state.scripts })
+		if (path === "scripts/read") {
+			const file = state.scriptFiles[`${body.id}/${body.revision}`]
+			return file
+				? json({ status: true, script: { ...body, ...file } })
+				: route.fulfill({
+						status: 400,
+						json: { status: false, error: "Revisão indisponível." }
+					})
+		}
 		if (path === "apps" && method === "POST") {
 			const item = {
 				...body,

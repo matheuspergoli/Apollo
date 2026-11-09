@@ -22,89 +22,66 @@ precisem executar código na instalação exigem revisão explícita, não liber
 
 ## Comandos
 
-### Protótipo de recursos gerenciados
+### Scripts gerenciados de aplicativos
 
-`resources-preview.html` é uma entrada HTML separada, disponível somente no Vite
-de desenvolvimento. Com `pnpm dev`, abra
-`http://127.0.0.1:5174/resources-preview.html`. Não é uma rota do painel nativo,
-não aparece no menu distribuído e não é entrada do build de produção. Nenhuma
-versão publicada é substituída por esse protótipo.
-
-O escopo é validar três percursos: selecionar scripts no editor de aplicativo,
-revisar um pacote de exemplo e administrar recursos/revisões. O recorte contém
-inicialização e um par de preparação/desfazer. Não é uma substituição do editor
-atual nem uma implementação de comandos globais, comandos de dispositivos,
-eventos de sessão ou processos desanexados. O par de preparação/desfazer compartilha
-sua opção de elevação; inicialização possui a opção própria, preservando a
-distinção do executor existente.
-
-O estado inteiro é simulado em memória. Não há transporte HTTP para o host,
-execução de código, leitura da instalação, persistência da biblioteca ou
-armazenamento dos scripts no navegador. O seletor de tema existente mantém sua
-preferência normal. Uma faixa permanente identifica a simulação e cada gravação
-ou exclusão se declara simulada. Atualizar a página reinicia as amostras.
+No host Windows, **Aplicativos → Scripts** administra a biblioteca real.
+**Usar script** vincula uma revisão à inicialização, preparação/desfazer ou
+conexão/desconexão de sessão. Comandos globais, de dispositivos e desanexados
+mantêm seu funcionamento anterior. Não há protocolo de URL registrado no sistema.
 
 Responsabilidades:
 
-- `src/prototypes/resources/model.ts`: transições da amostra, referências por ID e
-  revisão, verificação limitada de arquivo e preservação de rascunhos. Não é um
-  contrato de armazenamento ou pacote aceito pelo backend.
-- `command-editor.tsx`: seleção entre comando manual e script, mantendo o texto
-  manual ao alternar. Não muda o `CommandList` compartilhado pelo painel atual.
-- `preview.tsx`: composição com os elementos existentes de shadcn/Base UI, revisão,
-  consulta de vínculos, exclusão confirmada e cenários de falha. Sem novos tokens,
-  estilos globais, dependências, gerenciador de estado ou executor.
-- `main.tsx`: montagem isolada, usando os providers de tema e tooltip existentes;
-  recusa execução fora do modo de desenvolvimento.
+- `dashboard/src/features/scripts/`: leitura de arquivos do navegador, seleção,
+  argumentos, revisão e chamadas autenticadas; não executa scripts no navegador.
+- `src/confighttp.cpp`: autenticação dos endpoints `/api/scripts`,
+  `/api/scripts/read` e `/api/scripts/delete`, além da gravação de aplicativos.
+  Solicitações de scripts e gravações de aplicativos têm limite de 2 MiB.
+- `src/platform/windows/managed_scripts.*`: bytes originais, SHA-256, metadados,
+  revisões imutáveis, publicação de arquivos e validação de referências.
+  O armazenamento fica em `config/scripts` no diretório de dados existente.
+- `src/process.*`: resolução antes de encerrar o aplicativo atual e execução pelo
+  executor nativo existente; mantém os arquivos e diretórios abertos durante seu
+  uso, inclusive por comandos assíncronos de sessão.
+- `dashboard/src/features/apps/bundle.ts`: formato separado
+  `apollo-application-bundle`, versão 1, com scripts embutidos como arquivos
+  pendentes. Não transfere IDs de recursos nem identidade do aplicativo. O JSON
+  legado `apollo-application`, versão 1, permanece estrito; exportações legadas
+  recusam vínculos de scripts em vez de descartá-los silenciosamente.
 
-Decisões de interação exercitadas:
+Selecionar um arquivo no editor apenas altera o rascunho. **Salvar aplicativo**
+exige revisão explícita; `scripts-approved` é transitório e não é persistido.
+Adicionar um script pela biblioteca é uma gravação explícita e independente.
+Adicionar versões nunca atualiza automaticamente os vínculos existentes.
+Scripts usados por aplicativos salvos ou com arquivos em uso não são excluídos.
+Uma falha depois de iniciada a persistência do aplicativo retém os recursos novos:
+uma referência possivelmente salva não pode perder seu arquivo por limpeza.
 
-| Ação | Efeito na amostra |
-| --- | --- |
-| Selecionar arquivo | Lê do dispositivo que abriu o navegador; não explora o disco do host. |
-| Aplicar script ou pacote ao rascunho | Cria referências provisórias em memória, sem alterar o aplicativo salvo. |
-| Descartar rascunho | Retorna à versão salva e remove recursos provisórios; mantém recursos adicionados explicitamente à biblioteca. |
-| Adicionar revisão | Preserva revisões e vínculos anteriores; não atualiza aplicativos automaticamente. |
-| Revisar gravação | Exibe conteúdo, eventos, revisão, argumentos e privilégios; exige confirmação explícita dos vínculos de scripts. |
-| Excluir recurso | Exige confirmação e ausência de vínculos salvos ou no rascunho. |
-| Sessão expirada | Mantém o rascunho, bloqueia nova gravação e oferece revalidação sem replay. |
-| Conflito | Simula edição externa, mantém o rascunho e exige consulta explícita antes de outra tentativa. Não mescla valores automaticamente. |
-| Gravação sem confirmação | Pode ter alterado a cópia salva na memória; exige consulta, nunca repetição automática. |
+Limites: 128 recursos, 16 revisões por recurso, 128 KiB por arquivo `.ps1`, 32
+vínculos por aplicativo e 16 argumentos por vínculo. Argumentos são literais de
+uma linha, não vazios, sem NUL ou aspas duplas, até 1024 bytes cada. Os scripts
+devem ser ASCII ou UTF-8 com BOM quando contêm caracteres não ASCII, por causa da
+decodificação do Windows PowerShell 5.1. BOM e finais de linha são preservados.
+O executor usa o caminho absoluto de Windows PowerShell, com
+`-NoLogo -NoProfile -NonInteractive -File`, sem contornar a política de execução.
 
-Os limites desta amostra são deliberadamente pequenos: `.ps1` UTF-8, até 128 KiB,
-32 recursos e 16 revisões por recurso. O conteúdo é apenas apresentado como texto;
-SHA-256 identifica bytes, não autenticidade, confiança, aprovação de segurança ou
-assinatura válida. Os bytes originais, BOM e finais de linha são preservados em
-memória; a decodificação é só para leitura. O editor demonstra um argumento literal,
-não uma linha de shell ou uma implementação de parsing PowerShell.
+O armazenamento cria ACLs protegidas; execução elevada recusa arquivos graváveis
+por identidades não privilegiadas. Links, junções, hard links e alterações de
+conteúdo são recusados. SHA-256 identifica bytes: não substitui assinatura,
+revisão do código ou confiança no autor. Gerenciar um script não transfere jogos,
+módulos, executáveis, capas nem caminhos externos referenciados por ele.
 
-"Revisar pacote de exemplo" usa dados genéricos internos. Não importa ZIPs nem
-define extensão, manifesto, resolução de dependências ou formato final de pacote.
-Aplicar o exemplo preserva UUID local, inicialização, desfazer e opções de
-elevação; mudanças propostas ficam explícitas na revisão. JSONs, templates,
-exportações e atalhos Artemis existentes não são modificados.
-
-Os testes do modelo exercitam as mesmas transições usadas pela interface. O
-Playwright existente também abre um Vite de desenvolvimento para exercitar a
-entrada isolada; os outros servidores de preview e host empacotado permanecem.
-Os testes verificam rascunhos, aprovação, falhas sem replay, revisões, exclusão,
-conteúdo somente para leitura e ausência de chamadas `/api`. Há verificações de
-largura, temas e foco em 390, 768 e 1440 px, navegação com toque emulado e foco no
-erro de um vínculo incompleto, além da inspeção dos artefatos para
-excluir a entrada e o JavaScript do protótipo da distribuição. O artefato de
-diagnóstico já existente do dashboard retém também capturas genéricas desses
-percursos quando os testes passam, permitindo revisão visual sem forçar falhas.
-Viewport reduzido e navegação por teclado não qualificam, sozinhos, teclado
-virtual, leitores de tela ou gestos num dispositivo real.
-
-Antes de uma implementação nativa, ainda são contratos a definir e comprovar no
-módulo proprietário: armazenamento persistente e publicação consistente de
-arquivos/vínculos; autenticação e autorização; ACLs e proteção contra links e
-troca de arquivo; passagem de argumentos sem injeção; aprovação vinculada à
-revisão e privilégios; retenção enquanto ações assíncronas usam uma revisão;
-limites de upload e expansão de pacotes; compatibilidade/exportação sem perda de
-referências; e preservação/recuperação pelo instalador. O protótipo não demonstra
-esses contratos e não habilita execução, elevação ou bypass de políticas.
+Os testes de domínio protegem rascunhos, argumentos, bytes e formato de pacote.
+Os contratos Windows em `tests/unit/test_managed_scripts.cpp` usam pastas
+temporárias próprias para armazenamento, revisões, aprovação, integridade,
+retenção, exclusão e persistência incerta. Esses testes não demonstram execução
+real de PowerShell, preservação pelo instalador ou comportamento de dispositivos;
+essas integrações exigem validação Windows isolada nos runners guardados do fork.
+O ensaio HTTPS existente exercita autenticação, upload pendente, aprovação,
+revisões e exclusão pela API real, além de iniciar um script benigno pelo endpoint
+de lançamento do Apollo e conferir um arquivo de saída na pasta temporária do
+teste. Não inicia streaming, não instala drivers nem contorna políticas de
+PowerShell. O teste de dados da instalação inclui metadados e bytes de scripts
+na preservação e restauração; isso não substitui aceitação de uma atualização real.
 
 ### Verificações do frontend
 

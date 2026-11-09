@@ -21,6 +21,14 @@ import {
 	CardHeader,
 	CardTitle
 } from "@/components/ui/card"
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle
+} from "@/components/ui/dialog"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -38,6 +46,9 @@ import { ArtemisLaunch } from "@/features/apps/artemis-launch"
 import { ApplicationConfigurationControls } from "@/features/apps/configuration-controls"
 import { CoverPicker } from "@/features/apps/covers"
 import { appDraft, launcherFile, validateApp } from "@/features/apps/model"
+import { ScriptCommand } from "@/features/scripts/command"
+import { ScriptsDialog } from "@/features/scripts/dialog"
+import { applicationScripts } from "@/features/scripts/model"
 import { comparable } from "@/features/settings/model"
 import { ApiError } from "@/lib/api"
 import { action, applicationsOptions, bool, type Document, text } from "@/lib/documents"
@@ -73,7 +84,8 @@ function AppEditor({
 	onSaved,
 	hostUuid,
 	hostName,
-	hasPendingOrder = false
+	hasPendingOrder = false,
+	scriptsSupported = false
 }: {
 	original: Document
 	onClose: () => void
@@ -81,10 +93,17 @@ function AppEditor({
 	hostUuid: string
 	hostName: string
 	hasPendingOrder?: boolean
+	scriptsSupported?: boolean
 }) {
 	const [draft, setDraft] = useState(() => appDraft(original))
+	const [reviewScripts, setReviewScripts] = useState(false)
+	const [validationError, setValidationError] = useState<Error | null>(null)
 	const mutation = useMutation({
-		mutationFn: () => action("apps", validateApp(draft)),
+		mutationFn: () =>
+			action("apps", {
+				...validateApp(draft),
+				...(applicationScripts(draft).length ? { "scripts-approved": true } : {})
+			}),
 		onSuccess: async () => {
 			await onSaved()
 			onClose()
@@ -128,12 +147,18 @@ function AppEditor({
 					</Button>
 				)}
 			</div>
-			<RequestError error={mutation.error} />
+			<RequestError error={validationError || mutation.error} />
 			<ApplicationConfigurationControls
 				current={draft}
 				disabled={mutation.isPending}
+				scriptsSupported={scriptsSupported}
 				onApply={(values) => {
-					setDraft((previous) => ({ ...previous, ...values }))
+					setDraft((previous) => {
+						const next = { ...previous, ...values }
+						if (Object.hasOwn(values, "cmd") && !Object.hasOwn(values, "cmd-script"))
+							delete next["cmd-script"]
+						return next
+					})
 					mutation.reset()
 				}}
 			/>
@@ -141,7 +166,20 @@ function AppEditor({
 				className="min-w-0 space-y-6"
 				onSubmit={(event) => {
 					event.preventDefault()
-					if (!mutation.isPending) mutation.mutate()
+					if (!mutation.isPending) {
+						try {
+							validateApp(draft)
+							setValidationError(null)
+							if (applicationScripts(draft).length) setReviewScripts(true)
+							else mutation.mutate()
+						} catch (error) {
+							setValidationError(
+								error instanceof Error
+									? error
+									: new Error("Revise o aplicativo antes de salvar.")
+							)
+						}
+					}
 				}}
 			>
 				<Card>
@@ -157,13 +195,31 @@ function AppEditor({
 							{appText.map(([key, label, help]) => (
 								<Field key={key}>
 									<FieldLabel htmlFor={`app-${key}`}>{label}</FieldLabel>
-									<Input
-										id={`app-${key}`}
-										value={text(draft[key])}
-										onChange={(event) => set(key, event.target.value)}
-										required={key === "name"}
-										className={key === "name" ? "" : "font-mono"}
-									/>
+									{key === "cmd" && scriptsSupported ? (
+										<ScriptCommand
+											id={`app-${key}`}
+											label="inicialização"
+											value={text(draft[key])}
+											reference={draft["cmd-script"]}
+											disabled={mutation.isPending}
+											onChange={(value, reference) =>
+												setDraft((previous) => {
+													const next: Document = { ...previous, cmd: value }
+													if (reference) next["cmd-script"] = reference
+													else delete next["cmd-script"]
+													return next
+												})
+											}
+										/>
+									) : (
+										<Input
+											id={`app-${key}`}
+											value={text(draft[key])}
+											onChange={(event) => set(key, event.target.value)}
+											required={key === "name"}
+											className={key === "name" ? "" : "font-mono"}
+										/>
+									)}
 									<FieldDescription>{help}</FieldDescription>
 									{key === "image-path" && (
 										<CoverPicker
@@ -251,6 +307,28 @@ function AppEditor({
 									id={key}
 									value={draft[key]}
 									onChange={(value) => set(key, value)}
+									renderCommand={
+										scriptsSupported
+											? ({ row, key: part, id, update }) => (
+													<ScriptCommand
+														id={id}
+														label={`${key === "prep-cmd" ? "preparação" : "sessão"}, ${part === "do" ? "executar" : "desfazer"}`}
+														value={text(row[part])}
+														reference={row[`${part}-script`]}
+														disabled={mutation.isPending}
+														onChange={(value, reference) =>
+															update(
+																{
+																	[part]: value,
+																	...(reference ? { [`${part}-script`]: reference } : {})
+																},
+																reference ? [] : [`${part}-script`]
+															)
+														}
+													/>
+												)
+											: undefined
+									}
 								/>
 							</section>
 						))}
@@ -323,11 +401,72 @@ function AppEditor({
 					</Button>
 				</Card>
 			</form>
+			<Dialog
+				open={reviewScripts}
+				onOpenChange={(open) => {
+					if (!mutation.isPending) setReviewScripts(open)
+				}}
+			>
+				<DialogContent
+					className="max-h-[85dvh] overflow-y-auto overscroll-contain sm:max-w-xl"
+					showCloseButton={!mutation.isPending}
+				>
+					<DialogHeader>
+						<DialogTitle>Salvar vínculos de scripts?</DialogTitle>
+						<DialogDescription>
+							{text(draft.name)} · os scripts executarão nos eventos configurados, não ao
+							salvar.
+						</DialogDescription>
+					</DialogHeader>
+					<RequestError error={mutation.error} />
+					<div className="space-y-3">
+						{(reviewScripts ? applicationScripts(draft) : []).map(
+							({ label, reference, owner, key }) => (
+								<div key={label} className="space-y-1 border p-3">
+									<p className="font-medium">{label}</p>
+									<p className="break-all">
+										{"file" in reference
+											? reference.file.name
+											: `${reference.name || "Script salvo"} · versão ${reference.number || "selecionada"}`}
+									</p>
+									<p className="text-muted-foreground text-xs">
+										Privilégios elevados:{" "}
+										{bool(key === "cmd" ? draft.elevated : owner.elevated) ? "sim" : "não"}
+									</p>
+									{reference.arguments?.length ? (
+										<p className="break-all font-mono text-xs">
+											Argumentos: {JSON.stringify(reference.arguments)}
+										</p>
+									) : null}
+								</div>
+							)
+						)}
+					</div>
+					<DialogFooter>
+						<Button
+							type="button"
+							variant="outline"
+							disabled={mutation.isPending}
+							onClick={() => setReviewScripts(false)}
+						>
+							Voltar
+						</Button>
+						<Button
+							type="button"
+							disabled={mutation.isPending}
+							onClick={() => mutation.mutate()}
+						>
+							{mutation.isPending ? "Salvando…" : "Salvar aplicativo"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</>
 	)
 }
 
 export function ApplicationsPage() {
+	const [scriptsOpen, setScriptsOpen] = useState(false)
 	const [editor, setEditor] = useState<Document | null>(null)
 	const query = useQuery({
 		...applicationsOptions,
@@ -364,6 +503,7 @@ export function ApplicationsPage() {
 				hostUuid={data.hostUuid}
 				hostName={data.hostName}
 				hasPendingOrder={Boolean(order)}
+				scriptsSupported={data.scriptsSupported}
 			/>
 		)
 	const ordered = order
@@ -395,11 +535,19 @@ export function ApplicationsPage() {
 						{data.apps.length} entradas · lançar, organizar e configurar sem sair do painel.
 					</p>
 				</div>
-				<Button onClick={() => setEditor({})}>
-					<IconPlus />
-					Novo aplicativo
-				</Button>
+				<div className="flex flex-wrap gap-2">
+					{data.scriptsSupported && (
+						<Button variant="outline" onClick={() => setScriptsOpen(true)}>
+							Scripts
+						</Button>
+					)}
+					<Button onClick={() => setEditor({})}>
+						<IconPlus />
+						Novo aplicativo
+					</Button>
+				</div>
 			</div>
+			{scriptsOpen && <ScriptsDialog onClose={() => setScriptsOpen(false)} />}
 			<RequestError
 				error={query.error || saveOrder.error}
 				retry={query.error ? () => void query.refetch() : undefined}

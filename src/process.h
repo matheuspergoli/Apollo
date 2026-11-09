@@ -78,6 +78,13 @@ namespace proc {
      */
     std::vector<std::string> detached;
 
+#ifdef _WIN32
+    nlohmann::json script_definition;
+    std::size_t script_prep_offset = 0;
+    std::size_t script_state_offset = 0;
+    std::shared_ptr<void> script_lifetime;
+#endif
+
     std::string idx;
     std::string uuid;
     std::string name;

@@ -35,6 +35,10 @@
 #include "system_tray.h"
 #include "utility.h"
 #include "uuid.h"
+
+#ifdef _WIN32
+  #include "platform/windows/managed_scripts.h"
+#endif
 #include "video.h"
 #include "window_management_runtime.h"
 
@@ -184,6 +188,17 @@ namespace proc {
   }
 
   int proc_t::execute(const ctx_t& app, std::shared_ptr<rtsp_stream::launch_session_t> launch_session) {
+#ifdef _WIN32
+    std::optional<managed_scripts::execution> scripts;
+    if (!app.script_definition.is_null()) {
+      try {
+        scripts = managed_scripts::store(platf::appdata()).resolve(app.script_definition);
+      } catch (const std::exception &failure) {
+        BOOST_LOG(error) << "Managed script preflight refused: " << failure.what();
+        return 400;
+      }
+    }
+#endif
     if (_app_id == input_only_app_id) {
       terminate(false, false);
       std::this_thread::sleep_for(1s);
@@ -193,6 +208,23 @@ namespace proc {
     }
 
     _app = app;
+#ifdef _WIN32
+    if (scripts) {
+      const auto &definition = scripts->application;
+      _app.script_lifetime = scripts->lifetime;
+      if (definition.contains("cmd-script")) _app.cmd = definition.at("cmd").get<std::string>();
+      for (const auto *key : {"prep-cmd", "state-cmd"}) {
+        if (!definition.contains(key)) continue;
+        auto &commands = std::string_view(key) == "prep-cmd" ? _app.prep_cmds : _app.state_cmds;
+        const auto offset = std::string_view(key) == "prep-cmd" ? _app.script_prep_offset : _app.script_state_offset;
+        for (std::size_t index = 0; index < definition.at(key).size(); ++index) {
+          const auto &step = definition.at(key).at(index);
+          if (step.contains("do-script")) commands.at(offset + index).do_cmd = step.at("do").get<std::string>();
+          if (step.contains("undo-script")) commands.at(offset + index).undo_cmd = step.at("undo").get<std::string>();
+        }
+      }
+    }
+#endif
     _app_id = util::from_view(app.id);
     _app_name = app.name;
     _launch_session = launch_session;
@@ -615,7 +647,11 @@ namespace proc {
     BOOST_LOG(info) << "Session resuming for app [" << _app_name << "].";
 
     if (!_app.state_cmds.empty()) {
-      auto exec_thread = std::thread([cmd_list = _app.state_cmds, app_working_dir = _app.working_dir, _env = _env]() mutable {
+      auto exec_thread = std::thread([cmd_list = _app.state_cmds, app_working_dir = _app.working_dir, _env = _env
+#ifdef _WIN32
+        , script_lifetime = _app.script_lifetime
+#endif
+      ]() mutable {
 
         _env["APOLLO_APP_STATUS"] = "RESUMING";
 
@@ -670,7 +706,11 @@ namespace proc {
     BOOST_LOG(info) << "Session pausing for app [" << _app_name << "].";
 
     if (!_app.state_cmds.empty()) {
-      auto exec_thread = std::thread([cmd_list = _app.state_cmds, app_working_dir = _app.working_dir, _env = _env]() mutable {
+      auto exec_thread = std::thread([cmd_list = _app.state_cmds, app_working_dir = _app.working_dir, _env = _env
+#ifdef _WIN32
+        , script_lifetime = _app.script_lifetime
+#endif
+      ]() mutable {
         _env["APOLLO_APP_STATUS"] = "PAUSING";
 
         std::error_code ec;
@@ -1283,6 +1323,9 @@ namespace proc {
           proc::ctx_t ctx;
           ctx.idx = std::to_string(i);
           ctx.uuid = app_node.at("uuid");
+#ifdef _WIN32
+          if (managed_scripts::has_scripts(app_node)) ctx.script_definition = app_node;
+#endif
 
           // Build the list of preparation commands.
           std::vector<proc::cmd_t> prep_cmds;
@@ -1299,6 +1342,9 @@ namespace proc {
               );
             }
           }
+#ifdef _WIN32
+          ctx.script_prep_offset = prep_cmds.size();
+#endif
           if (app_node.contains("prep-cmd") && app_node["prep-cmd"].is_array()) {
             for (auto &prep_node : app_node["prep-cmd"]) {
               std::string do_cmd = parse_env_val(this_env, prep_node.value("do", ""));
@@ -1327,6 +1373,9 @@ namespace proc {
               );
             }
           }
+#ifdef _WIN32
+          ctx.script_state_offset = state_cmds.size();
+#endif
           if (app_node.contains("state-cmd") && app_node["state-cmd"].is_array()) {
             for (auto &prep_node : app_node["state-cmd"]) {
               std::string do_cmd = parse_env_val(this_env, prep_node.value("do", ""));

@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { scriptSlots } from "@/features/scripts/model"
 import {
 	configurationArchive,
 	parseContract,
@@ -26,6 +27,10 @@ export function applicationTemplate(): ApplicationFile {
 }
 
 export function exportedApplication(draft: Document): ApplicationFile {
+	if (scriptSlots(draft).some(({ owner, key }) => owner[`${key}-script`] !== undefined))
+		throw new Error(
+			"Este formato não inclui scripts gerenciados. A exportação foi interrompida para preservar os vínculos."
+		)
 	const application = parseContract(
 		applicationOptionsSchema,
 		knownOptions(validateApp(draft)),
@@ -50,7 +55,9 @@ export function parseApplicationFile(raw: string, current: Document): Applicatio
 	)
 	if (!Object.keys(parsed.application).length)
 		throw new Error("O arquivo não contém opções de aplicativo para importar.")
-	const merged = validateApp({ ...current, ...parsed.application })
+	const candidate: Document = { ...current, ...parsed.application }
+	if (Object.hasOwn(parsed.application, "cmd")) delete candidate["cmd-script"]
+	const merged = validateApp(candidate)
 	parseContract(
 		applicationOptionsSchema,
 		knownOptions(merged),

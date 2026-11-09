@@ -51,7 +51,8 @@ export const applicationsOptions = queryOptions({
 			apps: documents(response.apps).filter((app) => typeof app.uuid === "string"),
 			current: text(response.current_app),
 			hostName: text(response.host_name),
-			hostUuid: text(response.host_uuid)
+			hostUuid: text(response.host_uuid),
+			scriptsSupported: response.scripts_supported === true
 		}
 	},
 	staleTime: 3_000,

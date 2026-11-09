@@ -44,6 +44,10 @@
 #include "window_management_settings.h"
 
 #ifdef _WIN32
+  #include "platform/windows/managed_scripts.h"
+#endif
+
+#ifdef _WIN32
   #include "platform/windows/utils.h"
 #endif
 
@@ -602,6 +606,11 @@ namespace confighttp {
       file_tree["current_app"] = proc::proc.get_running_app_uuid();
       file_tree["host_uuid"] = http::unique_id;
       file_tree["host_name"] = config::nvhttp.sunshine_name;
+#ifdef _WIN32
+      file_tree["scripts_supported"] = true;
+#else
+      file_tree["scripts_supported"] = false;
+#endif
 
       send_response(response, file_tree);
     } catch (std::exception &e) {
@@ -643,6 +652,8 @@ namespace confighttp {
    *
    * @api_examples{/api/apps| POST| {"name":"Hello, World!","uuid": "aaaa-bbbb"}}
    */
+  nlohmann::json script_request(req_https_t request);
+
   void saveApp(resp_https_t response, req_https_t request) {
     if (!validateContentType(response, request, "application/json") || !authenticate(response, request)) {
       return;
@@ -650,15 +661,16 @@ namespace confighttp {
 
     print_req(request);
 
-    std::stringstream ss;
-    ss << request->content.rdbuf();
-
     BOOST_LOG(info) << config::stream.file_apps;
     try {
       // TODO: Input Validation
 
       // Read the input JSON from the request body.
-      nlohmann::json inputTree = nlohmann::json::parse(ss.str());
+      nlohmann::json inputTree = script_request(request);
+
+#ifdef _WIN32
+      std::lock_guard script_lock(managed_scripts::mutex());
+#endif
 
       // Read the existing apps file.
       std::string content = file_handler::read_file(config::stream.file_apps.c_str());
@@ -666,10 +678,31 @@ namespace confighttp {
 
       // Migrate/merge the new app into the file tree.
       BOOST_LOG(debug) << "SaveApp: merging application entry"sv;
+#ifdef _WIN32
+      managed_scripts::store(platf::appdata()).save_application(std::move(inputTree), [&](const nlohmann::json &normalized) {
+        auto candidate = normalized;
+        proc::migrate_apps(&fileTree, &candidate);
+        managed_scripts::atomic_write(config::stream.file_apps, fileTree.dump(4));
+      });
+#else
+      bool has_scripts = inputTree.contains("cmd-script");
+      for (const auto *key : {"prep-cmd", "state-cmd"}) {
+        if (!inputTree.contains(key) || !inputTree.at(key).is_array()) {
+          continue;
+        }
+        for (const auto &step : inputTree.at(key)) {
+          if (step.is_object() && (step.contains("do-script") || step.contains("undo-script"))) {
+            has_scripts = true;
+          }
+        }
+      }
+      if (has_scripts) {
+        throw std::runtime_error("Scripts gerenciados exigem um host Windows.");
+      }
+      inputTree.erase("scripts-approved");
       proc::migrate_apps(&fileTree, &inputTree);
-
-      // Write the updated file tree back to disk.
       file_handler::write_file(config::stream.file_apps.c_str(), fileTree.dump(4));
+#endif
       BOOST_LOG(debug) << "SaveApp: application file written; refreshing runtime library"sv;
       proc::refresh(config::stream.file_apps);
       BOOST_LOG(debug) << "SaveApp: runtime library refreshed"sv;
@@ -678,10 +711,90 @@ namespace confighttp {
       nlohmann::json outputTree;
       outputTree["status"] = true;
       send_response(response, outputTree);
-    }
-    catch (std::exception &e) {
+    } catch (std::exception &e) {
       BOOST_LOG(warning) << "SaveApp: "sv << e.what();
       bad_request(response, request, e.what());
+    }
+  }
+
+  nlohmann::json script_request(req_https_t request) {
+    constexpr std::size_t limit = 2 * 1024 * 1024;
+    std::string content;
+    std::array<char, 8192> buffer;
+    while (request->content.read(buffer.data(), buffer.size()) || request->content.gcount()) {
+      const auto count = static_cast<std::size_t>(request->content.gcount());
+      if (content.size() + count > limit) {
+        throw std::runtime_error("Use uma solicitacao de scripts de ate 2 MiB.");
+      }
+      content.append(buffer.data(), count);
+    }
+    return nlohmann::json::parse(content);
+  }
+
+  void getScripts(resp_https_t response, req_https_t request) {
+    if (!authenticate(response, request)) {
+      return;
+    }
+    try {
+#ifdef _WIN32
+      std::lock_guard lock(managed_scripts::mutex());
+      const auto applications = nlohmann::json::parse(file_handler::read_file(config::stream.file_apps.c_str()));
+      send_response(response, {{"status", true}, {"supported", true}, {"scripts", managed_scripts::store(platf::appdata()).list(applications)}});
+#else
+      send_response(response, {{"status", true}, {"supported", false}, {"scripts", nlohmann::json::array()}});
+#endif
+    } catch (const std::exception &error) {
+      bad_request(response, request, error.what());
+    }
+  }
+
+  void writeScripts(resp_https_t response, req_https_t request) {
+    if (!validateContentType(response, request, "application/json") || !authenticate(response, request)) {
+      return;
+    }
+    try {
+#ifdef _WIN32
+      auto result = managed_scripts::store(platf::appdata()).put(script_request(request));
+      send_response(response, {{"status", true}, {"script", result}});
+#else
+      throw std::runtime_error("Scripts gerenciados exigem um host Windows.");
+#endif
+    } catch (const std::exception &error) {
+      bad_request(response, request, error.what());
+    }
+  }
+
+  void readScript(resp_https_t response, req_https_t request) {
+    if (!validateContentType(response, request, "application/json") || !authenticate(response, request)) {
+      return;
+    }
+    try {
+#ifdef _WIN32
+      send_response(response, {{"status", true}, {"script", managed_scripts::store(platf::appdata()).read(script_request(request))}});
+#else
+      throw std::runtime_error("Scripts gerenciados exigem um host Windows.");
+#endif
+    } catch (const std::exception &error) {
+      bad_request(response, request, error.what());
+    }
+  }
+
+  void deleteScript(resp_https_t response, req_https_t request) {
+    if (!validateContentType(response, request, "application/json") || !authenticate(response, request)) {
+      return;
+    }
+    try {
+#ifdef _WIN32
+      std::lock_guard lock(managed_scripts::mutex());
+      const auto input = script_request(request);
+      const auto applications = nlohmann::json::parse(file_handler::read_file(config::stream.file_apps.c_str()));
+      managed_scripts::store(platf::appdata()).remove(input.at("id").get<std::string>(), applications);
+      send_response(response, {{"status", true}});
+#else
+      throw std::runtime_error("Scripts gerenciados exigem um host Windows.");
+#endif
+    } catch (const std::exception &error) {
+      bad_request(response, request, error.what());
     }
   }
 
@@ -718,6 +831,9 @@ namespace confighttp {
     }
 
     print_req(request);
+#ifdef _WIN32
+    std::lock_guard script_lock(managed_scripts::mutex());
+#endif
 
     try {
       std::stringstream ss;
@@ -832,6 +948,9 @@ namespace confighttp {
     }
 
     print_req(request);
+#ifdef _WIN32
+    std::lock_guard script_lock(managed_scripts::mutex());
+#endif
 
     try {
       std::stringstream ss;
@@ -1650,6 +1769,10 @@ namespace confighttp {
     server.resource["^/api/apps$"]["POST"] = saveApp;
     server.resource["^/api/apps/reorder$"]["POST"] = reorderApps;
     server.resource["^/api/apps/delete$"]["POST"] = deleteApp;
+    server.resource["^/api/scripts$"]["GET"] = getScripts;
+    server.resource["^/api/scripts$"]["POST"] = writeScripts;
+    server.resource["^/api/scripts/read$"]["POST"] = readScript;
+    server.resource["^/api/scripts/delete$"]["POST"] = deleteScript;
     server.resource["^/api/apps/launch$"]["POST"] = launchApp;
     server.resource["^/api/apps/close$"]["POST"] = closeApp;
     server.resource["^/api/logs$"]["GET"] = getLogs;

@@ -9,7 +9,6 @@
 			"*.json",
 			"*.ts",
 			"index.html",
-			"resources-preview.html",
 			"!src/routeTree.gen.ts"
 		]
 	},

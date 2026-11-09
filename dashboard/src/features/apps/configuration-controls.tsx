@@ -19,13 +19,22 @@ import {
 	DialogTitle
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { applicationScripts, decodeScript } from "@/features/scripts/model"
 import { comparable } from "@/features/settings/model"
 import type { Document } from "@/lib/documents"
 import { downloadFile } from "@/lib/download"
 import {
+	type ApplicationBundle,
+	applicationBundleArchive,
+	applicationBundleLimit,
+	exportedApplicationBundle,
+	hasApplicationScripts,
+	parseApplicationBundle
+} from "./bundle"
+import {
 	type ApplicationFile,
 	applicationArchive,
-	applicationFileLimit,
 	applicationTemplate,
 	exportedApplication,
 	parseApplicationFile
@@ -34,17 +43,23 @@ import {
 export function ApplicationConfigurationControls({
 	current,
 	disabled,
+	scriptsSupported = false,
 	onApply
 }: {
 	current: Document
 	disabled: boolean
+	scriptsSupported?: boolean
 	onApply: (values: Document) => void
 }) {
 	const input = useRef<HTMLInputElement>(null)
 	const [busy, setBusy] = useState(false)
 	const [error, setError] = useState<Error | null>(null)
-	const [pending, setPending] = useState<ApplicationFile | null>(null)
+	const [pending, setPending] = useState<ApplicationFile | ApplicationBundle | null>(null)
 	const [filename, setFilename] = useState("")
+	const importedScripts =
+		pending?.format === "apollo-application-bundle"
+			? applicationScripts(pending.application)
+			: []
 	const changes = Object.keys(pending?.application || {}).filter((key) => {
 		const normalized = (value: unknown) =>
 			["exit-timeout", "scale-factor"].includes(key) &&
@@ -79,7 +94,9 @@ export function ApplicationConfigurationControls({
 		try {
 			downloadFile(
 				"apollo-aplicativo.zip",
-				await applicationArchive(exportedApplication(current))
+				hasApplicationScripts(current)
+					? await applicationBundleArchive(await exportedApplicationBundle(current))
+					: await applicationArchive(exportedApplication(current))
 			)
 		} finally {
 			setBusy(false)
@@ -133,9 +150,21 @@ export function ApplicationConfigurationControls({
 							setPending(null)
 							setBusy(true)
 							try {
-								if (file.size > applicationFileLimit)
-									throw new Error("Use um JSON de aplicativo de até 512 KiB.")
-								setPending(parseApplicationFile(await file.text(), current))
+								if (file.size > applicationBundleLimit)
+									throw new Error(
+										"Use um JSON de aplicativo de até 2 MiB (512 KiB sem scripts)."
+									)
+								const raw = await file.text()
+								if (
+									JSON.parse(raw)?.format === "apollo-application-bundle" &&
+									!scriptsSupported
+								)
+									throw new Error("Este host não oferece suporte a scripts gerenciados.")
+								setPending(
+									JSON.parse(raw)?.format === "apollo-application-bundle"
+										? parseApplicationBundle(raw)
+										: parseApplicationFile(raw, current)
+								)
 								setFilename(file.name)
 							} catch (failure) {
 								setError(
@@ -178,9 +207,9 @@ export function ApplicationConfigurationControls({
 					<Alert>
 						<AlertTitle>Revise comandos, caminhos e elevação</AlertTitle>
 						<AlertDescription>
-							Campos presentes substituem o valor inteiro, inclusive listas vazias. Caminhos
-							são do host e arquivos não são transferidos. Comandos podem executar no
-							computador nos eventos configurados após salvar.
+							Campos presentes substituem o valor inteiro, inclusive listas vazias. Scripts
+							embutidos serão copiados ao salvar; outros arquivos e caminhos externos não são
+							transferidos. Comandos podem executar nos eventos configurados após salvar.
 						</AlertDescription>
 					</Alert>
 					<RequestError error={error} />
@@ -192,17 +221,38 @@ export function ApplicationConfigurationControls({
 							<div key={key} className="border p-2 text-xs">
 								<p className="font-mono">{key}</p>
 								<pre className="max-h-28 overflow-auto whitespace-pre-wrap break-all">
-									Antes: {JSON.stringify(current[key], null, 2)}
+									Antes:{" "}
+									{JSON.stringify(
+										current[key],
+										(key, value) => (key === "data" ? "[conteúdo do script]" : value),
+										2
+									)}
 									{"\n"}Depois:{" "}
 									{JSON.stringify(
 										pending?.application[key as keyof ApplicationFile["application"]],
-										null,
+										(key, value) => (key === "data" ? "[conteúdo do script]" : value),
 										2
 									)}
 								</pre>
 							</div>
 						))}
 						{!changes.length && <p>Não há diferenças em relação ao rascunho atual.</p>}
+						{importedScripts.map(({ label, reference }) =>
+							"file" in reference ? (
+								<div key={label} className="space-y-2">
+									<p className="font-medium">
+										{label} · {reference.file.name}
+									</p>
+									<Textarea
+										readOnly
+										spellCheck={false}
+										aria-label={`Conteúdo importado: ${label}`}
+										value={decodeScript(reference.file.data).text}
+										className="min-h-28 font-mono text-xs"
+									/>
+								</div>
+							) : null
+						)}
 					</section>
 					<DialogFooter>
 						<Button
@@ -219,7 +269,10 @@ export function ApplicationConfigurationControls({
 							onClick={() => {
 								if (pending && !disabled && changes.length) {
 									try {
-										const validated = parseApplicationFile(JSON.stringify(pending), current)
+										const validated =
+											pending.format === "apollo-application-bundle"
+												? parseApplicationBundle(JSON.stringify(pending))
+												: parseApplicationFile(JSON.stringify(pending), current)
 										onApply(validated.application)
 										setPending(null)
 										setError(null)

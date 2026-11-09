@@ -64,6 +64,7 @@ set(PLATFORM_TARGET_FILES
         "${CMAKE_SOURCE_DIR}/src/platform/windows/window_target.cpp"
         "${CMAKE_SOURCE_DIR}/src/platform/windows/window_desktop.cpp"
         "${CMAKE_SOURCE_DIR}/src/platform/windows/window_worker.cpp"
+        "${CMAKE_SOURCE_DIR}/src/platform/windows/managed_scripts.cpp"
         "${CMAKE_SOURCE_DIR}/src/platform/windows/utils.h"
         "${CMAKE_SOURCE_DIR}/src/platform/windows/utils.cpp"
         "${CMAKE_SOURCE_DIR}/third-party/sudovda/sudovda-ioctl.h"

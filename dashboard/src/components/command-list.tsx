@@ -1,5 +1,5 @@
 import { IconArrowDown, IconArrowUp, IconPlus, IconTrash } from "@tabler/icons-react"
-import { useRef, useState } from "react"
+import { type ReactNode, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -48,13 +48,20 @@ export function CommandList({
 		{ key: "undo", label: "Desfazer" }
 	],
 	elevated = true,
-	id
+	id,
+	renderCommand
 }: {
 	value: unknown
 	onChange: (value: Document[]) => void
 	columns?: Column[]
 	elevated?: boolean
 	id: string
+	renderCommand?: (props: {
+		row: Document
+		key: string
+		id: string
+		update: (patch: Document, remove?: string[]) => void
+	}) => ReactNode
 }) {
 	const identities = useRef(new WeakMap<object, string>())
 	if (
@@ -125,12 +132,28 @@ export function CommandList({
 						{columns.map((column) => (
 							<div key={column.key} className="space-y-2">
 								<Label htmlFor={`${id}-${index}-${column.key}`}>{column.label}</Label>
-								<Input
-									id={`${id}-${index}-${column.key}`}
-									value={text(row[column.key])}
-									onChange={(event) => change(index, column.key, event.target.value)}
-									className="font-mono"
-								/>
+								{renderCommand ? (
+									renderCommand({
+										row,
+										key: column.key,
+										id: `${id}-${index}-${column.key}`,
+										update: (patch, remove = []) => {
+											const updated = { ...row, ...patch }
+											for (const key of remove) delete updated[key]
+											identities.current.set(updated, identity || crypto.randomUUID())
+											onChange(
+												rows.map((item, position) => (position === index ? updated : item))
+											)
+										}
+									})
+								) : (
+									<Input
+										id={`${id}-${index}-${column.key}`}
+										value={text(row[column.key])}
+										onChange={(event) => change(index, column.key, event.target.value)}
+										className="font-mono"
+									/>
+								)}
 							</div>
 						))}
 					</div>

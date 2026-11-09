@@ -11,7 +11,10 @@ $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('apollo-data-' + [guid]::NewGu
 $app = Join-Path $testRoot 'Application with spaces'
 New-Item -ItemType Directory -Path (Join-Path $app 'config\credentials') -Force | Out-Null
 try {
-    $paths = @('config\sunshine.conf', 'config\apps.json', 'config\sunshine_state.json', 'config\credentials\server.key', 'config\unknown.bin')
+    $scriptDirectory = 'config\scripts\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    New-Item -ItemType Directory -Path (Join-Path $app $scriptDirectory) -Force | Out-Null
+    $scriptPath = "$scriptDirectory\$(('b' * 64)).ps1"
+    $paths = @('config\sunshine.conf', 'config\apps.json', 'config\sunshine_state.json', 'config\credentials\server.key', 'config\unknown.bin', "$scriptDirectory\resource.json", $scriptPath)
     foreach ($path in $paths) {
         [IO.File]::WriteAllBytes((Join-Path $app $path), [byte[]](0..255))
     }
@@ -41,6 +44,14 @@ try {
     Assert-InstallationDataPreserved $snapshot
     if ([IO.File]::ReadAllText((Join-Path $app 'sunshine.exe')) -ne 'snapshot fixture, never executed') {
         throw 'Previous executable bytes were not restored'
+    }
+    [IO.File]::WriteAllText((Join-Path $app $scriptPath), '# unexpected script mutation')
+    $blocked = $false
+    try { Assert-InstallationDataPreserved $snapshot } catch { $blocked = $true }
+    if (-not $blocked) { throw 'Managed script mutation must block installation success' }
+    Restore-InstallationSnapshot -Snapshot $snapshot -InstallDir $app
+    if ([Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $app $scriptPath))) -ne [Convert]::ToBase64String([byte[]](0..255))) {
+        throw 'Managed script bytes were not restored'
     }
 
     # A failed candidate's evidence must survive restoration of the previous log.

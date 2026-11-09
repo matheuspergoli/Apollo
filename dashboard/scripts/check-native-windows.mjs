@@ -91,7 +91,7 @@ function http(path, { method = "GET", data, cookie } = {}) {
 		)
 		const libraryWrite =
 			method === "POST" &&
-			["/api/apps", "/api/apps/reorder", "/api/apps/delete"].includes(path)
+			["/api/apps", "/api/apps/reorder", "/api/apps/delete", "/api/apps/launch"].includes(path)
 		request.setTimeout(libraryWrite ? 30_000 : 3000, () =>
 			request.destroy(new Error("Native request timeout"))
 		)
@@ -189,6 +189,152 @@ try {
 		"Rejected upload must not overwrite a valid PNG"
 	)
 	const snapshot = await http("/api/config", { cookie })
+
+	// Real authenticated storage and application-save boundaries on this isolated
+	// host. The launch below exercises Apollo's executor, not a parallel shell
+	// client. It does not start a stream or qualify capture/encoder hardware.
+	for (const [path, method] of [
+		["/api/scripts", "GET"],
+		["/api/scripts", "POST"],
+		["/api/scripts/read", "POST"],
+		["/api/scripts/delete", "POST"]
+	]) {
+		assert.equal(
+			(await http(path, { method, ...(method === "POST" ? { data: {} } : {}) })).status,
+			401
+		)
+	}
+	const scriptsBefore = await http("/api/scripts", { cookie })
+	assert.equal(scriptsBefore.status, 200)
+	assert.equal(scriptsBefore.json.supported, true)
+	const scriptBytes = Buffer.from(
+		"\ufeffparam([string]$OutputPath, [string]$Literal)\r\n[IO.File]::WriteAllText($OutputPath, $Literal)\r\n",
+		"utf8"
+	)
+	const pendingScript = { name: "example.ps1", data: scriptBytes.toString("base64") }
+	const scriptResult = resolve(work, "managed-script-result.txt")
+	const literalArgument = "$literal; & text with spaces"
+	const scriptApp = {
+		uuid: "f8a87b43-6d25-4a8b-87e1-8e3ca052d327",
+		name: "Managed script contract",
+		cmd: "",
+		"cmd-script": { file: pendingScript, arguments: [scriptResult, literalArgument] },
+		"virtual-display": false,
+		"use-app-identity": false,
+		"exclude-global-prep-cmd": true,
+		"exclude-global-state-cmd": true
+	}
+	const appBytesBefore = await readFile(resolve(home, "config/apps.json"))
+	assert.equal(
+		(await http("/api/apps", { method: "POST", cookie, data: scriptApp })).status,
+		400
+	)
+	assert.deepEqual(await readFile(resolve(home, "config/apps.json")), appBytesBefore)
+	assert.equal(
+		(await http("/api/scripts", { cookie })).json.scripts.length,
+		scriptsBefore.json.scripts.length
+	)
+	assert.equal(
+		(
+			await http("/api/apps", {
+				method: "POST",
+				cookie,
+				data: { ...scriptApp, "scripts-approved": true }
+			})
+		).status,
+		200
+	)
+	const savedScriptApps = await http("/api/apps", { cookie })
+	assert.equal(savedScriptApps.json.scripts_supported, true)
+	const savedScriptApp = savedScriptApps.json.apps.find((app) => app.uuid === scriptApp.uuid)
+	assert(savedScriptApp)
+	assert(!Object.hasOwn(savedScriptApp, "scripts-approved"))
+	const scriptReference = savedScriptApp["cmd-script"]
+	assert(!Object.hasOwn(scriptReference, "file"))
+	const scriptRead = await http("/api/scripts/read", {
+		method: "POST",
+		cookie,
+		data: scriptReference
+	})
+	assert.equal(scriptRead.status, 200)
+	assert.deepEqual(Buffer.from(scriptRead.json.script.data, "base64"), scriptBytes)
+	const launchedScript = await http("/api/apps/launch", {
+		method: "POST",
+		cookie,
+		data: { uuid: scriptApp.uuid }
+	})
+	assert.equal(launchedScript.status, 200, launchedScript.content)
+	await expect
+		.poll(
+			async () => {
+				try {
+					return await readFile(scriptResult, "utf8")
+				} catch (failure) {
+					if (failure.code === "ENOENT") return null
+					throw failure
+				}
+			},
+			{
+				timeout: 10000,
+				message: "The managed revision must execute through Apollo with literal arguments"
+			}
+		)
+		.toBe(literalArgument)
+	assert.equal(
+		(await http("/api/apps/close", { method: "POST", cookie, data: {} })).status,
+		200
+	)
+	const newRevision = await http("/api/scripts", {
+		method: "POST",
+		cookie,
+		data: {
+			id: scriptReference.id,
+			name: pendingScript.name,
+			data: Buffer.from("# New revision\r\n").toString("base64")
+		}
+	})
+	assert.equal(newRevision.status, 200)
+	assert.notEqual(newRevision.json.script.revision, scriptReference.revision)
+	assert.equal(
+		(await http("/api/apps", { cookie })).json.apps.find((app) => app.uuid === scriptApp.uuid)[
+			"cmd-script"
+		].revision,
+		scriptReference.revision
+	)
+	assert.equal(
+		(
+			await http("/api/scripts/delete", {
+				method: "POST",
+				cookie,
+				data: { id: scriptReference.id }
+			})
+		).status,
+		400
+	)
+	assert.equal(
+		(
+			await http("/api/apps/delete", {
+				method: "POST",
+				cookie,
+				data: { uuid: scriptApp.uuid }
+			})
+		).status,
+		200
+	)
+	assert.equal(
+		(
+			await http("/api/scripts/delete", {
+				method: "POST",
+				cookie,
+				data: { id: scriptReference.id }
+			})
+		).status,
+		200
+	)
+	assert.equal(
+		(await http("/api/scripts", { cookie })).json.scripts.length,
+		scriptsBefore.json.scripts.length
+	)
 
 	// Exercise the actual diagnostic log reader, not a parallel file-read mock.
 	// Windows text-mode reads can treat SUB (0x1a) as EOF. Generate it through

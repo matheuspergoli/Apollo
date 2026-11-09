@@ -1,3 +1,4 @@
+import { validateApplicationScripts } from "@/features/scripts/model"
 import { type Document, object, text } from "@/lib/documents"
 
 export const appDefaults: Document = {
@@ -27,6 +28,7 @@ export function appDraft(value: Document = {}) {
 	return structuredClone({ ...appDefaults, ...value })
 }
 export function validateApp(draft: Document): Document {
+	validateApplicationScripts(draft)
 	if (/^['"]|['"]$/.test(text(draft["image-path"]).trim()))
 		throw new Error("Informe o caminho da capa sem aspas no início ou no final.")
 	if (!text(draft.name).trim() || /[\r\n]/.test(text(draft.name)))
