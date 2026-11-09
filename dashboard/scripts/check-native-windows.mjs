@@ -42,7 +42,9 @@ const policyQuery = [
 	"-NoProfile",
 	"-NonInteractive",
 	"-Command",
-	"Get-ExecutionPolicy -List | Select-Object Scope,ExecutionPolicy | ConvertTo-Json -Compress"
+	// Windows PowerShell may inherit PowerShell 7's module search path from CI.
+	// Use this engine's installed security module, as the installer does.
+	"$ErrorActionPreference = 'Stop'; Import-Module (Join-Path $PSHOME 'Modules\\Microsoft.PowerShell.Security\\Microsoft.PowerShell.Security.psd1') -ErrorAction Stop; Get-ExecutionPolicy -List | Select-Object Scope,ExecutionPolicy | ConvertTo-Json -Compress"
 ]
 const policiesBefore = execFileSync("powershell.exe", policyQuery, { encoding: "utf8" }).trim()
 const child = spawn(resolve(home, "sunshine.exe"), [config], {
