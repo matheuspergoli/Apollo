@@ -174,6 +174,13 @@ O build nativo usa CMake e chama pnpm para gerar a interface. Consulte
 [building.md](building.md) para as dependências C++ e empacotamento. `PNPM_OFFLINE=ON`
 requer um store previamente preenchido. Não é um modo de ignorar dependências ausentes.
 
+O CI Windows fixa CMake e CPack em 4.4.5, com SHA256 do arquivo oficial verificado
+antes da extração. CMake 4.5 rejeita o agrupamento de headers de Boost.Locale 1.89
+durante a configuração. A versão das ferramentas é conferida no shell MSYS2 que
+executa o build; não se altera o código da dependência para contornar esse erro.
+Uma migração dessas ferramentas deve validar novamente a configuração, o build
+nativo, os contratos e o empacotamento Windows.
+
 ## Organização
 
 - `src/`, `src_assets/`: servidor e integração nativa Windows/Linux.
