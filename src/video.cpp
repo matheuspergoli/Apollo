@@ -326,14 +326,20 @@ namespace video {
 
     ~avcodec_encode_session_t() {
       // Flush any remaining frames in the encoder
+      BOOST_LOG(info) << "Encoder teardown: avcodec_send_frame(NULL) begin";
       if (avcodec_send_frame(avcodec_ctx.get(), nullptr) == 0) {
+        BOOST_LOG(info) << "Encoder teardown: drain accepted; avcodec_receive_packet loop begin";
         packet_raw_avcodec pkt;
         while (avcodec_receive_packet(avcodec_ctx.get(), pkt.av_packet) == 0);
+        BOOST_LOG(info) << "Encoder teardown: avcodec_receive_packet loop complete";
       }
 
       // Order matters here because the context relies on the hwdevice still being valid
+      BOOST_LOG(info) << "Encoder teardown: codec context release begin";
       avcodec_ctx.reset();
+      BOOST_LOG(info) << "Encoder teardown: codec context released; device release begin";
       device.reset();
+      BOOST_LOG(info) << "Encoder teardown: device released";
     }
 
     // Ensure objects are destroyed in the correct order
@@ -2463,6 +2469,7 @@ namespace video {
 
     BOOST_LOG(info) << "Encoder probe: first encoded packet ready";
     auto packet = packets->pop();
+    BOOST_LOG(info) << "Encoder probe: first encoded packet dequeued; IDR validation begin";
     if (!packet->is_idr()) {
       BOOST_LOG(error) << "First packet type is not an IDR frame"sv;
 
@@ -2474,15 +2481,18 @@ namespace video {
     // This check only applies for H.264 and HEVC
     if (config.videoFormat <= 1) {
       if (auto packet_avcodec = dynamic_cast<packet_raw_avcodec *>(packet.get())) {
+        BOOST_LOG(info) << "Encoder probe: SPS validation begin";
         if (cbs::validate_sps(packet_avcodec->av_packet, config.videoFormat ? AV_CODEC_ID_H265 : AV_CODEC_ID_H264)) {
           flag |= VUI_PARAMS;
         }
+        BOOST_LOG(info) << "Encoder probe: SPS validation complete";
       } else {
         // Don't check it for non-avcodec encoders.
         flag |= VUI_PARAMS;
       }
     }
 
+    BOOST_LOG(info) << "Encoder probe: packet validation complete; local resource teardown begin";
     return flag;
   }
 
