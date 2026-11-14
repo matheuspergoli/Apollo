@@ -745,6 +745,7 @@ namespace platf::dxgi {
         D3D_FEATURE_LEVEL_9_1
       };
 
+      BOOST_LOG(info) << "Encoder init: D3D11CreateDevice begin";
       HRESULT status = D3D11CreateDevice(
         adapter_p,
         D3D_DRIVER_TYPE_UNKNOWN,
@@ -757,6 +758,7 @@ namespace platf::dxgi {
         nullptr,
         &device_ctx
       );
+      BOOST_LOG(info) << "Encoder init: D3D11CreateDevice returned " << util::log_hex(status);
 
       if (FAILED(status)) {
         BOOST_LOG(error) << "Failed to create encoder D3D11 device [0x"sv << util::hex(status).to_string_view() << ']';
@@ -764,16 +766,22 @@ namespace platf::dxgi {
       }
 
       dxgi::dxgi_t dxgi;
+      BOOST_LOG(info) << "Encoder init: QueryInterface(IDXGIDevice) begin";
       status = device->QueryInterface(IID_IDXGIDevice, (void **) &dxgi);
+      BOOST_LOG(info) << "Encoder init: QueryInterface(IDXGIDevice) returned " << util::log_hex(status);
       if (FAILED(status)) {
         BOOST_LOG(warning) << "Failed to query DXGI interface from device [0x"sv << util::hex(status).to_string_view() << ']';
         return -1;
       }
 
+      BOOST_LOG(info) << "Encoder init: SetGPUThreadPriority(absolute) begin";
       status = dxgi->SetGPUThreadPriority(0x4000001E);
+      BOOST_LOG(info) << "Encoder init: SetGPUThreadPriority(absolute) returned " << util::log_hex(status);
       if (FAILED(status)) {
         BOOST_LOG(info) << "Failed to request absoloute encoding GPU thread priority. Trying relative priority.";
+        BOOST_LOG(info) << "Encoder init: SetGPUThreadPriority(relative) begin";
         status = dxgi->SetGPUThreadPriority(7);
+        BOOST_LOG(info) << "Encoder init: SetGPUThreadPriority(relative) returned " << util::log_hex(status);
         if (FAILED(status)) {
           BOOST_LOG(warning) << "Failed to request relative encoding GPU thread priority. Please run application as administrator for optimal performance.";
         } else {
@@ -787,13 +795,16 @@ namespace platf::dxgi {
         return -1;
       }
 
+      BOOST_LOG(info) << "Encoder init: color matrix buffer begin";
       color_matrix = make_buffer(device.get(), *default_color_vectors);
       if (!color_matrix) {
         BOOST_LOG(error) << "Failed to create color matrix buffer"sv;
         return -1;
       }
+      BOOST_LOG(info) << "Encoder init: color matrix buffer ready; constant buffer binding begin";
       device_ctx->VSSetConstantBuffers(3, 1, &color_matrix);
       device_ctx->PSSetConstantBuffers(0, 1, &color_matrix);
+      BOOST_LOG(info) << "Encoder init: constant buffer binding complete";
 
       this->display = std::dynamic_pointer_cast<display_base_t>(display);
       if (!this->display) {
@@ -801,11 +812,13 @@ namespace platf::dxgi {
       }
       display = nullptr;
 
+      BOOST_LOG(info) << "Encoder init: blend state begin";
       blend_disable = make_blend(device.get(), false, false);
       if (!blend_disable) {
         return -1;
       }
 
+      BOOST_LOG(info) << "Encoder init: blend state ready";
       D3D11_SAMPLER_DESC sampler_desc {};
       sampler_desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
       sampler_desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
@@ -815,15 +828,19 @@ namespace platf::dxgi {
       sampler_desc.MinLOD = 0;
       sampler_desc.MaxLOD = D3D11_FLOAT32_MAX;
 
+      BOOST_LOG(info) << "Encoder init: CreateSamplerState begin";
       status = device->CreateSamplerState(&sampler_desc, &sampler_linear);
+      BOOST_LOG(info) << "Encoder init: CreateSamplerState returned " << util::log_hex(status);
       if (FAILED(status)) {
         BOOST_LOG(error) << "Failed to create point sampler state [0x"sv << util::hex(status).to_string_view() << ']';
         return -1;
       }
 
+      BOOST_LOG(info) << "Encoder init: pipeline state binding begin";
       device_ctx->OMSetBlendState(blend_disable.get(), nullptr, 0xFFFFFFFFu);
       device_ctx->PSSetSamplers(0, 1, &sampler_linear);
       device_ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+      BOOST_LOG(info) << "Encoder init: pipeline state binding complete";
 
       return 0;
     }
