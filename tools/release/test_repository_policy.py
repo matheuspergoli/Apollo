@@ -8,6 +8,19 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class RepositoryPolicyTests(unittest.TestCase):
+    def test_discarded_encoder_session_releases_without_draining(self):
+        # The production destructor must not request unused output or release the
+        # device before the codec. Executing the reported AMF hang requires an AMD
+        # Windows host; this wiring check does not qualify driver teardown.
+        source = (ROOT / "src/video.cpp").read_text(encoding="utf-8")
+        start = source.index("~avcodec_encode_session_t()")
+        body = source[start:source.index("// Ensure objects are destroyed", start)]
+        body = re.sub(r'//[^\n]*|/\*[\s\S]*?\*/', '', body)
+        self.assertNotIn("avcodec_send_frame(", body)
+        self.assertNotIn("avcodec_receive_packet(", body)
+        self.assertNotIn("avcodec_flush_buffers(", body)
+        self.assertLess(body.index("avcodec_ctx.reset();"), body.index("device.reset();"))
+
     def test_input_validation_precedes_typed_permission_access_and_queue(self):
         # Wiring regression complements the executable wire-format tests. Running
         # dispatch itself would inject OS input and needs an isolated native host.

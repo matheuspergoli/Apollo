@@ -325,15 +325,9 @@ namespace video {
     avcodec_encode_session_t(avcodec_encode_session_t &&other) noexcept = default;
 
     ~avcodec_encode_session_t() {
-      // Flush any remaining frames in the encoder
-      BOOST_LOG(info) << "Encoder teardown: avcodec_send_frame(NULL) begin";
-      if (avcodec_send_frame(avcodec_ctx.get(), nullptr) == 0) {
-        BOOST_LOG(info) << "Encoder teardown: drain accepted; avcodec_receive_packet loop begin";
-        packet_raw_avcodec pkt;
-        while (avcodec_receive_packet(avcodec_ctx.get(), pkt.av_packet) == 0);
-        BOOST_LOG(info) << "Encoder teardown: avcodec_receive_packet loop complete";
-      }
-
+      // No output is consumed after session destruction. Release the codec rather
+      // than draining packets only to discard them: AMF draining can block even
+      // after the probe's encoded packet has already been received and validated.
       // Order matters here because the context relies on the hwdevice still being valid
       BOOST_LOG(info) << "Encoder teardown: codec context release begin";
       avcodec_ctx.reset();

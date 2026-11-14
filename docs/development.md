@@ -181,6 +181,13 @@ executa o build; não se altera o código da dependência para contornar esse er
 Uma migração dessas ferramentas deve validar novamente a configuração, o build
 nativo, os contratos e o empacotamento Windows.
 
+O destrutor da sessão de encoding descarta saída pendente: libera o contexto
+FFmpeg antes do dispositivo, sem solicitar drenagem de pacotes que não serão
+enviados. Isso também se aplica às sessões temporárias de detecção de codecs.
+O teste estrutural protege essa ordem e a ausência de drenagem no destrutor;
+não comprova encerramento AMF no driver. Inicialização, transmissão e
+reconexão com aceleração AMD exigem validação em um host Windows com essa GPU.
+
 ## Organização
 
 - `src/`, `src_assets/`: servidor e integração nativa Windows/Linux.
