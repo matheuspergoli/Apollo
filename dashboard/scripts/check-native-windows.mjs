@@ -25,7 +25,9 @@ execFileSync(
 		"-NoProfile",
 		"-NonInteractive",
 		"-Command",
-		"Expand-Archive -LiteralPath $env:APOLLO_TEST_ZIP -DestinationPath $env:APOLLO_TEST_DEST"
+		// Select this engine's module, not PowerShell 7's inherited module path.
+		// Extraction errors must stop the test before attempting to start the host.
+		"$ErrorActionPreference = 'Stop'; Import-Module (Join-Path $PSHOME 'Modules\\Microsoft.PowerShell.Archive\\Microsoft.PowerShell.Archive.psd1') -ErrorAction Stop; Expand-Archive -LiteralPath $env:APOLLO_TEST_ZIP -DestinationPath $env:APOLLO_TEST_DEST -ErrorAction Stop"
 	],
 	{ env: { ...process.env, APOLLO_TEST_ZIP: archive, APOLLO_TEST_DEST: work } }
 )
