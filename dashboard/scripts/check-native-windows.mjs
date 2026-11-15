@@ -1182,6 +1182,11 @@ try {
 	)
 	assert.deepEqual(errors, [])
 	await navigate("/apps")
+	// Navigation waits for document load, not the authenticated library query.
+	// Finish that query before invalidating the session in the next scenario.
+	await expect(
+		page.getByRole("button", { name: "Atualizar aplicativos", exact: true })
+	).toBeVisible()
 
 	const changed = await http("/api/password", {
 		method: "POST",
