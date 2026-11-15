@@ -187,8 +187,11 @@ enviados. Isso também se aplica às sessões temporárias de detecção de code
 O teste estrutural protege essa ordem e a ausência de drenagem no destrutor;
 não comprova encerramento AMF no driver. Inicialização, transmissão e
 reconexão com aceleração AMD exigem validação em um host Windows com essa GPU.
-Os marcadores de inicialização, detecção e liberação ficam no nível Depuração;
-o nível Informação mantém os resultados da detecção sem o detalhamento por chamada.
+Os marcadores de Depuração cobrem dispositivo, sessão, primeiro pacote e liberação,
+sem registrar cada operação de buffer, sampler ou validação. Informação mantém
+os resultados da detecção; falhas reais continuam em Aviso/Erro. A seleção não
+declara irrelevantes os erros anteriores. Saída zero de scripts desanexados é
+Depuração; saída não zero e falhas de observação permanecem em Aviso.
 
 Os arquivos gerados distinguem padrões de valores exportados: configurações
 globais/por seção leem o estado salvo; aplicativos e dispositivos usam o rascunho.
@@ -197,6 +200,11 @@ pacote de recursos, pelo mesmo importador, com revisão antes de criar cópias l
 O ensaio Windows exporta pela interface, remove os recursos de origem, importa,
 salva, reexporta e executa a cópia. Protege bytes, argumentos, políticas, ordem,
 elevação e independência dos IDs; não qualifica dependências externas dos scripts.
+Rejeições HTTP 400 de aplicativos e scripts podem mostrar a mensagem do host quando
+seguem o contrato JSON de erro e têm até 1024 caracteres. Respostas inválidas mantêm
+o erro genérico; autenticação e conflito de aprovação mantêm seus fluxos próprios.
+Os testes protegem essa mensagem, a retenção do rascunho e a ausência de repetição
+automática da gravação.
 
 ## Organização
 

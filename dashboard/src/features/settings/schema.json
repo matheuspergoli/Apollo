@@ -7,7 +7,7 @@
 				"key": "sunshine_name",
 				"defaultValue": "",
 				"label": "Nome Apollo",
-				"description": "O nome exibido pelo Moonlight. Se não for especificado, será usado o nome do PC servidor"
+				"description": "Nome exibido no Artemis/Moonlight. Vazio usa o nome do computador."
 			},
 			{
 				"key": "min_log_level",
@@ -48,8 +48,8 @@
 			{
 				"key": "global_prep_cmd",
 				"defaultValue": [],
-				"label": "Comando Preparativo",
-				"description": "Configure uma lista de comandos a serem executados antes ou depois da execução de qualquer aplicativo. Se algum dos comandos preparativos especificados falhar, o processo de inicialização do aplicativo será abortado."
+				"label": "Comandos de preparação",
+				"description": "Executa comandos antes de iniciar aplicativos e comandos de desfazer ao encerrar. Uma falha na preparação interrompe a inicialização do aplicativo."
 			},
 			{
 				"key": "global_state_cmd",
@@ -61,13 +61,13 @@
 				"key": "server_cmd",
 				"defaultValue": [],
 				"label": "Comandos de Servidor",
-				"description": "Configura uma lista de comandos a serem executados no servidor quando solicitados durante uma transmissão pelo cliente."
+				"description": "Comandos que o cliente pode solicitar ao host durante uma transmissão."
 			},
 			{
 				"key": "notify_pre_releases",
 				"defaultValue": "disabled",
 				"label": "Notificações de pré-lançamento",
-				"description": "Se deseja ser notificado sobre novas versões de pré-lançamento do Apollo"
+				"description": "Inclui pré-lançamentos nas notificações de novas versões do Apollo."
 			},
 			{
 				"key": "system_tray",
@@ -79,13 +79,13 @@
 				"key": "hide_tray_controls",
 				"defaultValue": "disabled",
 				"label": "Esconder controles no ícone de bandeja",
-				"description": "Não exibir \"Forçar fechamento\", \"Reiniciar\" e \"Sair\" do menu do ícone de bandeja."
+				"description": "Oculta Forçar fechamento, Reiniciar e Sair no menu da bandeja."
 			},
 			{
 				"key": "enable_pairing",
 				"defaultValue": "enabled",
 				"label": "Ativar Pareamento",
-				"description": "Ativa pareamento com um cliente Moonlight. Isso permite o cliente autenticar com o servidor e estabelecer uma conexão segura."
+				"description": "Permite parear clientes Artemis/Moonlight com o host."
 			},
 			{
 				"key": "enable_discovery",
@@ -144,13 +144,13 @@
 				"key": "controller",
 				"defaultValue": "enabled",
 				"label": "Ativar entrada do controle de jogo",
-				"description": "Permite que os convidados controlem o servidor com um gamepad/controle"
+				"description": "Permite entrada de controles dos clientes autorizados."
 			},
 			{
 				"key": "gamepad",
 				"defaultValue": "auto",
 				"label": "Tipo de gamepad emulado",
-				"description": "Escolha o tipo de gamepad a ser emulado no servidor",
+				"description": "Tipo de controle emulado no host. A disponibilidade depende da plataforma.",
 				"options": [
 					{
 						"value": "auto",
@@ -182,18 +182,18 @@
 				"key": "ds4_back_as_touchpad_click",
 				"defaultValue": "enabled",
 				"label": "Mapear Voltar/Selecionar para o clique no touchpad",
-				"description": "Ao forçar a emulação DS4, mapeia o Voltar/Selecionar para o clique no touchpad"
+				"description": "Na emulação DS4, usa Voltar/Selecionar como clique no touchpad."
 			},
 			{
 				"key": "motion_as_ds4",
 				"defaultValue": "enabled",
-				"label": "Emular um gamepad DS4 se o gamepad do cliente informar que há sensores de movimento presentes",
+				"label": "Preferir DS4 para controles com sensores de movimento",
 				"description": "Se estiver desativado, os sensores de movimento não serão levados em conta durante a seleção do tipo de gamepad."
 			},
 			{
 				"key": "touchpad_as_ds4",
 				"defaultValue": "enabled",
-				"label": "Emular um gamepad DS4 se o gamepad do cliente informar que há um touchpad presente",
+				"label": "Preferir DS4 para controles com touchpad",
 				"description": "Se estiver desativado, a presença do touchpad não será levada em conta durante a seleção do tipo de gamepad."
 			},
 			{
@@ -206,19 +206,19 @@
 				"key": "back_button_timeout",
 				"defaultValue": -1,
 				"label": "Tempo limite de emulação do botão Início/Guia",
-				"description": "Se o botão Voltar/Selecionar for mantido pressionado pelo número especificado de milissegundos, um pressionamento do botão Início/Guia será emulado. Se definido com um valor < 0 (padrão), manter pressionado o botão Voltar/Selecionar não emulará o botão Início/Guia."
+				"description": "Tempo em milissegundos para manter Voltar/Selecionar pressionado e emular Início/Guia. Valores negativos desativam essa emulação."
 			},
 			{
 				"key": "keyboard",
 				"defaultValue": "enabled",
 				"label": "Ativar entrada de teclado",
-				"description": "Permite que os convidados controlem o teclado do servidor"
+				"description": "Permite entrada de teclado dos clientes autorizados."
 			},
 			{
 				"key": "key_repeat_delay",
 				"defaultValue": 500,
 				"label": "Atraso de repetição de tecla",
-				"description": "Controle a velocidade com que as teclas se repetirão. O atraso inicial em milissegundos antes da repetição das teclas."
+				"description": "Atraso inicial, em milissegundos, antes da repetição de uma tecla mantida pressionada."
 			},
 			{
 				"key": "key_repeat_frequency",
@@ -236,31 +236,31 @@
 				"key": "key_rightalt_to_key_win",
 				"defaultValue": "disabled",
 				"label": "Tecla Alt direito como tecla Windows",
-				"description": "Pode ser que você não consiga enviar a tecla Windows diretamente do cliente Moonlight. Nesses casos, pode ser útil fazer com que o Apollo interprete a tecla Alt direito como a tecla Windows"
+				"description": "Interpreta Alt direito como a tecla Windows quando o cliente não consegue enviá-la diretamente."
 			},
 			{
 				"key": "mouse",
 				"defaultValue": "enabled",
 				"label": "Ativar entrada do mouse",
-				"description": "Permite que os convidados controlem o mouse do servidor"
+				"description": "Permite entrada de mouse dos clientes autorizados."
 			},
 			{
 				"key": "high_resolution_scrolling",
 				"defaultValue": "enabled",
 				"label": "Suporte à rolagem de alta resolução",
-				"description": "Quando ativado, o Apollo transmitirá os eventos de rolagem de alta resolução dos clientes Moonlight. Isso pode ser útil desativar para aplicativos mais antigos que rolam muito rápido com eventos de rolagem de alta resolução."
+				"description": "Encaminha rolagem de alta resolução ao host. Desative se aplicativos antigos rolarem rápido demais."
 			},
 			{
 				"key": "native_pen_touch",
 				"defaultValue": "enabled",
 				"label": "Suporte nativo a caneta/toque",
-				"description": "Quando ativado, o Apollo transmitirá os eventos nativos de caneta/toque dos clientes Moonlight. Isso pode ser útil desativar para aplicativos mais antigos sem suporte nativo a caneta/toque."
+				"description": "Encaminha eventos nativos de caneta e toque ao host. Desative para aplicativos sem suporte a esses eventos."
 			},
 			{
 				"key": "enable_input_only_mode",
 				"defaultValue": "disabled",
 				"label": "Ativar Modo de Somente Controle",
-				"description": "Adiciona uma entrada de Aplicativo de Somente Controle. Quando ativado, a lista de aplicativos vai mostrar somente o aplicativo em execução e a entrada de Somente Controle quando estiver transmitindo. A entrada Somente Controle não receberá imagem nem áudio. Isso é útil quando controlando o computador pela TV ou conectando periféricos que a TV não suporta."
+				"description": "Adiciona uma entrada sem imagem ou áudio para usar periféricos do cliente no host. Durante uma transmissão, a lista mostra essa entrada e o aplicativo em execução."
 			},
 			{
 				"key": "forward_rumble",
@@ -284,13 +284,13 @@
 				"key": "audio_sink",
 				"defaultValue": "",
 				"label": "Saída de Áudio",
-				"description": "Especificar manualmente um dispositivo de áudio específico para saída. Se não for definido, o dispositivo será escolhido automaticamente. É altamente recomendável deixar esse campo em branco para usar a seleção automática de dispositivos! Se você tiver vários dispositivos de áudio com nomes idênticos, poderá obter o ID do dispositivo usando o seguinte comando:"
+				"description": "Nome ou ID da saída de áudio no host. Deixe vazio para seleção automática; use o ID para distinguir dispositivos com nomes iguais."
 			},
 			{
 				"key": "virtual_sink",
 				"defaultValue": "",
 				"label": "Saída de Áudio Virtual",
-				"description": "Especificar manualmente um dispositivo de áudio virtual a ser usado. Se não for definido, o dispositivo será escolhido automaticamente. É altamente recomendável deixar esse campo em branco para usar a seleção automática de dispositivos!"
+				"description": "Saída de áudio virtual no host. Deixe vazio para seleção automática."
 			},
 			{
 				"key": "stream_audio",
@@ -308,7 +308,7 @@
 				"key": "keep_sink_default",
 				"defaultValue": "enabled",
 				"label": "Manter saída de áudio virtual como padrão",
-				"description": "Se o uso da saída de áudio virtual será forçada como padrão (útil quando a saída de áudio do servidor está desabilitado)"
+				"description": "Mantém a saída de áudio virtual como dispositivo padrão, inclusive quando o áudio local está desativado."
 			},
 			{
 				"key": "auto_capture_sink",
@@ -320,19 +320,19 @@
 				"key": "adapter_name",
 				"defaultValue": "",
 				"label": "Nome da GPU",
-				"description": "Especificar manualmente uma GPU a ser usada para captura. Se não for definido, a GPU será escolhida automaticamente. É altamente recomendável deixar esse campo em branco para usar a seleção automática de GPU! Observação: essa GPU deve ter uma tela conectada e ligada. Os valores apropriados podem ser encontrados usando o seguinte comando:"
+				"description": "GPU usada para captura. Deixe vazio para seleção automática. Ela precisa ter um display ativo; confira o nome detectado no log."
 			},
 			{
 				"key": "output_name",
 				"defaultValue": "",
 				"label": "ID do monitor",
-				"description": "Especifique manualmente o ID do monitor a ser usado para captura. Se não for definido, o monitor principal será capturado. Observação: se você especificou uma GPU acima, esse monitor deverá estar conectado a essa GPU. Durante a inicialização do Apollo, você deverá ver a lista de monitores detectados. Abaixo está um exemplo; a saída real pode ser encontrada na guia Solução de Problemas."
+				"description": "ID do display capturado. Vazio usa o monitor principal. Se uma GPU estiver selecionada, o display deve pertencer a ela. Consulte os displays detectados no log, em Diagnóstico."
 			},
 			{
 				"key": "fallback_mode",
 				"defaultValue": "",
 				"label": "Modo Monitor de Reserva",
-				"description": "Apollo vai usar esse modo quando o cliente não providenciar um modo ou quando o aplicativo é iniciado através da UI da web. Formato: [Largura]x[Altura]x[FPS]"
+				"description": "Modo usado quando o cliente não informa um valor ou o aplicativo é iniciado pelo painel. Formato: largura x altura x FPS, sem espaços; exemplo: 1920x1080x60."
 			},
 			{
 				"key": "dd_configuration_option",
@@ -442,7 +442,7 @@
 				"key": "dd_config_revert_delay",
 				"defaultValue": 3000,
 				"label": "Configurar atraso de reversão",
-				"description": "Atraso adicional em milissegundos para esperar antes de reverter a configuração quando o aplicativo for fechado ou a última sessão for encerrada. O principal é proporcionar uma transição mais suave ao alternar rapidamente entre aplicativos.",
+				"description": "Atraso adicional, em milissegundos, antes de restaurar o display após encerrar o aplicativo ou a última sessão. Evita transições imediatas ao alternar entre aplicativos.",
 				"min": 0
 			},
 			{
@@ -471,7 +471,7 @@
 				"key": "double_refreshrate",
 				"defaultValue": "disabled",
 				"label": "Taxa de atualização dobrada para Monitores Virtuais",
-				"description": "Dobra a taxa de atualização quando criando monitores virtuais, mantendo a taxa de atualização da transmissão inalterada. Pode potencialmente melhorar problemas com engasgos de quadros em alguns sistemas."
+				"description": "Dobra a taxa de atualização do monitor virtual sem alterar o FPS da transmissão. Pode reduzir engasgos em alguns sistemas."
 			},
 			{
 				"key": "max_bitrate",
@@ -533,7 +533,7 @@
 				"key": "origin_web_ui_allowed",
 				"defaultValue": "lan",
 				"label": "Origens permitidas para acesso da UI da Web",
-				"description": "Onde na rede o usuário é deve estar para possuir acesso à interface de usuário da Web",
+				"description": "Redes de onde o painel pode ser acessado. Não dispensa autenticação.",
 				"options": [
 					{
 						"value": "pc",
@@ -641,7 +641,7 @@
 				"key": "file_state",
 				"defaultValue": "",
 				"label": "Arquivo de estado",
-				"description": "O arquivo em que são armazenados o estado atual do Apollo"
+				"description": "Caminho do arquivo que armazena o estado do Apollo."
 			}
 		]
 	},
@@ -672,7 +672,7 @@
 				"key": "limit_framerate",
 				"defaultValue": "enabled",
 				"label": "Limitar taxa de quadros da captura",
-				"description": "Limita a taxa de quadros da captura pela taxa de quadros solicitado pelo cliente. Pode não executar com taxa de quadros máxima se VSync estiver ativado e a taxa de atualização do monitor não for igual ao solicitado. Pode causar lag em algums clientes se desabilitado."
+				"description": "Limita a captura ao FPS solicitado pelo cliente. VSync e diferenças na taxa do monitor podem reduzir o FPS efetivo. Desativar pode aumentar o atraso em alguns clientes."
 			},
 			{
 				"key": "envvar_compatibility_mode",
@@ -696,23 +696,23 @@
 				"key": "hevc_mode",
 				"defaultValue": 0,
 				"label": "Suporte a HEVC",
-				"description": "Permite que o cliente solicite transmissões de vídeo HEVC Main ou HEVC Main10. A codificação do HEVC consome mais CPU, portanto, ativar essa opção pode reduzir o desempenho ao usar a codificação de software.",
+				"description": "Controla o suporte HEVC anunciado ao cliente. Main10 permite 10 bits/HDR quando o hardware e o cliente são compatíveis. A codificação por software pode exigir mais CPU.",
 				"options": [
 					{
 						"value": "0",
-						"label": "O Apollo anunciará o suporte para HEVC com base nos recursos do codificador (recomendado)"
+						"label": "Automático, conforme o encoder (recomendado)"
 					},
 					{
 						"value": "1",
-						"label": "O Apollo não anunciará suporte para HEVC"
+						"label": "Não anunciar HEVC"
 					},
 					{
 						"value": "2",
-						"label": "O Apollo anunciará o suporte ao perfil principal HEVC"
+						"label": "Anunciar HEVC Main"
 					},
 					{
 						"value": "3",
-						"label": "O Apollo anunciará o suporte aos perfis HEVC Main e Main10 (HDR)"
+						"label": "Anunciar HEVC Main e Main10 (HDR)"
 					}
 				]
 			},
@@ -720,23 +720,23 @@
 				"key": "av1_mode",
 				"defaultValue": 0,
 				"label": "Suporte AV1",
-				"description": "Permite que o cliente solicite fluxos de vídeo AV1 Main de 8 ou 10 bits. A codificação do AV1 consome mais CPU, portanto, a ativação dessa opção pode reduzir o desempenho ao usar a codificação de software.",
+				"description": "Controla o suporte AV1 de 8 ou 10 bits anunciado ao cliente. Exige encoder e cliente compatíveis; a codificação por software pode exigir mais CPU.",
 				"options": [
 					{
 						"value": "0",
-						"label": "O Apollo anunciará o suporte para AV1 com base nos recursos do codificador (recomendado)"
+						"label": "Automático, conforme o encoder (recomendado)"
 					},
 					{
 						"value": "1",
-						"label": "O Apollo não anunciará o suporte ao AV1"
+						"label": "Não anunciar AV1"
 					},
 					{
 						"value": "2",
-						"label": "O Apollo anunciará o suporte ao perfil AV1 Main de 8 bits"
+						"label": "Anunciar AV1 Main de 8 bits"
 					},
 					{
 						"value": "3",
-						"label": "O Apollo anunciará o suporte aos perfis AV1 Main de 8 e 10 bits (HDR)"
+						"label": "Anunciar AV1 Main de 8 e 10 bits (HDR)"
 					}
 				]
 			},
@@ -744,7 +744,7 @@
 				"key": "capture",
 				"defaultValue": "",
 				"label": "Forçar um método de captura específico",
-				"description": "No modo automático, o Apollo usará o primeiro método que funcionar. O NvFBC requer drivers nvidia corrigidos.",
+				"description": "No modo automático, usa o primeiro método disponível. Os métodos dependem da plataforma, do driver e dos displays ativos.",
 				"options": [
 					{
 						"value": "",
@@ -780,7 +780,7 @@
 				"key": "encoder",
 				"defaultValue": "",
 				"label": "Forçar um codificador específico",
-				"description": "Force um codificador específico; caso contrário, o Apollo selecionará a melhor opção disponível. Observação: se você especificar um codificador de hardware no Windows, ele deverá corresponder à GPU em que o monitor está conectado.",
+				"description": "Seleciona o encoder do host, não o decoder do cliente. No Windows, o encoder de hardware deve corresponder à GPU do display capturado. Autodetecção escolhe uma opção disponível; Software usa a CPU.",
 				"options": [
 					{
 						"value": "",
@@ -1002,27 +1002,27 @@
 				"key": "amd_usage",
 				"defaultValue": "ultralowlatency",
 				"label": "Uso do AMF",
-				"description": "Isso define o perfil de codificação básico. Todas as opções apresentadas abaixo substituirão um subconjunto do perfil de uso, mas há configurações ocultas adicionais aplicadas que não podem ser configuradas em outro lugar.",
+				"description": "Perfil básico do encoder AMD. As opções abaixo substituem parte desse perfil; o driver também aplica ajustes internos.",
 				"options": [
 					{
 						"value": "transcoding",
-						"label": "transcoding -- transcodificação (mais lento)"
+						"label": "Transcodificação"
 					},
 					{
 						"value": "webcam",
-						"label": "webcam -- webcam (lento)"
+						"label": "Webcam"
 					},
 					{
 						"value": "lowlatency_high_quality",
-						"label": "lowlatency_high_quality - baixa latência, alta qualidade (rápido)"
+						"label": "Baixa latência e alta qualidade"
 					},
 					{
 						"value": "lowlatency",
-						"label": "lowlatency - baixa latência (mais rápido)"
+						"label": "Baixa latência"
 					},
 					{
 						"value": "ultralowlatency",
-						"label": "ultralowlatency - latência ultra baixa (mais rápido; padrão)"
+						"label": "Latência ultrabaixa (padrão)"
 					}
 				]
 			},
@@ -1030,49 +1030,49 @@
 				"key": "amd_rc",
 				"defaultValue": "vbr_latency",
 				"label": "Controle de taxa AMF",
-				"description": "Isso controla o método de controle de taxa para garantir que não estamos excedendo a meta de taxa de bits do cliente. O \"cqp\" não é adequado para o direcionamento da taxa de bits, e outras opções além do \"vbr_latency\" dependem da aplicação do HRD para ajudar a restringir os excessos de taxa de bits.",
+				"description": "Método usado para controlar a taxa de bits. CQP fixa a quantização, não a taxa. Os modos CBR e VBR de pico dependem do HRD para restringir excessos.",
 				"options": [
 					{
 						"value": "cbr",
-						"label": "cbr -- taxa de bits constante (recomendado se o HRD estiver ativado)"
+						"label": "CBR — taxa constante (recomendado com HRD)"
 					},
 					{
 						"value": "cqp",
-						"label": "cqp -- modo qp constante"
+						"label": "CQP — quantização constante"
 					},
 					{
 						"value": "vbr_latency",
-						"label": "vbr_latency -- taxa de bits variável com restrição de latência (recomendado se o HRD estiver desativado; padrão)"
+						"label": "VBR — limite de latência (padrão, recomendado sem HRD)"
 					},
 					{
 						"value": "vbr_peak",
-						"label": "vbr_peak -- taxa de bits variável com restrição de pico"
+						"label": "VBR — limite de pico"
 					}
 				]
 			},
 			{
 				"key": "amd_enforce_hrd",
 				"defaultValue": "disabled",
-				"label": "Execução do Decodificador de Referência Hipotético (HRD) da AMF",
-				"description": "Aumenta as restrições do controle de taxa para atender aos requisitos do modelo HRD. Isso reduz bastante os excessos de taxa de bits, mas pode causar artefatos de codificação ou qualidade reduzida em determinadas placas."
+				"label": "Aplicar limites HRD no AMF",
+				"description": "Restringe o controle de taxa conforme o modelo HRD de buffer do decoder. Reduz picos de taxa de bits, mas pode causar artefatos ou reduzir a qualidade em algumas GPUs."
 			},
 			{
 				"key": "amd_quality",
 				"defaultValue": "balanced",
 				"label": "Qualidade AMF",
-				"description": "Isso controla o equilíbrio entre a velocidade e a qualidade da codificação.",
+				"description": "Equilíbrio entre velocidade e qualidade da codificação AMD.",
 				"options": [
 					{
 						"value": "speed",
-						"label": "velocidade -- preferir velocidade"
+						"label": "Velocidade"
 					},
 					{
 						"value": "balanced",
-						"label": "balanced -- balanceado (padrão)"
+						"label": "Equilibrado (padrão)"
 					},
 					{
 						"value": "quality",
-						"label": "qualidade -- preferir qualidade"
+						"label": "Qualidade"
 					}
 				]
 			},
@@ -1080,31 +1080,31 @@
 				"key": "amd_preanalysis",
 				"defaultValue": "disabled",
 				"label": "Pré-análise da AMF",
-				"description": "Isso permite a pré-análise de controle de taxa, que pode aumentar a qualidade às custas de uma maior latência de codificação."
+				"description": "Analisa os quadros para orientar o controle de taxa. Pode melhorar a qualidade, mas aumenta a latência de codificação."
 			},
 			{
 				"key": "amd_vbaq",
 				"defaultValue": "enabled",
 				"label": "Quantização adaptativa baseada em variância AMF (VBAQ)",
-				"description": "Em geral, o sistema visual humano é menos sensível a artefatos em áreas altamente texturizadas. No modo VBAQ, a variação de pixels é usada para indicar a complexidade das texturas espaciais, permitindo que o codificador aloque mais bits para áreas mais suaves. A ativação desse recurso leva a melhorias na qualidade visual subjetiva com alguns conteúdos."
+				"description": "Distribui bits conforme a complexidade das texturas, priorizando áreas mais suaves. Pode melhorar a qualidade visual em alguns conteúdos."
 			},
 			{
 				"key": "amd_coder",
 				"defaultValue": "auto",
-				"label": "Codificador AMF (H264)",
-				"description": "Permite que você selecione a codificação de entropia para priorizar a qualidade ou a velocidade de codificação. Somente H.264.",
+				"label": "Codificação de entropia AMF (H.264)",
+				"description": "CABAC prioriza eficiência de compressão; CAVLC simplifica a decodificação. Aplica-se somente a H.264.",
 				"options": [
 					{
 						"value": "auto",
-						"label": "auto -- deixa o ffmpeg decidir (padrão)"
+						"label": "Automático — FFmpeg (padrão)"
 					},
 					{
 						"value": "cabac",
-						"label": "cabac -- codificação aritmética binária adaptável ao contexto - qualidade superior"
+						"label": "CABAC — maior eficiência de compressão"
 					},
 					{
 						"value": "cavlc",
-						"label": "cavlc -- codificação de comprimento variável adaptável ao contexto - decodificação mais rápida"
+						"label": "CAVLC — decodificação mais simples"
 					}
 				]
 			}

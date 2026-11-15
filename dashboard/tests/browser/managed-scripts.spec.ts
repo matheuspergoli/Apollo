@@ -9,6 +9,41 @@ const savedReference = {
 	arguments: []
 }
 
+test("script rejection explains the host error and retains the file without retrying", async ({
+	page
+}) => {
+	const host = await mockHost(page)
+	host.scriptsSupported = true
+	let writes = 0
+	await page.route("**/api/scripts", async (route) => {
+		if (route.request().method() !== "POST") return route.fallback()
+		writes++
+		return route.fulfill({
+			status: 400,
+			json: { status: false, error: "Este conteúdo já está salvo neste script." }
+		})
+	})
+	await page.goto("/apps")
+	await page.getByRole("button", { name: "Scripts", exact: true }).click()
+	const library = page.getByRole("dialog", { name: "Scripts", exact: true })
+	await library.getByLabel("Adicionar script deste dispositivo").setInputFiles({
+		name: "example.ps1",
+		mimeType: "text/plain",
+		buffer: Buffer.from("# Test-owned content\r\n")
+	})
+	const preview = page.getByRole("dialog", { name: "Script", exact: true })
+	await preview.getByRole("button", { name: "Salvar script", exact: true }).click()
+	await expect(preview.getByRole("alert")).toContainText(
+		"Este conteúdo já está salvo neste script."
+	)
+	await expect(preview.getByLabel("Conteúdo do script")).toHaveValue("# Test-owned content\n")
+	expect(writes).toBe(1)
+	expect(host.scripts).toHaveLength(0)
+	await preview.getByRole("button", { name: "Voltar", exact: true }).click()
+	await library.getByRole("button", { name: "Fechar", exact: true }).click()
+	expect(writes).toBe(1)
+})
+
 test("unchanged script bindings save without a repeated review", async ({ page }) => {
 	const host = await mockHost(page)
 	host.scriptsSupported = true

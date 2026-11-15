@@ -549,7 +549,7 @@ namespace proc {
               if (code != 0) {
                 BOOST_LOG(warning) << "Managed detached script [" << script_id << "] revision [" << revision << "] exited with code [" << code << "]. Review the application's output file for PowerShell diagnostics.";
               } else {
-                BOOST_LOG(info) << "Managed detached script [" << script_id << "] revision [" << revision << "] exited with code [0].";
+                BOOST_LOG(debug) << "Managed detached script [" << script_id << "] revision [" << revision << "] exited with code [0].";
               }
             }
             child.detach();

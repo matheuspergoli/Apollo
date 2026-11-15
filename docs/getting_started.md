@@ -63,6 +63,24 @@ Cadastre aplicativos com comandos e caminhos conhecidos. Excluir uma entrada da
 biblioteca não desinstala o aplicativo. Comandos de preparação/retorno podem alterar
 o computador; revise-os antes de salvar ou iniciar uma sessão.
 
+### Scripts PowerShell
+
+No Windows, **Aplicativos → Scripts** permite adicionar arquivos `.ps1` à
+biblioteca do host. No editor de aplicativo, use **Usar script** na inicialização,
+nas etapas de preparação/desfazer, nos eventos de sessão ou em comandos desanexados.
+Selecione a versão, confira o conteúdo e informe os argumentos em campos separados.
+Salvar vínculos novos ou alterados exige revisão; selecionar ou salvar não executa
+o script.
+
+Cada vínculo usa uma versão fixa. Adicionar uma nova versão à biblioteca não
+atualiza os aplicativos existentes. A opção **Permitir execução neste processo**
+usa Bypass somente na chamada do PowerShell, sem alterar a política permanente
+do Windows; Políticas de Grupo prevalecem. Deixe desativada se não for necessária.
+
+Scripts desanexados não encerram com o aplicativo: devem definir seu próprio
+critério de saída. Para voltar a um comando escrito no editor, use
+**Usar comando manual**.
+
 Abrir no Artemis usa o aplicativo instalado no dispositivo que abre o link. Um
 link aberto no navegador do PC não manda o celular abrir o cliente remotamente.
 

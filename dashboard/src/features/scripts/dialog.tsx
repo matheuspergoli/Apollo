@@ -130,7 +130,7 @@ export function ScriptsDialog({
 							? deleting.name
 							: selected
 								? selected.file.name
-								: "Seus scripts PowerShell, guardados no Apollo."}
+								: "Biblioteca de scripts PowerShell deste host."}
 					</DialogDescription>
 				</DialogHeader>
 				<RequestError
@@ -179,9 +179,9 @@ export function ScriptsDialog({
 						/>
 						<p className="text-muted-foreground text-xs">
 							{selected.target
-								? "Os aplicativos permanecem nas versões que já utilizam."
+								? "Não altera as versões usadas pelos aplicativos."
 								: onSelect
-									? "Script selecionado para este comando."
+									? "Revise o conteúdo antes de usar."
 									: "Vincule este script a um comando de aplicativo."}
 						</p>
 					</div>

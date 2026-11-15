@@ -16,8 +16,8 @@ export async function request(
 	json: boolean | "text" = true
 ): Promise<unknown> {
 	try {
-		// These writes refresh the native library and may retry virtual-display detection.
-		// The isolated Windows run measured 11.4s without that driver; never retry writes.
+		// Library writes also refresh native application/display state. Give that
+		// operation its own bounded budget; never retry a write automatically.
 		const libraryWrite =
 			options.method === "POST" && ["apps", "apps/reorder", "apps/delete"].includes(path)
 		const timeout = AbortSignal.timeout(libraryWrite ? 30_000 : 10_000)
@@ -30,9 +30,22 @@ export async function request(
 		})
 		if (!response.ok) {
 			let reason: string | undefined
+			let detail: string | undefined
 			if (response.status === 401) {
 				const body = await response.json().catch(() => null)
 				if (body && typeof body.reason === "string") reason = body.reason
+			} else if (
+				response.status === 400 &&
+				["apps", "scripts", "scripts/read", "scripts/delete"].includes(path)
+			) {
+				const body = await response.json().catch(() => null)
+				if (
+					body?.status === false &&
+					typeof body.error === "string" &&
+					body.error.trim() &&
+					body.error.length <= 1024
+				)
+					detail = body.error
 			}
 			throw new ApiError(
 				response.status,
@@ -44,7 +57,7 @@ export async function request(
 							: "Acesso não autorizado. Entre novamente para continuar."
 					: path === "apps" && response.status === 409
 						? "Os vínculos de scripts mudaram no host. Revise antes de salvar."
-						: `O host recusou a solicitação (${response.status}).`,
+						: detail || `O host recusou a solicitação (${response.status}).`,
 				reason
 			)
 		}

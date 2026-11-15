@@ -7,6 +7,34 @@ afterEach(() => {
 })
 
 describe("host API boundary", () => {
+	it("shows bounded script validation errors without retrying or losing HTTP status", async () => {
+		for (const path of ["apps", "scripts", "scripts/read", "scripts/delete"]) {
+			const message = "A revisão do script não está mais disponível. Escolha outra versão."
+			const fetcher = vi
+				.fn()
+				.mockResolvedValue(
+					new Response(JSON.stringify({ status: false, error: message }), { status: 400 })
+				)
+			vi.stubGlobal("fetch", fetcher)
+			await expect(post(path, {})).rejects.toMatchObject({ status: 400, message })
+			expect(fetcher).toHaveBeenCalledTimes(1)
+		}
+	})
+	it("keeps generic errors for malformed script replies and unrelated endpoints", async () => {
+		for (const [path, body] of [
+			["scripts", "<html>Unavailable</html>"],
+			["scripts", JSON.stringify({ status: true, error: "not a rejection" })],
+			["scripts", JSON.stringify({ status: false, error: "x".repeat(1025) })],
+			["scripts", JSON.stringify({ status: false, error: "" })],
+			["login", JSON.stringify({ status: false, error: "private backend detail" })]
+		]) {
+			vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(body, { status: 400 })))
+			await expect(post(path, {})).rejects.toMatchObject({
+				status: 400,
+				message: "O host recusou a solicitação (400)."
+			})
+		}
+	})
 	it("only calls a session expired when the backend confirms expiry", async () => {
 		for (const reason of [
 			"session_missing",

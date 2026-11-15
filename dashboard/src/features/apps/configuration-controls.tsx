@@ -206,8 +206,8 @@ export function ApplicationConfigurationControls({
 						<AlertTitle>Revise comandos, caminhos e elevação</AlertTitle>
 						<AlertDescription>
 							Campos presentes substituem o valor inteiro, inclusive listas vazias. Scripts
-							embutidos serão copiados ao salvar; outros arquivos e caminhos externos não são
-							transferidos. Comandos podem executar nos eventos configurados após salvar.
+							embutidos serão copiados ao salvar; arquivos externos não são transferidos.
+							Revise os caminhos; comandos podem executar nos eventos configurados.
 						</AlertDescription>
 					</Alert>
 					<RequestError error={error} />

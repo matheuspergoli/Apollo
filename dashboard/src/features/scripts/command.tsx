@@ -108,8 +108,8 @@ export function ScriptCommand({
 								</Label>
 							</div>
 							<p className="text-muted-foreground text-xs">
-								Ignora a política de execução apenas nesta chamada do PowerShell. Políticas de
-								grupo continuam valendo.
+								Usa Bypass nesta chamada do PowerShell, sem alterar a política do Windows.
+								Políticas de Grupo prevalecem.
 							</p>
 							{(script.arguments || []).map((argument, index) => (
 								<div key={argumentIds[index]} className="flex gap-2">

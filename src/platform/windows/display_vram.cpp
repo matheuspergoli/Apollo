@@ -766,9 +766,7 @@ namespace platf::dxgi {
       }
 
       dxgi::dxgi_t dxgi;
-      BOOST_LOG(debug) << "Encoder init: QueryInterface(IDXGIDevice) begin";
       status = device->QueryInterface(IID_IDXGIDevice, (void **) &dxgi);
-      BOOST_LOG(debug) << "Encoder init: QueryInterface(IDXGIDevice) returned " << util::log_hex(status);
       if (FAILED(status)) {
         BOOST_LOG(warning) << "Failed to query DXGI interface from device [0x"sv << util::hex(status).to_string_view() << ']';
         return -1;
@@ -778,10 +776,8 @@ namespace platf::dxgi {
       status = dxgi->SetGPUThreadPriority(0x4000001E);
       BOOST_LOG(debug) << "Encoder init: SetGPUThreadPriority(absolute) returned " << util::log_hex(status);
       if (FAILED(status)) {
-        BOOST_LOG(info) << "Failed to request absoloute encoding GPU thread priority. Trying relative priority.";
-        BOOST_LOG(debug) << "Encoder init: SetGPUThreadPriority(relative) begin";
+        BOOST_LOG(info) << "Absolute encoding GPU priority unavailable; trying relative priority.";
         status = dxgi->SetGPUThreadPriority(7);
-        BOOST_LOG(debug) << "Encoder init: SetGPUThreadPriority(relative) returned " << util::log_hex(status);
         if (FAILED(status)) {
           BOOST_LOG(warning) << "Failed to request relative encoding GPU thread priority. Please run application as administrator for optimal performance.";
         } else {
@@ -795,16 +791,14 @@ namespace platf::dxgi {
         return -1;
       }
 
-      BOOST_LOG(debug) << "Encoder init: color matrix buffer begin";
+      BOOST_LOG(debug) << "Encoder init: D3D11 resources begin";
       color_matrix = make_buffer(device.get(), *default_color_vectors);
       if (!color_matrix) {
         BOOST_LOG(error) << "Failed to create color matrix buffer"sv;
         return -1;
       }
-      BOOST_LOG(debug) << "Encoder init: color matrix buffer ready; constant buffer binding begin";
       device_ctx->VSSetConstantBuffers(3, 1, &color_matrix);
       device_ctx->PSSetConstantBuffers(0, 1, &color_matrix);
-      BOOST_LOG(debug) << "Encoder init: constant buffer binding complete";
 
       this->display = std::dynamic_pointer_cast<display_base_t>(display);
       if (!this->display) {
@@ -812,13 +806,11 @@ namespace platf::dxgi {
       }
       display = nullptr;
 
-      BOOST_LOG(debug) << "Encoder init: blend state begin";
       blend_disable = make_blend(device.get(), false, false);
       if (!blend_disable) {
         return -1;
       }
 
-      BOOST_LOG(debug) << "Encoder init: blend state ready";
       D3D11_SAMPLER_DESC sampler_desc {};
       sampler_desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
       sampler_desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
@@ -828,19 +820,16 @@ namespace platf::dxgi {
       sampler_desc.MinLOD = 0;
       sampler_desc.MaxLOD = D3D11_FLOAT32_MAX;
 
-      BOOST_LOG(debug) << "Encoder init: CreateSamplerState begin";
       status = device->CreateSamplerState(&sampler_desc, &sampler_linear);
-      BOOST_LOG(debug) << "Encoder init: CreateSamplerState returned " << util::log_hex(status);
       if (FAILED(status)) {
-        BOOST_LOG(error) << "Failed to create point sampler state [0x"sv << util::hex(status).to_string_view() << ']';
+        BOOST_LOG(error) << "Failed to create linear sampler state [0x"sv << util::hex(status).to_string_view() << ']';
         return -1;
       }
 
-      BOOST_LOG(debug) << "Encoder init: pipeline state binding begin";
       device_ctx->OMSetBlendState(blend_disable.get(), nullptr, 0xFFFFFFFFu);
       device_ctx->PSSetSamplers(0, 1, &sampler_linear);
       device_ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-      BOOST_LOG(debug) << "Encoder init: pipeline state binding complete";
+      BOOST_LOG(debug) << "Encoder init: D3D11 resources ready";
 
       return 0;
     }

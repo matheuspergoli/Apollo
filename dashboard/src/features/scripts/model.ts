@@ -102,7 +102,10 @@ export async function readScriptFile(file: File): Promise<ScriptFile> {
 	let binary = ""
 	for (let start = 0; start < bytes.length; start += 8192)
 		binary += String.fromCharCode(...bytes.subarray(start, start + 8192))
-	return scriptFileSchema.parse({ name: file.name, data: btoa(binary) })
+	const parsed = scriptFileSchema.safeParse({ name: file.name, data: btoa(binary) })
+	if (!parsed.success)
+		throw new Error("Use um nome simples de arquivo .ps1, com até 180 caracteres.")
+	return parsed.data
 }
 
 export async function loadScript(reference: ScriptReference): Promise<ScriptFile> {
@@ -147,10 +150,12 @@ export function scriptSlots(app: Document) {
 export function applicationScripts(app: Document) {
 	return scriptSlots(app)
 		.filter(({ owner, key }) => owner[`${key}-script`] !== undefined)
-		.map((slot) => ({
-			...slot,
-			reference: scriptReferenceSchema.parse(slot.owner[`${slot.key}-script`])
-		}))
+		.map((slot) => {
+			const parsed = scriptReferenceSchema.safeParse(slot.owner[`${slot.key}-script`])
+			if (!parsed.success)
+				throw new Error(`${slot.label}: referência de script inválida. Escolha outro script.`)
+			return { ...slot, reference: parsed.data }
+		})
 }
 
 export function requiresScriptApproval(application: Document, previous: Document) {
@@ -200,7 +205,14 @@ export function validateApplicationScripts(app: Document) {
 	if (scripts.length > 32) throw new Error("Use até 32 vínculos de scripts por aplicativo.")
 	for (const { owner, key, label, reference } of scripts) {
 		if ("file" in reference) {
-			const { bytes, text } = decodeScript(reference.file.data)
+			const message = `${label}: use um script de até 128 KiB em ASCII ou UTF-8 com BOM, sem bytes nulos.`
+			let decoded: ReturnType<typeof decodeScript>
+			try {
+				decoded = decodeScript(reference.file.data)
+			} catch {
+				throw new Error(message)
+			}
+			const { bytes, text } = decoded
 			const bom = bytes[0] === 239 && bytes[1] === 187 && bytes[2] === 191
 			if (
 				!bytes.length ||
@@ -208,9 +220,7 @@ export function validateApplicationScripts(app: Document) {
 				text.includes("\0") ||
 				(!bom && bytes.some((value) => value >= 128))
 			)
-				throw new Error(
-					`${label}: use um script de até 128 KiB em ASCII ou UTF-8 com BOM, sem bytes nulos.`
-				)
+				throw new Error(message)
 		}
 		if (owner[key] !== "" && owner[key] !== undefined)
 			throw new Error(`${label}: escolha comando manual ou script, não os dois.`)

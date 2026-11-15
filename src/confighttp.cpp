@@ -746,7 +746,7 @@ namespace confighttp {
     while (request->content.read(buffer.data(), buffer.size()) || request->content.gcount()) {
       const auto count = static_cast<std::size_t>(request->content.gcount());
       if (content.size() + count > limit) {
-        throw std::runtime_error("Use uma solicitacao de scripts de ate 2 MiB.");
+        throw std::runtime_error("Use uma solicitação de scripts de até 2 MiB.");
       }
       content.append(buffer.data(), count);
     }

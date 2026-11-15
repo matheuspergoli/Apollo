@@ -364,7 +364,8 @@ function AppEditor({
 								/>
 							)}
 							<FieldDescription>
-								Iniciam em paralelo, sem aguardar o término. Usam os privilégios do aplicativo.
+								Iniciam na ordem da lista, sem aguardar o término. Usam os privilégios do
+								aplicativo.
 							</FieldDescription>
 						</Field>
 					</CardContent>
@@ -437,7 +438,7 @@ function AppEditor({
 					<DialogHeader>
 						<DialogTitle>Salvar vínculos de scripts?</DialogTitle>
 						<DialogDescription>
-							{text(draft.name)} · os scripts executarão nos eventos configurados.
+							{text(draft.name)} · autoriza os scripts nos eventos configurados.
 						</DialogDescription>
 					</DialogHeader>
 					<RequestError error={mutation.error} />

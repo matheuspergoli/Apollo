@@ -83,7 +83,17 @@ it("does not quietly ignore invalid references", () => {
 		{ ...reference, revision: "missing" },
 		{ ...reference, path: "C:\\example.ps1" }
 	])
-		expect(() => validateApplicationScripts({ "cmd-script": value })).toThrow()
+		expect(() => validateApplicationScripts({ "cmd-script": value })).toThrow(
+			"referência de script inválida"
+		)
+})
+
+it("explains invalid imported encoding without exposing decoder errors", () => {
+	expect(() =>
+		validateApplicationScripts({
+			"cmd-script": { file: { name: "example.ps1", data: btoa("\xff") } }
+		})
+	).toThrow("Inicialização: use um script de até 128 KiB em ASCII ou UTF-8 com BOM")
 })
 
 it("preserves ordered manual and managed detached commands without changing the main executable", () => {

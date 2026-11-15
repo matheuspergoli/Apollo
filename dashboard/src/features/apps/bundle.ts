@@ -108,7 +108,7 @@ export async function applicationBundleArchive(bundle: ApplicationBundle) {
 		"schema.json": `${JSON.stringify(z.toJSONSchema(applicationBundleSchema), null, 2)}\n`,
 		"LEIA-ME.md": `# Apollo — aplicativo com scripts
 
-Exportação dos campos conhecidos do rascunho do editor, incluindo alterações não salvas. Os scripts usados estão embutidos em aplicativo.json com seus bytes originais; não é necessário localizar os arquivos no host de origem.
+Exportação dos campos conhecidos do rascunho do editor, incluindo alterações não salvas. Exige um host Windows com suporte a scripts gerenciados. Os scripts estão embutidos em aplicativo.json com seus bytes originais; não é necessário localizar os arquivos no host de origem.
 
 ## Como importar
 
@@ -124,7 +124,7 @@ O pacote usa format="apollo-application-bundle", version=1 e kind="application".
 - Conteúdo e nome de cada arquivo, argumentos, ordem das etapas, elevação e diretório de trabalho configurado.
 - Política por vínculo: "execution-policy": "bypass" permite execução somente no processo PowerShell filho; ausente herda a política. Não é um booleano e não altera a política permanente do Windows nem supera Política de Grupo.
 
-Cada script aceita até 128 KiB em ASCII ou UTF-8 com BOM, sem bytes nulos. São até 32 vínculos por aplicativo e 16 argumentos por vínculo. O pacote transporta a revisão utilizada, não atualizações futuras do script de origem. Os arquivos estão em file.data, codificados em Base64; prefira o editor para adicionar ou alterar scripts.
+Cada script aceita até 128 KiB em ASCII ou UTF-8 com BOM, sem bytes nulos. São até 32 vínculos por aplicativo e 16 argumentos por vínculo. Cada argumento é um texto literal de 1 a 1024 bytes, em uma linha, sem aspas duplas ou bytes nulos. O pacote transporta a revisão utilizada, não atualizações futuras do script de origem. Os arquivos estão em file.data, codificados em Base64; prefira o editor para adicionar ou alterar scripts.
 
 ## Identidade e dependências
 
