@@ -58,9 +58,40 @@ export function sectionDocumentation(
 	})
 	if (mode === "reference")
 		return `# Apollo — ${section.title}\n\nReferência dos campos desta seção no JSON global, em \`sections.${section.id}\`. Os valores padrão abaixo são documentação; os valores exportados estão em \`configuracao.json\`. Leia o LEIA-ME da raiz antes de importar.\n\n${blocks.join("\n\n")}\n`
-	if (mode === "saved")
-		return `# Apollo — ${section.title}: valores salvos\n\nEste pacote contém os campos conhecidos desta seção lidos novamente do arquivo do host, com padrões para campos ausentes. Não inclui o rascunho não salvo nem outras seções. O ZIP não é criptografado: comandos, nomes e caminhos podem ser privados.\n\nEdite apenas settings em configuracao.json (UTF-8, até 256 KiB). Mantenha format="${format}", version=1 e section="${section.id}". Importe o JSON na mesma seção, revise e aplique ao rascunho. Somente Revisar e salvar grava; não há reinício automático. Campos omitidos são preservados, listas/objetos presentes substituem o campo inteiro. Não compartilhe sem revisão. Importar não transfere arquivos ou certificados.\n\nOs padrões abaixo são referência, não necessariamente os valores exportados. Revise comandos/elevação e mudanças de porta antes de aplicar. A porta do painel é a base + 1.\n\n${blocks.join("\n\n")}\n`
-	return `# Apollo — ${section.title}\n\n## Como usar\n\n1. Edite apenas os valores de \`settings\` em \`configuracao.json\`. O template contém os padrões do aplicativo, não seus dados privados nem os valores atuais do host.\n2. Importe o JSON na seção **${section.title}**. Não importe o ZIP.\n3. Confira o resumo e confirme a aplicação ao rascunho. Nada é enviado ao host nesse passo.\n4. Use **Revisar e salvar** para gravar pelo fluxo normal. Salvar não reinicia.\n\nFormato: \`format: "${format}"\`, \`version: 1\`, \`section: "${section.id}"\`. Não altere esses identificadores. O arquivo deve ser UTF-8, até 256 KiB, sem comentários. Números usam ponto decimal e não levam aspas. Opções booleanas do host usam os textos listados, como \`"enabled"\` e \`"disabled"\`.\n\nVocê pode remover chaves de \`settings\` para manter os valores atuais desses campos. Uma chave presente substitui o valor inteiro do campo, inclusive listas e objetos; listas vazias removem comandos/regras daquele campo. Chaves de outra seção, versões desconhecidas e valores inválidos são rejeitados integralmente.\n\n## Segurança\n\nRevise comandos e elevação antes de importar: eles podem executar no computador quando os eventos ocorrerem. Caminhos de certificados/credenciais apontam para arquivos no host, não transferem arquivos nem devem conter chaves privadas no JSON. Alterações de rede podem impedir acesso; HDR/display dependem do driver e do hardware. O template não instala drivers nem promete ganhos de desempenho.\n\n## Estruturas e exemplos\n\nComandos de preparação/estado:\n\n\`\`\`json\n[{"do":"echo iniciar","undo":"echo desfazer","elevated":false}]\n\`\`\`\n\nComandos de servidor:\n\n\`\`\`json\n[{"name":"Exemplo","cmd":"echo exemplo","elevated":false}]\n\`\`\`\n\nRegras de display:\n\n\`\`\`json\n{"mixed":[{"requested_resolution":"1920x1080","requested_fps":"60","final_resolution":"1920x1080","final_refresh_rate":"60"}],"resolution_only":[],"refresh_rate_only":[]}\n\`\`\`\n\nEsses exemplos só se aplicam aos campos correspondentes da seção; não são executados ou incluídos automaticamente.\n\n## Campos desta seção\n\n${blocks.join("\n")}\n`
+	return `# Apollo — ${section.title}${mode === "saved" ? ": valores salvos" : ""}
+
+${mode === "saved" ? "Exportação dos campos conhecidos desta seção, lidos novamente do host, com padrões para campos ausentes. Não inclui o rascunho não salvo nem outras seções." : "Template com os padrões desta seção, não os valores atuais do host."}
+
+## Como importar
+
+1. Extraia o ZIP e edite settings em configuracao.json (UTF-8, até 256 KiB, sem comentários).
+2. Mantenha format="${format}", version=1 e section="${section.id}". Importe o JSON na seção **${section.title}**, não o ZIP.
+3. Revise e confirme **Aplicar ao rascunho**. Só **Revisar e salvar** grava no host; importar não executa comandos nem reinicia.
+
+Campos omitidos preservam o rascunho. Campos presentes substituem o valor inteiro, inclusive listas e objetos; listas vazias removem comandos ou regras. Chaves de outra seção, versões desconhecidas e valores inválidos rejeitam o arquivo inteiro.
+
+Números usam ponto decimal, sem aspas. Opções booleanas do host usam os textos documentados, como "enabled" e "disabled". Os padrões abaixo são referência; podem diferir dos valores exportados.
+
+## Comandos e arquivos
+
+Estas configurações aceitam comandos manuais, não vínculos de scripts gerenciados. Se um comando chamar um arquivo no host, esse arquivo não será incluído na exportação. Para transportar scripts gerenciados, use **Exportar aplicativo do editor**, em Aplicativos.
+
+Revise comandos e elevação: podem executar ações nos eventos configurados após salvar. Caminhos não transferem arquivos, certificados ou credenciais. O ZIP não é criptografado e pode conter dados privados; revise antes de compartilhar.
+
+Mudanças de rede podem impedir acesso: a porta do painel é a base + 1. Display/HDR dependem do hardware e do driver; importar não instala drivers nem adapta opções de outra plataforma.
+
+## Estruturas e exemplos
+
+Use somente nos campos correspondentes desta seção:
+
+- Preparação/estado: [{"do":"echo iniciar","undo":"echo desfazer","elevated":false}].
+- Servidor: [{"name":"Exemplo","cmd":"echo exemplo","elevated":false}].
+- Display: {"mixed":[{"requested_resolution":"1920x1080","requested_fps":"60","final_resolution":"1920x1080","final_refresh_rate":"60"}],"resolution_only":[],"refresh_rate_only":[]}.
+
+## Campos desta seção
+
+${blocks.join("\n\n")}
+`
 }
 
 export function parseSectionTemplate(raw: string, section: SettingSection): Document {

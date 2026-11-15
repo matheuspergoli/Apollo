@@ -163,3 +163,76 @@ test("app export is confirmed, includes the draft and schema, and excludes ident
 	expect(files["apollo-aplicativo/schema.json"]).toBeDefined()
 	expect(host.calls.some((call) => call.method === "POST")).toBe(false)
 })
+
+test("the basic template stays manual while script export includes portable resources", async ({
+	page
+}) => {
+	const host = await mockHost(page)
+	host.scriptsSupported = true
+	const reference = {
+		file: {
+			name: "example.ps1",
+			data: Buffer.from("# Portable script\r\n").toString("base64")
+		},
+		arguments: ["literal with spaces"],
+		"execution-policy": "bypass"
+	}
+	host.apps[0].cmd = ""
+	host.apps[0]["cmd-script"] = reference
+	host.apps[0].detached = ["manual before", { cmd: "", "cmd-script": reference }]
+	await page.goto("/apps")
+	await page.getByRole("button", { name: "Editar", exact: true }).click()
+	const templateReady = page.waitForEvent("download")
+	await page
+		.getByRole("button", { name: "Baixar template de aplicativo", exact: true })
+		.click()
+	const templateFiles = await contents(await templateReady)
+	const template = JSON.parse(strFromU8(templateFiles["apollo-aplicativo/aplicativo.json"]))
+	expect(template.format).toBe("apollo-application")
+	expect(template.kind).toBe("template")
+	expect(template.application).not.toHaveProperty("cmd-script")
+	expect(template.application.detached).toEqual([])
+	expect(strFromU8(templateFiles["apollo-aplicativo/LEIA-ME.md"])).toContain(
+		"apollo-application-bundle"
+	)
+	await page
+		.getByRole("button", { name: "Exportar aplicativo do editor", exact: true })
+		.click()
+	const exportReady = page.waitForEvent("download")
+	await page
+		.getByRole("alertdialog")
+		.getByRole("button", { name: "Confirmar", exact: true })
+		.click()
+	const exportedFiles = await contents(await exportReady)
+	const exported = JSON.parse(strFromU8(exportedFiles["apollo-aplicativo/aplicativo.json"]))
+	expect(exported.format).toBe("apollo-application-bundle")
+	expect(exported.application["cmd-script"]).toEqual(reference)
+	expect(exported.application.detached).toEqual(host.apps[0].detached)
+	expect(host.calls.some((call) => call.method === "POST")).toBe(false)
+})
+
+test("unsupported script bundles are rejected without changing the draft or writing", async ({
+	page
+}) => {
+	const host = await mockHost(page)
+	await page.goto("/apps")
+	await page.getByRole("button", { name: "Editar", exact: true }).click()
+	await page.getByLabel("Arquivo JSON do aplicativo", { exact: true }).setInputFiles({
+		name: "aplicativo.json",
+		mimeType: "application/json",
+		buffer: Buffer.from(
+			JSON.stringify({
+				format: "apollo-application-bundle",
+				version: 1,
+				kind: "application",
+				application: { name: "Do not apply" }
+			})
+		)
+	})
+	await expect(page.getByRole("alert")).toContainText(
+		"Este host não oferece suporte a scripts gerenciados."
+	)
+	await expect(page.locator("#app-name")).toHaveValue("Test Game")
+	await expect(page.getByRole("dialog")).toHaveCount(0)
+	expect(host.calls.some((call) => call.method === "POST")).toBe(false)
+})

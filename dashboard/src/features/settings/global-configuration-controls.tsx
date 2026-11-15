@@ -102,8 +102,8 @@ export function GlobalConfigurationControls({
 							plataformas.
 						</>
 					)}{" "}
-					Padrões e valores salvos são arquivos diferentes; não é backup de conta, pareamentos
-					ou aplicativos.
+					O template contém padrões; a exportação lê os valores salvos, não o rascunho. Não
+					inclui conta, pareamentos, aplicativos ou biblioteca de scripts.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-3">

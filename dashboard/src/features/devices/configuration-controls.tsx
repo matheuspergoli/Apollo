@@ -90,8 +90,8 @@ export function DeviceConfigurationControls({
 			<CardHeader>
 				<CardTitle>Arquivo de permissões</CardTitle>
 				<CardDescription>
-					Configuração de um dispositivo já pareado, sem transferir nome, UUID ou certificados.
-					Não modifica o fluxo de pareamento.
+					Template com permissões conservadoras; exportação com os valores do editor. Não
+					transfere nome, UUID ou certificados de um dispositivo já pareado.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-3">

@@ -977,6 +977,212 @@ try {
 	)
 	assert.deepEqual(errors, [])
 
+	// Export through the production UI, remove the source resources, then import,
+	// save and execute the restored app. Format-only tests cannot prove this path.
+	const bundleOutput = resolve(work, "bundle-launch.txt")
+	const bundleDetachedOutput = resolve(work, "bundle-detached.txt")
+	const bundleReference = (path, policy = "bypass") => ({
+		file: pendingScript,
+		arguments: [path, literalArgument],
+		...(policy === "bypass" ? { "execution-policy": "bypass" } : {})
+	})
+	const bundleSource = {
+		name: "Bundle source",
+		cmd: "",
+		"cmd-script": bundleReference(bundleOutput),
+		"virtual-display": false,
+		"use-app-identity": false,
+		"exclude-global-prep-cmd": true,
+		"exclude-global-state-cmd": true,
+		"prep-cmd": [
+			{
+				do: "",
+				undo: "",
+				elevated: false,
+				"do-script": bundleReference(resolve(work, "bundle-prepare.txt")),
+				"undo-script": bundleReference(resolve(work, "bundle-undo.txt"))
+			}
+		],
+		"state-cmd": [
+			{
+				do: "",
+				undo: "",
+				elevated: true,
+				"do-script": bundleReference(resolve(work, "bundle-state.txt"), "inherit"),
+				"undo-script": bundleReference(resolve(work, "bundle-state-undo.txt"), "inherit")
+			}
+		],
+		detached: [
+			"cmd.exe /c exit 0",
+			{ cmd: "", "cmd-script": bundleReference(bundleDetachedOutput) },
+			"cmd.exe /c exit 0"
+		],
+		"scripts-approved": true
+	}
+	const bundleBindings = (app) => [
+		app["cmd-script"],
+		app["prep-cmd"][0]["do-script"],
+		app["prep-cmd"][0]["undo-script"],
+		app["state-cmd"][0]["do-script"],
+		app["state-cmd"][0]["undo-script"],
+		app.detached[1]["cmd-script"]
+	]
+	assert.equal(
+		(await http("/api/apps", { method: "POST", cookie, data: bundleSource })).status,
+		200
+	)
+	const sourceEntry = (await http("/api/apps", { cookie })).json.apps.find(
+		(app) => app.name === bundleSource.name
+	)
+	assert(sourceEntry?.uuid)
+	await navigate("/apps")
+	await page
+		.locator('[data-slot="card"]')
+		.filter({ has: page.getByRole("button", { name: "Excluir Bundle source", exact: true }) })
+		.getByRole("button", { name: "Editar", exact: true })
+		.click()
+	async function exportEditorBundle() {
+		await page
+			.getByRole("button", { name: "Exportar aplicativo do editor", exact: true })
+			.click()
+		const ready = page.waitForEvent("download")
+		await page
+			.getByRole("alertdialog")
+			.getByRole("button", { name: "Confirmar", exact: true })
+			.click()
+		const path = await (await ready).path()
+		assert(path, "Script application ZIP must be downloaded")
+		const files = unzipSync(await readFile(path))
+		assert(files["apollo-aplicativo/schema.json"])
+		assert(files["apollo-aplicativo/LEIA-ME.md"])
+		return JSON.parse(strFromU8(files["apollo-aplicativo/aplicativo.json"]))
+	}
+	const exportedBundle = await exportEditorBundle()
+	assert.equal(exportedBundle.format, "apollo-application-bundle")
+	assert(!Object.hasOwn(exportedBundle.application, "uuid"))
+	for (const reference of bundleBindings(exportedBundle.application)) {
+		assert.deepEqual(reference.file, pendingScript)
+		assert(!Object.hasOwn(reference, "id"))
+	}
+	await page.getByRole("button", { name: "Cancelar edição", exact: true }).click()
+	assert.equal(
+		(
+			await http("/api/apps/delete", {
+				method: "POST",
+				cookie,
+				data: { uuid: sourceEntry.uuid }
+			})
+		).status,
+		200
+	)
+	for (const id of new Set(bundleBindings(sourceEntry).map((reference) => reference.id)))
+		assert.equal(
+			(await http("/api/scripts/delete", { method: "POST", cookie, data: { id } })).status,
+			200
+		)
+	const scriptsBeforeImport = (await http("/api/scripts", { cookie })).json.scripts.length
+	await navigate("/apps")
+	await page.getByRole("button", { name: "Novo aplicativo", exact: true }).click()
+	const bundleFile = {
+		name: "aplicativo.json",
+		mimeType: "application/json",
+		buffer: Buffer.from(JSON.stringify(exportedBundle))
+	}
+	const bundleInput = page.getByLabel("Arquivo JSON do aplicativo", { exact: true })
+	await bundleInput.setInputFiles(bundleFile)
+	const bundleReview = page.getByRole("dialog", {
+		name: "Revisar importação de aplicativo",
+		exact: true
+	})
+	await bundleReview.getByRole("button", { name: "Cancelar", exact: true }).click()
+	await expect(page.getByLabel("Nome", { exact: true })).toHaveValue("")
+	await bundleInput.setInputFiles(bundleFile)
+	await bundleReview.getByRole("button", { name: "Aplicar ao rascunho", exact: true }).click()
+	await page.getByLabel("Nome", { exact: true }).fill("Bundle restored")
+	assert.equal(
+		(await http("/api/scripts", { cookie })).json.scripts.length,
+		scriptsBeforeImport,
+		"Import review must not create scripts"
+	)
+	assert(
+		!(await http("/api/apps", { cookie })).json.apps.some(
+			(app) => app.name === "Bundle restored"
+		)
+	)
+	await page.getByRole("button", { name: "Salvar aplicativo", exact: true }).click()
+	const bindingReview = page.getByRole("dialog", {
+		name: "Salvar vínculos de scripts?",
+		exact: true
+	})
+	await expect(bindingReview).toBeVisible()
+	await bindingReview.getByRole("button", { name: "Salvar aplicativo", exact: true }).click()
+	await page.getByRole("button", { name: "Excluir Bundle restored", exact: true }).waitFor()
+	const restoredEntry = (await http("/api/apps", { cookie })).json.apps.find(
+		(app) => app.name === "Bundle restored"
+	)
+	assert(restoredEntry?.uuid)
+	assert.notEqual(restoredEntry.uuid, sourceEntry.uuid)
+	const sourceIds = new Set(bundleBindings(sourceEntry).map((reference) => reference.id))
+	for (const [index, reference] of bundleBindings(restoredEntry).entries()) {
+		assert(!sourceIds.has(reference.id), "Imported scripts need independent local identities")
+		const expected = bundleBindings(exportedBundle.application)[index]
+		assert.deepEqual(reference.arguments, expected.arguments)
+		assert.equal(reference["execution-policy"], expected["execution-policy"])
+		const content = await http("/api/scripts/read", {
+			method: "POST",
+			cookie,
+			data: reference
+		})
+		assert.equal(content.status, 200)
+		assert.equal(content.json.script.name, pendingScript.name)
+		assert.equal(content.json.script.data, pendingScript.data)
+	}
+	assert.equal(restoredEntry["state-cmd"][0].elevated, true)
+	assert.equal(restoredEntry.detached[0], bundleSource.detached[0])
+	assert.equal(restoredEntry.detached[2], bundleSource.detached[2])
+	await page
+		.locator('[data-slot="card"]')
+		.filter({
+			has: page.getByRole("button", { name: "Excluir Bundle restored", exact: true })
+		})
+		.getByRole("button", { name: "Editar", exact: true })
+		.click()
+	assert.deepEqual(await exportEditorBundle(), {
+		...exportedBundle,
+		application: { ...exportedBundle.application, name: "Bundle restored" }
+	})
+	await page.getByRole("button", { name: "Cancelar edição", exact: true }).click()
+	assert.equal(
+		(
+			await http("/api/apps/launch", {
+				method: "POST",
+				cookie,
+				data: { uuid: restoredEntry.uuid }
+			})
+		).status,
+		200
+	)
+	for (const path of [bundleOutput, bundleDetachedOutput])
+		await expect
+			.poll(
+				async () => {
+					try {
+						return await readFile(path, "utf8")
+					} catch (error) {
+						if (error.code === "ENOENT") return null
+						throw error
+					}
+				},
+				{ timeout: 10000 }
+			)
+			.toBe(literalArgument)
+	assert.equal(
+		(await http("/api/apps/close", { method: "POST", cookie, data: {} })).status,
+		200
+	)
+	assert.deepEqual(errors, [])
+	await navigate("/apps")
+
 	const changed = await http("/api/password", {
 		method: "POST",
 		cookie,

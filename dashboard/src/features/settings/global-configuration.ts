@@ -122,27 +122,29 @@ export function parseGlobalConfiguration(raw: string): GlobalImport {
 export function globalDocumentation(configuration: GlobalConfiguration) {
 	return `# Apollo — configuração global
 
-Este pacote contém ${configuration.kind === "saved" ? "os valores dos campos conhecidos do arquivo salvo, lidos do host no momento da exportação; não inclui o rascunho não salvo" : `os padrões das ${sections.length} seções, não uma cópia dos valores atuais`}. Plataforma de origem: ${configuration.platform}.
+${configuration.kind === "saved" ? "Exportação dos campos conhecidos salvos no host, lidos no momento da exportação; não inclui o rascunho não salvo." : `Template com os padrões das ${sections.length} seções, não os valores atuais do host.`} Plataforma de origem: ${configuration.platform}.
 
 ## Conteúdo
 
 - configuracao.json: JSON editável e importável.
 - secoes/: referência de todos os campos, padrões, opções e limites.
 
-São ${sections.reduce((total, section) => total + section.fields.length, 0)} campos de Windows e Linux. O painel mostra apenas as seções da plataforma do host; o arquivo completo inclui todas. Não inclui conta/senhas, pareamentos, aplicativos, conteúdo de certificados/chaves, logs ou chaves desconhecidas. Isto não é backup da instalação inteira. Caminhos e comandos podem conter dados privados: guarde o ZIP com cuidado. A exportação é local e não envia arquivos a serviços externos.
+São ${sections.reduce((total, section) => total + section.fields.length, 0)} campos de Windows e Linux. O painel mostra as seções da plataforma do host; o arquivo completo inclui todas. Não inclui conta, senhas, pareamentos, aplicativos, biblioteca de scripts, conteúdo de certificados/chaves, logs ou opções desconhecidas. Não é backup da instalação inteira.
 
-## Importação segura
+## Como importar
 
 1. Extraia o ZIP e edite configuracao.json em UTF-8. Importe o JSON, não o ZIP. Limite: 1 MiB.
 2. Mantenha format="${format}", version=1, kind e platform. Valores ficam em sections.<id>.<chave>.
 3. Use **Importar configuração completa**, revise e confirme **Aplicar tudo ao rascunho**.
-4. Só **Revisar e salvar** grava o host. Importar não reinicia e não instala drivers.
+4. Só **Revisar e salvar** grava no host. Importar não executa comandos, reinicia o host ou instala drivers.
 
 Uma seção inválida rejeita o arquivo inteiro antes de alterar o rascunho. Seções e campos omitidos permanecem como estão; campos presentes substituem o valor inteiro, inclusive listas vazias. Chaves desconhecidas do host são preservadas pelo salvamento normal, mas não são exportadas ou aceitas neste formato.
 
 ## Rede e dados privados
 
-Importar padrões pode trocar a porta ou reativar descoberta/bandeja. Remova do JSON as chaves que deseja manter. A porta do painel é a porta base + 1: base 50989 corresponde a 50990. Revise comandos, elevação e caminhos. Não coloque senhas nem chaves privadas no JSON e não compartilhe exportações sem revisá-las.
+Importar padrões pode trocar a porta ou reativar descoberta/bandeja. Remova do JSON as chaves que deseja manter. A porta do painel é a porta base + 1: base 50989 corresponde a 50990.
+
+O ZIP não é criptografado e pode conter nomes, endereços, comandos e caminhos privados. Revise antes de compartilhar; não inclua senhas ou chaves privadas. A exportação ocorre no navegador, sem envio a serviços externos.
 
 ## Exemplo parcial
 
@@ -158,6 +160,10 @@ Comandos de preparação/estado: [{"do":"echo iniciar","undo":"echo desfazer","e
 Comandos de servidor: [{"name":"Exemplo","cmd":"echo exemplo","elevated":false}].
 Regras de display: {"mixed":[],"resolution_only":[],"refresh_rate_only":[]}.
 Consulte secoes/ para tipos, opções e limites. Os exemplos não são executados automaticamente.
+
+Essas listas aceitam comandos manuais, não vínculos de scripts gerenciados. Um comando pode chamar um arquivo já existente no host, mas esse arquivo não é incluído na exportação. Para transportar um aplicativo com scripts gerenciados, use **Exportar aplicativo do editor**, em Aplicativos.
+
+Revise comandos, elevação e caminhos antes de salvar: eles podem executar ações nos eventos configurados. Arquivos não são transferidos; caminhos não são adaptados a outra plataforma.
 `
 }
 

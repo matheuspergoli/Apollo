@@ -43,6 +43,7 @@ it("rejects host-local references, identity transfer, unsupported versions and m
 	)
 	for (const value of [
 		{ ...bundle, version: 2 },
+		{ ...bundle, $schema: "https://example.invalid/schema.json" },
 		{ ...bundle, application: { ...bundle.application, uuid: "foreign" } },
 		{ ...bundle, application: { ...bundle.application, cmd: "manual" } },
 		{
@@ -54,6 +55,52 @@ it("rejects host-local references, identity transfer, unsupported versions and m
 		}
 	])
 		expect(() => parseApplicationBundle(JSON.stringify(value))).toThrow()
+})
+
+it("preserves every script slot, policy and manual command in an exported package", async () => {
+	const reference = {
+		file: { name: "example.ps1", data: btoa("# original\r\n") },
+		arguments: ["literal with spaces"],
+		"execution-policy": "bypass" as const
+	}
+	const inherited = { file: reference.file, arguments: [] }
+	const draft = appDraft({
+		name: "Example",
+		"cmd-script": reference,
+		"working-dir": "C:\\Example",
+		elevated: true,
+		"prep-cmd": [{ do: "", "do-script": reference, undo: "manual undo", elevated: false }],
+		"state-cmd": [
+			{ do: "", "do-script": inherited, undo: "", "undo-script": reference, elevated: true }
+		],
+		detached: ["manual before", { cmd: "", "cmd-script": reference }, "manual after"]
+	})
+	const original = structuredClone(draft)
+	const bundle = await exportedApplicationBundle(draft)
+	const files = unzipSync(
+		new Uint8Array(await (await applicationBundleArchive(bundle)).arrayBuffer())
+	)
+	const restored = parseApplicationBundle(
+		strFromU8(files["apollo-aplicativo/aplicativo.json"])
+	).application
+	for (const key of [
+		"cmd-script",
+		"prep-cmd",
+		"state-cmd",
+		"detached",
+		"working-dir",
+		"elevated"
+	])
+		expect(restored[key as keyof typeof restored]).toEqual(draft[key])
+	expect(draft).toEqual(original)
+	const invalid = {
+		...bundle,
+		application: {
+			...bundle.application,
+			"cmd-script": { ...reference, "execution-policy": true }
+		}
+	}
+	expect(() => parseApplicationBundle(JSON.stringify(invalid))).toThrow()
 })
 
 it("roundtrips detached script bytes, arguments and ordering without widening the legacy format", async () => {

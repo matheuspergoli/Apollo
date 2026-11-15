@@ -7,6 +7,10 @@ dos testes estão em [development.md](../docs/development.md).
 
 ## Templates por seção
 
+Template contém padrões para preencher; exportação contém valores do host ou do
+editor, conforme a área. Nos dois casos, extraia o ZIP e importe o JSON indicado.
+Revisar e aplicar altera apenas o rascunho; salvar é uma ação separada.
+
 Em Configurações, selecione uma seção e use **Baixar template da seção**. O ZIP
 contém `configuracao.json` com os padrões e `LEIA-ME.md` com tipos, valores aceitos,
 limites, efeitos e exemplos. Não é uma exportação dos dados atuais do host.
@@ -20,7 +24,7 @@ O limite de importação é 256 KiB, UTF-8. Não coloque senhas/chaves privadas 
 
 O bloco **Todas as configurações** mantém os controles por seção e acrescenta:
 
-- **Baixar template completo:** padrões dos 99 campos em 11 seções de Windows/Linux, sem dados do host. O Windows mostra 10 seções; VA-API pertence ao Linux.
+- **Baixar template completo:** padrões das seções de Windows/Linux, sem dados do host. O painel mostra as seções da plataforma; VA-API pertence ao Linux.
 - **Exportar configurações salvas:** após confirmação de privacidade, lê novamente
   o arquivo no host. Exporta campos conhecidos, normalizados para JSON, com os
   padrões dos campos ausentes; não inclui o rascunho não salvo.
@@ -28,7 +32,7 @@ O bloco **Todas as configurações** mantém os controles por seção e acrescen
   diferenças por seção e aplica os campos presentes somente após confirmação.
   Um erro em qualquer seção rejeita tudo. Seções/campos omitidos permanecem intactos.
 
-Cada ZIP contém `configuracao.json`, `LEIA-ME.md` e a documentação das 11 seções.
+Cada ZIP contém `configuracao.json`, `LEIA-ME.md` e a documentação das seções.
 O formato global é `apollo-settings`, versão 1, separado do JSON por seção.
 Depois da importação, **Revisar e salvar** continua obrigatório para gravar.
 Não há reinício automático, nem conversão silenciosa de opções entre plataformas.
@@ -46,17 +50,41 @@ No editor de aplicativo novo ou existente há **Baixar template de aplicativo**,
 `aplicativo.json`, `LEIA-ME.md` e `schema.json` gerado do contrato Zod. A referência
 `$schema` é local e fixa; o importador não consulta schemas externos.
 
-O formato é `apollo-application`, versão 1, com campos em `application`. Aceita
-importação parcial: campos omitidos mantêm o rascunho. O aplicativo resultante
-inteiro precisa ser válido, inclusive nome ao criar. Só **Salvar aplicativo**
-grava a biblioteca; importar não executa comandos ou inicia o stream.
+O template básico usa `apollo-application`, versão 1, com campos em `application`
+e comandos manuais. **Exportar aplicativo do editor** inclui alterações não salvas
+e escolhe automaticamente o formato:
+
+- Sem scripts gerenciados: `apollo-application`.
+- Com scripts gerenciados: `apollo-application-bundle`, versão 1, com arquivos
+  embutidos, argumentos, ordem, elevação e política de execução por vínculo.
+
+Ambos usam **Importar JSON de aplicativo**. O formato básico aceita importação
+parcial; o pacote com scripts exporta os campos conhecidos completos. Campos
+omitidos preservam o rascunho; campos presentes substituem o valor inteiro,
+inclusive listas vazias. `cmd` manual substitui o vínculo de inicialização.
+O aplicativo resultante precisa ser válido, inclusive nome ao criar.
+
+Só **Salvar aplicativo** grava a biblioteca. Vínculos importados exigem revisão;
+salvar cria cópias locais dos scripts com novos IDs e reconstrói os vínculos.
+Conteúdo e nome do arquivo, argumentos e bypass são preservados, não o histórico
+ou a identidade da biblioteca de origem. O bypass usa
+`"execution-policy": "bypass"`, não `true`; vale apenas para o PowerShell filho e
+não altera políticas permanentes ou Política de Grupo. Importar e salvar não
+executam os scripts.
+
+O limite é 512 KiB no formato básico e 2 MiB no pacote com scripts. Cada script
+aceita até 128 KiB em ASCII ou UTF-8 com BOM. Para criar um modelo reutilizável
+com scripts, monte o aplicativo no editor e exporte; não é necessário preencher
+Base64 manualmente no template básico.
 
 UUID/identidade do host, estado de execução e campos desconhecidos não são
 exportados nem aceitos no arquivo. Ao editar, a identidade e os campos extras
 locais são preservados; ao criar, a identidade é gerada pelo host ao salvar.
 Exportar inclui o rascunho, não necessariamente o último arquivo salvo, e exige
 confirmação de privacidade. O ZIP não é criptografado nem transfere capas/binários.
-Não há importação global da biblioteca nesta funcionalidade; `.art` continua
+Módulos PowerShell e arquivos acessados pelos scripts também não são transferidos;
+caminhos e argumentos não são adaptados ao destino. Não há importação global da
+biblioteca nesta funcionalidade; `.art` continua
 sendo apenas um atalho Artemis, não um arquivo de configuração de aplicativo.
 
 ## Permissões de dispositivos e valores por seção
@@ -72,6 +100,10 @@ Cada seção de configurações agora também exporta **valores salvos da seçã
 lidos novamente do host, sem o rascunho e sem depender de seções inválidas não
 relacionadas. Template continua sendo padrões; ambos usam o mesmo formato fechado
 por seção. Exportações de valores atuais pedem confirmação de privacidade.
+
+Configurações e dispositivos aceitam comandos manuais, mas não vínculos de scripts
+gerenciados. Um comando pode chamar um arquivo já existente no host; exportar o
+comando não inclui esse arquivo. A biblioteca de scripts é usada nos aplicativos.
 
 ## Estado dos aplicativos, capas e ações do host
 
@@ -121,7 +153,7 @@ metadados inferiores compactos; testes verificam alinhamento em temas e larguras
 React/DOM 19.3.1, strict TypeScript 7.0.2, Vite 8.3.4/React plugin 6.1.2,
 Tailwind/Vite plugin 4.3.3, Query 5.104.5, Router 1.170.45, official Router Vite
 plugin 1.168.47/generator 1.167.45. Biome 2.5.15, Vitest 5.0.5, Playwright 1.64.1.
-Versions are exact-pinned with package-lock.json and checked against actual peer
+Versions are exact-pinned with pnpm-lock.yaml and checked against actual peer
 compatibility; TanStack packages do not all share identical release numbers.
 
 Use official shadcn base-lyra/Base UI sources for primitives. Use the regular

@@ -187,6 +187,16 @@ enviados. Isso também se aplica às sessões temporárias de detecção de code
 O teste estrutural protege essa ordem e a ausência de drenagem no destrutor;
 não comprova encerramento AMF no driver. Inicialização, transmissão e
 reconexão com aceleração AMD exigem validação em um host Windows com essa GPU.
+Os marcadores de inicialização, detecção e liberação ficam no nível Depuração;
+o nível Informação mantém os resultados da detecção sem o detalhamento por chamada.
+
+Os arquivos gerados distinguem padrões de valores exportados: configurações
+globais/por seção leem o estado salvo; aplicativos e dispositivos usam o rascunho.
+O template básico de aplicativo permanece manual. Aplicativos com scripts usam o
+pacote de recursos, pelo mesmo importador, com revisão antes de criar cópias locais.
+O ensaio Windows exporta pela interface, remove os recursos de origem, importa,
+salva, reexporta e executa a cópia. Protege bytes, argumentos, políticas, ordem,
+elevação e independência dos IDs; não qualifica dependências externas dos scripts.
 
 ## Organização
 

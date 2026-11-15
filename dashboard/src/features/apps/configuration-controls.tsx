@@ -107,8 +107,8 @@ export function ApplicationConfigurationControls({
 			<CardHeader>
 				<CardTitle>Arquivo de configuração do aplicativo</CardTitle>
 				<CardDescription>
-					Um aplicativo por arquivo. Funciona ao criar ou editar; não importa a biblioteca
-					inteira nem copia UUIDs.
+					Template com padrões e comandos manuais; exportação com os valores do editor e os
+					scripts utilizados. Um aplicativo por arquivo, sem copiar UUIDs.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-3">

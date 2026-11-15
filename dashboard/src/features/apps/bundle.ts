@@ -17,7 +17,12 @@ import { applicationOptionsSchema } from "./schema"
 export const applicationBundleLimit = 2 * 1024 * 1024
 const pendingScript = z.strictObject({
 	file: scriptFileSchema,
-	"execution-policy": z.literal("bypass").optional(),
+	"execution-policy": z
+		.literal("bypass")
+		.optional()
+		.describe(
+			"Permitir execução somente no processo PowerShell filho; ausente herda a política."
+		),
 	arguments: z.array(z.string()).max(16).optional()
 })
 const step = z.strictObject({
@@ -41,7 +46,7 @@ const options = applicationOptionsSchema.extend({
 		.max(256)
 })
 export const applicationBundleSchema = z.strictObject({
-	$schema: z.string().optional(),
+	$schema: z.literal("./schema.json").optional(),
 	format: z.literal("apollo-application-bundle"),
 	version: z.literal(1),
 	kind: z.literal("application"),
@@ -101,7 +106,33 @@ export async function applicationBundleArchive(bundle: ApplicationBundle) {
 	return configurationArchive("apollo-aplicativo", {
 		"aplicativo.json": `${JSON.stringify(bundle, null, 2)}\n`,
 		"schema.json": `${JSON.stringify(z.toJSONSchema(applicationBundleSchema), null, 2)}\n`,
-		"LEIA-ME.md":
-			"# Aplicativo com scripts\n\nImporte aplicativo.json no editor de Aplicativos. Os scripts estão incluídos com seus bytes originais; capas, executáveis, módulos e caminhos externos não são transferidos. Revise conteúdo, argumentos e privilégios antes de salvar. Importar apenas altera o rascunho; salvar cria cópias locais dos scripts, sem executá-los. A identidade local do aplicativo é preservada. O pacote não é criptografado: revise os scripts antes de compartilhar.\n"
+		"LEIA-ME.md": `# Apollo — aplicativo com scripts
+
+Exportação dos campos conhecidos do rascunho do editor, incluindo alterações não salvas. Os scripts usados estão embutidos em aplicativo.json com seus bytes originais; não é necessário localizar os arquivos no host de origem.
+
+## Como importar
+
+1. Extraia o ZIP e use **Importar JSON de aplicativo** em um editor novo ou existente. Importe aplicativo.json, não o ZIP. Limite: 2 MiB, UTF-8; profundidade máxima: 20.
+2. Revise comandos, conteúdo dos scripts, argumentos, elevação e política de execução. Confirme **Aplicar ao rascunho**.
+3. Use **Salvar aplicativo** e revise os vínculos de scripts. Só essa confirmação grava o aplicativo e cria cópias locais dos scripts; importar e salvar não os executam.
+
+O pacote usa format="apollo-application-bundle", version=1 e kind="application". schema.json descreve a estrutura. Uma opção inválida rejeita o arquivo inteiro. Campos presentes substituem o valor inteiro, inclusive listas; campos omitidos preservam o rascunho.
+
+## O que é preservado
+
+- Comandos manuais e scripts na inicialização, preparação/undo, eventos de sessão e comandos desanexados.
+- Conteúdo e nome de cada arquivo, argumentos, ordem das etapas, elevação e diretório de trabalho configurado.
+- Política por vínculo: "execution-policy": "bypass" permite execução somente no processo PowerShell filho; ausente herda a política. Não é um booleano e não altera a política permanente do Windows nem supera Política de Grupo.
+
+Cada script aceita até 128 KiB em ASCII ou UTF-8 com BOM, sem bytes nulos. São até 32 vínculos por aplicativo e 16 argumentos por vínculo. O pacote transporta a revisão utilizada, não atualizações futuras do script de origem. Os arquivos estão em file.data, codificados em Base64; prefira o editor para adicionar ou alterar scripts.
+
+## Identidade e dependências
+
+Ao editar, o UUID local do aplicativo é preservado; ao criar, o host gera outro UUID ao salvar. Scripts importados recebem IDs locais novos, sem substituir os scripts existentes. Os vínculos são reconstruídos com essas cópias; não há sincronização da biblioteca ou do histórico de revisões.
+
+Capas, executáveis, módulos PowerShell, credenciais e arquivos acessados pelos scripts não são transferidos. Caminhos e argumentos não são adaptados ao destino: confira essas dependências antes de executar.
+
+O ZIP não é criptografado e inclui o conteúdo dos scripts. Revise dados privados antes de compartilhar e importe apenas conteúdo confiável. Scripts podem executar nos eventos configurados após salvar.
+`
 	})
 }

@@ -75,6 +75,15 @@ revise as diferenças e salve explicitamente.
 Templates contêm padrões, não uma cópia da instalação. Uma importação pode alterar
 portas, caminhos ou comandos se esses campos estiverem presentes. Exportações
 podem conter dados privados e não são backup de conta, pareamento ou certificados.
+Configurações exportam valores salvos no host; aplicativos e dispositivos exportam
+o rascunho do editor, incluindo alterações não salvas.
+
+O template de aplicativo usa comandos manuais. Para transportar um aplicativo com
+scripts gerenciados, configure os vínculos no editor e exporte o aplicativo:
+o pacote inclui os arquivos, argumentos e política por vínculo. Importe pelo mesmo
+controle, revise e salve para criar cópias locais. Importar e salvar não executam
+os scripts. Executáveis, módulos e arquivos externos usados por eles continuam
+dependendo do host de destino.
 Os formatos e controles estão documentados em [dashboard/README.md](../dashboard/README.md).
 
 ## Acesso e diagnóstico

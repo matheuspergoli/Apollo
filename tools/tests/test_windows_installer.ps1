@@ -101,16 +101,17 @@ try {
     Write-Output 'Incomplete driver payload was rejected without changing certificate trust.'
 
     $previousReleases = @(
-        @{ Version = '1.0.0'; Sha256 = 'cac2d5bd17fe14489b07acd96fc7f7568641dccbc3cb09d914af5fd8aa5b6f54' },
-        @{ Version = '1.0.1'; Sha256 = 'f2dd3fb9242867e8816b1a8e990df51f4a14a3fa766a5eebfb20799816dea1d0' },
-        @{ Version = '1.0.2'; Sha256 = '225f04786c3363ce4a5d074f5f59441bd7222262855e6e701a296a0344bc7ccb' },
-        @{ Version = '1.0.3'; Sha256 = '1d147898a676bc7a0ef926ba326604980a94695afa4d4e21ee35bb9ffdc5910a' },
-        @{ Version = '1.0.4'; Sha256 = '572ba6e2dab2fd6f6fabbfe3989a7cee2ee05a6457723f58ee2bce93db7ed2c3' }
+        @{ Version = '1.0.0'; Asset = 'Apollo-1.0.0-Windows-x64.zip'; Sha256 = 'cac2d5bd17fe14489b07acd96fc7f7568641dccbc3cb09d914af5fd8aa5b6f54' },
+        @{ Version = '1.0.1'; Asset = 'Apollo-1.0.1-Windows-x64.zip'; Sha256 = 'f2dd3fb9242867e8816b1a8e990df51f4a14a3fa766a5eebfb20799816dea1d0' },
+        @{ Version = '1.0.2'; Asset = 'Apollo-1.0.2-Windows-x64.zip'; Sha256 = '225f04786c3363ce4a5d074f5f59441bd7222262855e6e701a296a0344bc7ccb' },
+        @{ Version = '1.0.3'; Asset = 'Apollo-1.0.3-Windows-x64.zip'; Sha256 = '1d147898a676bc7a0ef926ba326604980a94695afa4d4e21ee35bb9ffdc5910a' },
+        @{ Version = '1.0.4'; Asset = 'Apollo-1.0.4-Windows-x64.zip'; Sha256 = '572ba6e2dab2fd6f6fabbfe3989a7cee2ee05a6457723f58ee2bce93db7ed2c3' },
+        @{ Version = '1.0.5'; Asset = 'Apollo.zip'; Sha256 = 'feccf3a946f42999713d6f6c078dc985af5afff2d1ddde40129420edada14735' }
     )
     foreach ($release in $previousReleases) {
         $version = $release.Version
         $oldZip = Join-Path $work "Apollo-$version.zip"
-        Invoke-WebRequest -Uri "https://github.com/matheuspergoli/Apollo/releases/download/v$version/Apollo-$version-Windows-x64.zip" -OutFile $oldZip
+        Invoke-WebRequest -Uri "https://github.com/matheuspergoli/Apollo/releases/download/v$version/$($release.Asset)" -OutFile $oldZip
         if ((Get-FileHash $oldZip).Hash -ine $release.Sha256) {
             throw "The released $version fixture differs from its pinned artifact."
         }

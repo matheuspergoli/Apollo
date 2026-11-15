@@ -329,11 +329,11 @@ namespace video {
       // than draining packets only to discard them: AMF draining can block even
       // after the probe's encoded packet has already been received and validated.
       // Order matters here because the context relies on the hwdevice still being valid
-      BOOST_LOG(info) << "Encoder teardown: codec context release begin";
+      BOOST_LOG(debug) << "Encoder teardown: codec context release begin";
       avcodec_ctx.reset();
-      BOOST_LOG(info) << "Encoder teardown: codec context released; device release begin";
+      BOOST_LOG(debug) << "Encoder teardown: codec context released; device release begin";
       device.reset();
-      BOOST_LOG(info) << "Encoder teardown: device released";
+      BOOST_LOG(debug) << "Encoder teardown: device released";
     }
 
     // Ensure objects are destroyed in the correct order
@@ -1560,13 +1560,13 @@ namespace video {
         ctx->pix_fmt = platform_formats->avcodec_dev_pix_fmt;
 
         // Create the base hwdevice context
-        BOOST_LOG(info) << "Encoder init [" << video_format.name << "]: hardware input context begin";
+        BOOST_LOG(debug) << "Encoder init [" << video_format.name << "]: hardware input context begin";
         auto buf_or_error = platform_formats->init_avcodec_hardware_input_buffer(encode_device.get());
         if (buf_or_error.has_right()) {
           return nullptr;
         }
         encoding_stream_context = std::move(buf_or_error.left());
-        BOOST_LOG(info) << "Encoder init [" << video_format.name << "]: hardware input context ready";
+        BOOST_LOG(debug) << "Encoder init [" << video_format.name << "]: hardware input context ready";
 
         // If this encoder requires derivation from the base, derive the desired type
         if (platform_formats->avcodec_derived_dev_type != AV_HWDEVICE_TYPE_NONE) {
@@ -1602,12 +1602,12 @@ namespace video {
           // Allow the hwdevice to modify hwframe context parameters
           encode_device->init_hwframes(frame_ctx);
 
-          BOOST_LOG(info) << "Encoder init [" << video_format.name << "]: av_hwframe_ctx_init begin";
+          BOOST_LOG(debug) << "Encoder init [" << video_format.name << "]: av_hwframe_ctx_init begin";
           if (auto err = av_hwframe_ctx_init(frame_ref.get()); err < 0) {
-            BOOST_LOG(info) << "Encoder init [" << video_format.name << "]: av_hwframe_ctx_init returned " << err;
+            BOOST_LOG(error) << "Encoder init [" << video_format.name << "]: av_hwframe_ctx_init returned " << err;
             return nullptr;
           }
-          BOOST_LOG(info) << "Encoder init [" << video_format.name << "]: av_hwframe_ctx_init complete";
+          BOOST_LOG(debug) << "Encoder init [" << video_format.name << "]: av_hwframe_ctx_init complete";
 
           ctx->hw_frames_ctx = av_buffer_ref(frame_ref.get());
         }
@@ -1715,9 +1715,9 @@ namespace video {
       // Allow the encoding device a final opportunity to set/unset or override any options
       encode_device->init_codec_options(ctx.get(), &options);
 
-      BOOST_LOG(info) << "Encoder init [" << video_format.name << "]: avcodec_open2 begin (attempt " << retries + 1 << ')';
+      BOOST_LOG(debug) << "Encoder init [" << video_format.name << "]: avcodec_open2 begin (attempt " << retries + 1 << ')';
       if (auto status = avcodec_open2(ctx.get(), codec, &options)) {
-        BOOST_LOG(info) << "Encoder init [" << video_format.name << "]: avcodec_open2 returned " << status;
+        BOOST_LOG(debug) << "Encoder init [" << video_format.name << "]: avcodec_open2 returned " << status;
         char err_str[AV_ERROR_MAX_STRING_SIZE] {0};
 
         if (!video_format.fallback_options.empty() && retries == 0) {
@@ -1737,7 +1737,7 @@ namespace video {
       }
 
       // Successfully opened the codec
-      BOOST_LOG(info) << "Encoder init [" << video_format.name << "]: avcodec_open2 complete";
+      BOOST_LOG(debug) << "Encoder init [" << video_format.name << "]: avcodec_open2 complete";
       break;
     }
 
@@ -1799,14 +1799,14 @@ namespace video {
       encode_device_final = std::move(encode_device);
     }
 
-    BOOST_LOG(info) << "Encoder init [" << video_format.name << "]: frame setup begin";
+    BOOST_LOG(debug) << "Encoder init [" << video_format.name << "]: frame setup begin";
     if (encode_device_final->set_frame(frame.release(), ctx->hw_frames_ctx)) {
       return nullptr;
     }
-    BOOST_LOG(info) << "Encoder init [" << video_format.name << "]: frame setup complete; colorspace application begin";
+    BOOST_LOG(debug) << "Encoder init [" << video_format.name << "]: frame setup complete; colorspace application begin";
 
     encode_device_final->apply_colorspace();
-    BOOST_LOG(info) << "Encoder init [" << video_format.name << "]: colorspace application complete";
+    BOOST_LOG(debug) << "Encoder init [" << video_format.name << "]: colorspace application complete";
 
     auto session = std::make_unique<avcodec_encode_session_t>(
       std::move(ctx),
@@ -2429,19 +2429,19 @@ namespace video {
   };
 
   int validate_config(std::shared_ptr<platf::display_t> disp, const encoder_t &encoder, const config_t &config) {
-    BOOST_LOG(info) << "Encoder probe [" << encoder.codec_from_config(config).name << "]: device creation begin";
+    BOOST_LOG(debug) << "Encoder probe [" << encoder.codec_from_config(config).name << "]: device creation begin";
     auto encode_device = make_encode_device(*disp, encoder, config);
     if (!encode_device) {
       return -1;
     }
 
-    BOOST_LOG(info) << "Encoder probe: device ready; session creation begin";
+    BOOST_LOG(debug) << "Encoder probe: device ready; session creation begin";
     auto session = make_encode_session(disp.get(), encoder, config, disp->width, disp->height, std::move(encode_device));
     if (!session) {
       return -1;
     }
 
-    BOOST_LOG(info) << "Encoder probe: session ready; dummy image allocation/conversion begin";
+    BOOST_LOG(debug) << "Encoder probe: session ready; dummy image allocation/conversion begin";
     {
       // Image buffers are large, so we use a separate scope to free it immediately after convert()
       auto img = disp->alloc_img();
@@ -2450,20 +2450,20 @@ namespace video {
       }
     }
 
-    BOOST_LOG(info) << "Encoder probe: dummy image conversion complete; IDR request begin";
+    BOOST_LOG(debug) << "Encoder probe: dummy image conversion complete; IDR request begin";
     session->request_idr_frame();
 
     auto packets = mail::man->queue<packet_t>(mail::video_packets);
-    BOOST_LOG(info) << "Encoder probe: waiting for first encoded packet";
+    BOOST_LOG(debug) << "Encoder probe: waiting for first encoded packet";
     while (!packets->peek()) {
       if (encode(1, *session, packets, nullptr, {})) {
         return -1;
       }
     }
 
-    BOOST_LOG(info) << "Encoder probe: first encoded packet ready";
+    BOOST_LOG(debug) << "Encoder probe: first encoded packet ready";
     auto packet = packets->pop();
-    BOOST_LOG(info) << "Encoder probe: first encoded packet dequeued; IDR validation begin";
+    BOOST_LOG(debug) << "Encoder probe: first encoded packet dequeued; IDR validation begin";
     if (!packet->is_idr()) {
       BOOST_LOG(error) << "First packet type is not an IDR frame"sv;
 
@@ -2475,18 +2475,18 @@ namespace video {
     // This check only applies for H.264 and HEVC
     if (config.videoFormat <= 1) {
       if (auto packet_avcodec = dynamic_cast<packet_raw_avcodec *>(packet.get())) {
-        BOOST_LOG(info) << "Encoder probe: SPS validation begin";
+        BOOST_LOG(debug) << "Encoder probe: SPS validation begin";
         if (cbs::validate_sps(packet_avcodec->av_packet, config.videoFormat ? AV_CODEC_ID_H265 : AV_CODEC_ID_H264)) {
           flag |= VUI_PARAMS;
         }
-        BOOST_LOG(info) << "Encoder probe: SPS validation complete";
+        BOOST_LOG(debug) << "Encoder probe: SPS validation complete";
       } else {
         // Don't check it for non-avcodec encoders.
         flag |= VUI_PARAMS;
       }
     }
 
-    BOOST_LOG(info) << "Encoder probe: packet validation complete; local resource teardown begin";
+    BOOST_LOG(debug) << "Encoder probe: packet validation complete; local resource teardown begin";
     return flag;
   }
 
@@ -2909,9 +2909,9 @@ void do_nothing(void *) {
 
 namespace video {
   util::Either<avcodec_buffer_t, int> dxgi_init_avcodec_hardware_input_buffer(platf::avcodec_encode_device_t *encode_device) {
-    BOOST_LOG(info) << "Encoder init: av_hwdevice_ctx_alloc(D3D11VA) begin";
+    BOOST_LOG(debug) << "Encoder init: av_hwdevice_ctx_alloc(D3D11VA) begin";
     avcodec_buffer_t ctx_buf {av_hwdevice_ctx_alloc(AV_HWDEVICE_TYPE_D3D11VA)};
-    BOOST_LOG(info) << "Encoder init: av_hwdevice_ctx_alloc(D3D11VA) complete";
+    BOOST_LOG(debug) << "Encoder init: av_hwdevice_ctx_alloc(D3D11VA) complete";
     auto ctx = (AVD3D11VADeviceContext *) ((AVHWDeviceContext *) ctx_buf->data)->hwctx;
 
     std::fill_n((std::uint8_t *) ctx, sizeof(AVD3D11VADeviceContext), 0);
@@ -2925,9 +2925,9 @@ namespace video {
     ctx->lock = do_nothing;
     ctx->unlock = do_nothing;
 
-    BOOST_LOG(info) << "Encoder init: av_hwdevice_ctx_init(D3D11VA) begin";
+    BOOST_LOG(debug) << "Encoder init: av_hwdevice_ctx_init(D3D11VA) begin";
     auto err = av_hwdevice_ctx_init(ctx_buf.get());
-    BOOST_LOG(info) << "Encoder init: av_hwdevice_ctx_init(D3D11VA) returned " << err;
+    BOOST_LOG(debug) << "Encoder init: av_hwdevice_ctx_init(D3D11VA) returned " << err;
     if (err) {
       char err_str[AV_ERROR_MAX_STRING_SIZE] {0};
       BOOST_LOG(error) << "Failed to create FFMpeg hardware device context: "sv << av_make_error_string(err_str, AV_ERROR_MAX_STRING_SIZE, err);

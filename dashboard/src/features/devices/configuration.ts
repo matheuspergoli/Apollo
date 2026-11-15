@@ -115,13 +115,38 @@ export async function deviceArchive(file: DeviceFile) {
 	readConfigurationJson(JSON.stringify(file), deviceFileLimit)
 	parseContract(fileSchema, file, "Arquivo de permissões inválido")
 	parseContract(deviceSettingsSchema, file.settings, "Permissões para exportação inválidas")
-	const docs = `# Apollo — permissões de um dispositivo\n\nEste pacote contém ${file.kind === "template" ? "um template conservador: listar/visualizar, sem entrada nem comandos" : "os valores conhecidos do rascunho deste editor, inclusive alterações ainda não salvas"}.\n\nEdite settings em dispositivo.json (UTF-8, até 256 KiB). Mantenha format="apollo-device-permissions", version=1 e kind. Importe o JSON, não o ZIP, no editor de permissões de um dispositivo já pareado. Revise e confirme Aplicar ao rascunho; só Salvar dispositivo grava no host. O arquivo não cria vínculo, não pareia, não conecta nem desconecta.\n\nNome, UUID, certificados, estado de conexão e dados desconhecidos não transitam. A identidade e o nome locais permanecem intactos. Campos omitidos preservam o rascunho; listas presentes substituem o campo inteiro. Zero em perm revoga tudo. Booleanos usam true/false sem aspas. A máscara é decimal: JSON não aceita notação 0x. Apenas os bits abaixo são aceitos; o importador também valida o dispositivo resultante.\n\nO ZIP não é criptografado. Comandos podem conter caminhos/dados privados e executar no host ao conectar/desconectar após salvar. Importe apenas arquivos confiáveis e revise elevação.\n\n## Bits de permissão\n\n${permissions.map((permission) => `- ${permission.label}: ${permission.bit} (0x${permission.bit.toString(16)}). ${permission.help}`).join("\n")}\n\n## Campos\n\n${Object.entries(
-		deviceSettingsSchema.shape
-	)
-		.map(([key, schema]) => `- ${key}: ${schema.description}`)
-		.join(
-			"\n"
-		)}\n\nComandos: [{"cmd":"echo conectar","elevated":false}]. Cada lista aceita até 256 etapas e cada comando até 16384 caracteres. schema.json documenta a estrutura; validação em runtime também verifica os bits de permissão e os valores mesclados ao editor.\n`
+	const docs = `# Apollo — permissões de um dispositivo
+
+${file.kind === "template" ? "Template conservador: listar e visualizar, sem entrada nem comandos." : "Exportação dos campos conhecidos do rascunho do editor, incluindo alterações não salvas."}
+
+## Como importar
+
+1. Extraia o ZIP e edite settings em dispositivo.json (UTF-8, até 256 KiB). Mantenha format="apollo-device-permissions", version=1 e kind. Consulte schema.json para a estrutura.
+2. Use **Importar JSON de permissões** no editor de um dispositivo já pareado. Importe o JSON, não o ZIP.
+3. Revise e confirme **Aplicar ao rascunho**. Só **Salvar dispositivo** grava no host. Importar não pareia, conecta, desconecta ou executa comandos.
+
+Campos omitidos preservam o rascunho; campos presentes substituem o valor inteiro, inclusive listas vazias. Uma opção inválida rejeita o arquivo inteiro. Nome, UUID, certificados, estado de conexão e campos desconhecidos não transitam; os dados locais são preservados.
+
+## Permissões e comandos
+
+Zero em perm revoga todas as permissões; o template também pode reduzir permissões atuais. A máscara é decimal: JSON não aceita notação 0x. Apenas os bits documentados são aceitos. Salvar sem permissão de visualização pode desconectar o cliente. Booleanos usam true/false sem aspas.
+
+do e undo aceitam comandos manuais de conexão e desconexão, não vínculos de scripts gerenciados. Se um comando chamar um arquivo no host, esse arquivo não será incluído na exportação. Scripts gerenciados e seus arquivos são transportados pela exportação de aplicativos.
+
+O ZIP não é criptografado e pode conter comandos e caminhos privados. Revise antes de compartilhar. Confira comandos, elevação e dependências no destino: eles podem executar no host nos eventos de conexão/desconexão após salvar, quando permitidos.
+
+## Bits de permissão
+
+${permissions.map((permission) => `- ${permission.label}: ${permission.bit} (0x${permission.bit.toString(16)}). ${permission.help}`).join("\n")}
+
+## Campos
+
+${Object.entries(deviceSettingsSchema.shape)
+	.map(([key, schema]) => `- ${key}: ${schema.description}`)
+	.join("\n")}
+
+Comandos: [{"cmd":"echo conectar","elevated":false}]. Cada lista aceita até 256 etapas e cada comando até 16384 caracteres. A importação valida também os valores mesclados ao editor.
+`
 	return configurationArchive("apollo-dispositivo", {
 		"dispositivo.json": `${JSON.stringify(file, null, 2)}\n`,
 		"LEIA-ME.md": docs,
