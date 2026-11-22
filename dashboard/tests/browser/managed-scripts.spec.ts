@@ -40,7 +40,11 @@ test("script rejection explains the host error and retains the file without retr
 	expect(writes).toBe(1)
 	expect(host.scripts).toHaveLength(0)
 	await preview.getByRole("button", { name: "Voltar", exact: true }).click()
-	await library.getByRole("button", { name: "Fechar", exact: true }).click()
+	await library
+		.locator('[data-slot="dialog-footer"]')
+		.getByRole("button", { name: "Fechar", exact: true })
+		.click()
+	await expect(library).not.toBeVisible()
 	expect(writes).toBe(1)
 })
 
