@@ -206,6 +206,13 @@ o erro genérico; autenticação e conflito de aprovação mantêm seus fluxos p
 Os testes protegem essa mensagem, a retenção do rascunho e a ausência de repetição
 automática da gravação.
 
+As credenciais e os bytes de assinatura de certificados são manipulados pelas
+funções públicas do OpenSSL, sem acessar estruturas internas ou remover constância.
+Os contratos de `tests/unit/test_crypto_credentials.cpp` exercitam a implementação
+de `src/crypto.cpp`: certificado RSA autoassinado, CN/emissor, assinatura SHA-256
+de dados binários e bytes de assinatura usados pelo pareamento. Esses testes e a
+integração HTTPS não substituem a aceitação de pareamento com um cliente real.
+
 ## Organização
 
 - `src/`, `src_assets/`: servidor e integração nativa Windows/Linux.

@@ -7,6 +7,7 @@ target_sources(apollo_ui_contracts PRIVATE ../unit/test_window_session_controlle
 target_sources(apollo_ui_contracts PRIVATE ../unit/test_window_runtime_state.cpp ../../src/window_runtime_state.cpp)
 target_include_directories(apollo_ui_contracts PRIVATE "${CMAKE_SOURCE_DIR}" "${CMAKE_SOURCE_DIR}/third-party")
 if(WIN32)
+    target_sources(apollo_ui_contracts PRIVATE ../unit/test_crypto_credentials.cpp ../../src/crypto.cpp)
     target_sources(apollo_ui_contracts PRIVATE ../unit/test_managed_scripts.cpp ../../src/platform/windows/managed_scripts.cpp)
     target_link_libraries(apollo_ui_contracts PRIVATE OpenSSL::Crypto)
     target_sources(apollo_ui_contracts PRIVATE ../unit/test_nvenc_event_wait.cpp)
