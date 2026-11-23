@@ -123,7 +123,9 @@ test("launcher export and deep link carry the selected host/application IDs", as
 	expect(link.protocol).toBe("art:")
 	expect(link.searchParams.get("host_uuid")).toBe("test-host")
 	expect(link.searchParams.get("app_uuid")).toBe("app-1")
-	await expect(page.getByRole("dialog")).toContainText("Não envia um comando do PC")
+	await expect(page.getByRole("dialog")).toContainText(
+		"Abra o link no dispositivo com Artemis instalado e o host pareado."
+	)
 	await page.getByRole("dialog").getByRole("button", { name: "Fechar", exact: true }).click()
 	const downloadReady = page.waitForEvent("download")
 	await page.getByRole("button", { name: "Exportar .art", exact: true }).click()

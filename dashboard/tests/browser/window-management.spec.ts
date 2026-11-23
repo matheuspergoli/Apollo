@@ -146,7 +146,7 @@ test("diagnostics explain the operation without attributing an inspection code t
 	await expect(state.getByText(/Última operação sem confirmação:/)).not.toContainText(
 		"Código Win32 13"
 	)
-	await expect(state).toContainText("Categorias podem se sobrepor")
+	await expect(state).toContainText("categorias sobrepostas")
 	await expect(state.getByRole("button", { name: "Recuperar janelas agora" })).toBeDisabled()
 	expect(host.calls.filter((call) => call.path === "window-management/recover")).toHaveLength(
 		0
