@@ -122,8 +122,7 @@ function Editor({ initial }: { initial: Snapshot }) {
 					</p>
 					<h1 className="font-semibold text-3xl tracking-tight">Configurações</h1>
 					<p className="mt-2 text-muted-foreground text-sm">
-						Revise e salve os ajustes do Apollo. Salvar não reinicia o host; alguns ajustes só
-						entram em uso após reiniciar.
+						Alguns ajustes exigem reinício após salvar.
 					</p>
 				</div>
 				<Badge variant={dirty ? "secondary" : "outline"}>
@@ -148,7 +147,7 @@ function Editor({ initial }: { initial: Snapshot }) {
 						<a href={savedAddress} className="underline">
 							{savedAddress}
 						</a>
-						. A aba atual pode perder a conexão; isso não significa que a gravação foi perdida.
+						.
 					</AlertDescription>
 				</Alert>
 			)}
@@ -225,7 +224,7 @@ function Editor({ initial }: { initial: Snapshot }) {
 						<CardDescription>
 							{searching
 								? "A busca inclui todos os grupos disponíveis para esta plataforma."
-								: "Valores atuais e padrões explícitos. Nenhuma otimização é aplicada automaticamente."}
+								: "Valores atuais e padrões da seção."}
 						</CardDescription>
 						{!searching && (
 							<SectionTemplates
@@ -275,9 +274,7 @@ function Editor({ initial }: { initial: Snapshot }) {
 				className="sticky bottom-0 z-20 w-full min-w-0 flex-row flex-wrap items-center justify-between gap-3 bg-card/95 px-(--card-spacing) shadow-sm backdrop-blur-sm"
 			>
 				<p className="text-muted-foreground text-sm">
-					{dirty
-						? "Seu rascunho ainda não foi gravado."
-						: "As configurações estão sincronizadas com sua última gravação."}
+					{dirty ? "Seu rascunho ainda não foi gravado." : "Nenhuma alteração pendente."}
 				</p>
 				<div className="ml-auto flex flex-wrap justify-end gap-2">
 					<Button
@@ -307,8 +304,7 @@ function Editor({ initial }: { initial: Snapshot }) {
 					<DialogHeader>
 						<DialogTitle>Salvar {changes.length} alterações?</DialogTitle>
 						<DialogDescription>
-							Revisão do arquivo. Comandos configurados podem executar no host quando os
-							eventos correspondentes ocorrerem. O host não será reiniciado.
+							Confira as alterações. Comandos podem executar nos eventos configurados.
 						</DialogDescription>
 					</DialogHeader>
 					{changes.includes("port") && (
@@ -316,8 +312,6 @@ function Editor({ initial }: { initial: Snapshot }) {
 							<AlertTitle>A porta do painel vai mudar após reiniciar</AlertTitle>
 							<AlertDescription>
 								O novo endereço será {configuredWebAddress(draft.port, location.origin)}.
-								Importar o padrão de rede também pode voltar à porta padrão 47990. Salvar não
-								reinicia o host.
 							</AlertDescription>
 						</Alert>
 					)}

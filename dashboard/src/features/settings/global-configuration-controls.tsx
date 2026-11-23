@@ -30,7 +30,7 @@ import {
 	parseGlobalConfiguration,
 	savedConfiguration
 } from "./global-configuration"
-import { changedKeys, fields, loadSnapshot, sections, visibleSections } from "./model"
+import { changedKeys, fields, loadSnapshot, sections } from "./model"
 
 export function GlobalConfigurationControls({
 	platform,
@@ -48,8 +48,6 @@ export function GlobalConfigurationControls({
 	const [error, setError] = useState<Error | null>(null)
 	const [pending, setPending] = useState<GlobalImport | null>(null)
 	const [filename, setFilename] = useState("")
-	const visible = visibleSections(platform)
-	const otherPlatforms = sections.filter((section) => !visible.includes(section))
 	const changes = pending
 		? changedKeys(currentValues, { ...currentValues, ...pending.values })
 		: []
@@ -92,18 +90,8 @@ export function GlobalConfigurationControls({
 			<CardHeader>
 				<CardTitle>Todas as configurações</CardTitle>
 				<CardDescription>
-					Exporte os {fields.length} campos das {sections.length} seções de todas as
-					plataformas ou importe várias seções de uma vez.
-					{otherPlatforms.length > 0 && (
-						<>
-							{" "}
-							Neste host, o painel mostra {visible.length} seções; o arquivo completo inclui
-							também {otherPlatforms.map((section) => section.title).join(" e ")}, de outras
-							plataformas.
-						</>
-					)}{" "}
-					O template contém padrões; a exportação lê os valores salvos, não o rascunho. Não
-					inclui conta, pareamentos, aplicativos ou biblioteca de scripts.
+					O template usa padrões de todas as plataformas; a exportação usa as configurações
+					salvas. Conta, pareamentos, aplicativos e scripts são separados.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-3">
@@ -118,7 +106,7 @@ export function GlobalConfigurationControls({
 					<ConfirmedAction
 						label="Exportar configurações salvas"
 						disabled={disabled || busy}
-						description="Lê novamente o arquivo salvo no host, sem incluir seu rascunho não salvo. O ZIP não é criptografado e pode conter nomes, endereços, caminhos e comandos privados. Não inclui conta, pareamentos, biblioteca, conteúdo de certificados/chaves ou opções desconhecidas. Guarde o arquivo localmente e revise antes de compartilhar."
+						description="O ZIP pode conter dados privados. Revise antes de compartilhar."
 						execute={exportSaved}
 					/>
 					<Button
@@ -161,9 +149,7 @@ export function GlobalConfigurationControls({
 					/>
 				</div>
 				<p className="text-muted-foreground text-xs">
-					Os ZIPs contêm configuracao.json e documentação. Importe apenas o JSON. Importar não
-					grava nem reinicia: confirme o rascunho e use Revisar e salvar. Seções/campos
-					omitidos ficam intactos.
+					Extraia o ZIP e importe configuracao.json. Revise o rascunho antes de salvar.
 				</p>
 				{busy && (
 					<p role="status" className="text-xs">
@@ -182,17 +168,14 @@ export function GlobalConfigurationControls({
 					<DialogHeader>
 						<DialogTitle>Revisar importação global</DialogTitle>
 						<DialogDescription>
-							{filename}: {changes.length} opções diferentes em {affected.length} seções. Nada
-							será gravado no host agora. Campos ausentes, opções desconhecidas já existentes e
-							outros rascunhos permanecem intactos.
+							{filename}: {changes.length} opções diferentes em {affected.length} seções.
 						</DialogDescription>
 					</DialogHeader>
 					{pending?.kind === "defaults" && (
 						<Alert>
 							<AlertTitle>Este arquivo contém padrões</AlertTitle>
 							<AlertDescription>
-								Os campos presentes podem substituir sua configuração personalizada. Remova do
-								JSON os campos que deseja preservar, inclusive rede, bandeja e comandos.
+								Remova do JSON os campos que deseja preservar.
 							</AlertDescription>
 						</Alert>
 					)}
@@ -200,9 +183,8 @@ export function GlobalConfigurationControls({
 						<Alert>
 							<AlertTitle>Plataforma de origem diferente</AlertTitle>
 							<AlertDescription>
-								Origem: {pending.platform}. Destino: {platform || "não informado"}. Revise
-								caminhos, displays e encoders antes de aplicar; campos específicos de outra
-								plataforma não serão convertidos.
+								{pending.platform} → {platform || "não informado"}. Adapte caminhos, displays e
+								encoders ao destino.
 							</AlertDescription>
 						</Alert>
 					)}
@@ -217,8 +199,7 @@ export function GlobalConfigurationControls({
 						</Alert>
 					)}
 					<p className="text-muted-foreground text-xs">
-						Revise comandos e elevação: eles podem executar no host nos eventos configurados.
-						Esta tela pode conter dados privados.
+						Revise comandos e elevação: eles podem executar nos eventos configurados.
 					</p>
 					<section
 						className="max-h-64 space-y-3 overflow-auto"

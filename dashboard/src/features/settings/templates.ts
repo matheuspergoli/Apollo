@@ -60,13 +60,13 @@ export function sectionDocumentation(
 		return `# Apollo — ${section.title}\n\nReferência dos campos desta seção no JSON global, em \`sections.${section.id}\`. Os valores padrão abaixo são documentação; os valores exportados estão em \`configuracao.json\`. Leia o LEIA-ME da raiz antes de importar.\n\n${blocks.join("\n\n")}\n`
 	return `# Apollo — ${section.title}${mode === "saved" ? ": valores salvos" : ""}
 
-${mode === "saved" ? "Exportação dos campos conhecidos desta seção, lidos novamente do host, com padrões para campos ausentes. Não inclui o rascunho não salvo nem outras seções." : "Template com os padrões desta seção, não os valores atuais do host."}
+${mode === "saved" ? "Exportação dos valores salvos desta seção, com padrões para campos ausentes e sem o rascunho." : "Template com os padrões desta seção."}
 
 ## Como importar
 
 1. Extraia o ZIP e edite settings em configuracao.json (UTF-8, até 256 KiB, sem comentários).
 2. Mantenha format="${format}", version=1 e section="${section.id}". Importe o JSON na seção **${section.title}**, não o ZIP.
-3. Revise e confirme **Aplicar ao rascunho**. Só **Revisar e salvar** grava no host; importar não executa comandos nem reinicia.
+3. Confirme **Aplicar ao rascunho** e use **Revisar e salvar**.
 
 Campos omitidos preservam o rascunho. Campos presentes substituem o valor inteiro, inclusive listas e objetos; listas vazias removem comandos ou regras. Chaves de outra seção, versões desconhecidas e valores inválidos rejeitam o arquivo inteiro.
 
@@ -74,11 +74,11 @@ Números usam ponto decimal, sem aspas. Opções booleanas do host usam os texto
 
 ## Comandos e arquivos
 
-Estas configurações aceitam comandos manuais, não vínculos de scripts gerenciados. Se um comando chamar um arquivo no host, esse arquivo não será incluído na exportação. Para transportar scripts gerenciados, use **Exportar aplicativo do editor**, em Aplicativos.
+Estas configurações aceitam comandos manuais. Para transportar scripts gerenciados, use **Exportar aplicativo do editor**, em Aplicativos.
 
 Revise comandos e elevação: podem executar ações nos eventos configurados após salvar. Caminhos não transferem arquivos, certificados ou credenciais. O ZIP não é criptografado e pode conter dados privados; revise antes de compartilhar.
 
-Mudanças de rede podem impedir acesso: a porta do painel é a base + 1. Display/HDR dependem do hardware e do driver; importar não instala drivers nem adapta opções de outra plataforma.
+Mudanças de rede podem impedir acesso: a porta do painel é a base + 1. Adapte caminhos e opções à plataforma de destino.
 
 ## Estruturas e exemplos
 

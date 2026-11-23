@@ -135,9 +135,6 @@ export function OverviewPage() {
 					<Card>
 						<CardHeader>
 							<CardTitle>Operação e ajustes</CardTitle>
-							<CardDescription>
-								Abra a função certa sem procurar entre opções irrelevantes.
-							</CardDescription>
 						</CardHeader>
 						<CardContent>
 							<div className="grid gap-3">
@@ -185,9 +182,7 @@ export function OverviewPage() {
 								</Link>
 							</div>
 							<p className="mt-5 text-muted-foreground text-xs leading-6">
-								As configurações salvas orientam as sessões. Codec, resolução e FPS também
-								dependem do cliente e do monitor. Confira a transmissão e as estatísticas de
-								rede/decodificação no Artemis; este painel não mede latência de ponta a ponta.
+								Confira FPS, rede e decodificação nas estatísticas do Artemis.
 							</p>
 						</CardContent>
 					</Card>
@@ -198,9 +193,6 @@ export function OverviewPage() {
 					<div className="flex flex-wrap items-center justify-between gap-3">
 						<div>
 							<CardTitle>Aplicativo atual</CardTitle>
-							<CardDescription>
-								Aplicativo informado pelo host na última leitura.
-							</CardDescription>
 						</div>
 						<Link to="/apps" className={buttonVariants({ variant: "outline" })}>
 							<IconApps />
@@ -217,10 +209,6 @@ export function OverviewPage() {
 									? "Aplicativo não identificado na biblioteca"
 									: "Nenhum aplicativo em execução"
 							: "Estado ainda não disponível"}
-					</p>
-					<p className="mt-2 text-muted-foreground text-sm">
-						Abra a biblioteca para iniciar ou encerrar aplicativos. Encerrar pode interromper
-						sessões e exige confirmação.
 					</p>
 				</CardContent>
 			</Card>

@@ -123,15 +123,15 @@ ${file.kind === "template" ? "Template conservador: listar e visualizar, sem ent
 
 1. Extraia o ZIP e edite settings em dispositivo.json (UTF-8, até 256 KiB). Mantenha format="apollo-device-permissions", version=1 e kind. Consulte schema.json para a estrutura.
 2. Use **Importar JSON de permissões** no editor de um dispositivo já pareado. Importe o JSON, não o ZIP.
-3. Revise e confirme **Aplicar ao rascunho**. Só **Salvar dispositivo** grava no host. Importar não pareia, conecta, desconecta ou executa comandos.
+3. Revise, confirme **Aplicar ao rascunho** e use **Salvar dispositivo**.
 
-Campos omitidos preservam o rascunho; campos presentes substituem o valor inteiro, inclusive listas vazias. Uma opção inválida rejeita o arquivo inteiro. Nome, UUID, certificados, estado de conexão e campos desconhecidos não transitam; os dados locais são preservados.
+Campos omitidos preservam o rascunho; campos presentes substituem o valor inteiro, inclusive listas vazias. Uma opção inválida rejeita o arquivo inteiro. Nome, UUID, certificados e demais dados locais são preservados e não transitam no arquivo.
 
 ## Permissões e comandos
 
-Zero em perm revoga todas as permissões; o template também pode reduzir permissões atuais. A máscara é decimal: JSON não aceita notação 0x. Apenas os bits documentados são aceitos. Salvar sem permissão de visualização pode desconectar o cliente. Booleanos usam true/false sem aspas.
+perm usa máscara decimal com os bits abaixo; zero revoga todas as permissões. O template pode reduzir permissões atuais. Revogar visualização pode desconectar o cliente.
 
-do e undo aceitam comandos manuais de conexão e desconexão, não vínculos de scripts gerenciados. Se um comando chamar um arquivo no host, esse arquivo não será incluído na exportação. Scripts gerenciados e seus arquivos são transportados pela exportação de aplicativos.
+do e undo aceitam comandos manuais de conexão e desconexão. Arquivos externos não são incluídos; para transportar scripts gerenciados, use a exportação de aplicativos.
 
 O ZIP não é criptografado e pode conter comandos e caminhos privados. Revise antes de compartilhar. Confira comandos, elevação e dependências no destino: eles podem executar no host nos eventos de conexão/desconexão após salvar, quando permitidos.
 
@@ -145,7 +145,7 @@ ${Object.entries(deviceSettingsSchema.shape)
 	.map(([key, schema]) => `- ${key}: ${schema.description}`)
 	.join("\n")}
 
-Comandos: [{"cmd":"echo conectar","elevated":false}]. Cada lista aceita até 256 etapas e cada comando até 16384 caracteres. A importação valida também os valores mesclados ao editor.
+Comandos: [{"cmd":"echo conectar","elevated":false}]. Até 256 etapas por lista e 16384 caracteres por comando.
 `
 	return configurationArchive("apollo-dispositivo", {
 		"dispositivo.json": `${JSON.stringify(file, null, 2)}\n`,

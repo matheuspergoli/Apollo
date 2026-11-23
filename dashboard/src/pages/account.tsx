@@ -56,7 +56,7 @@ export function AccountPage() {
 				</p>
 				<h1 className="mt-2 font-semibold text-3xl tracking-tight">Acesso e senha</h1>
 				<p className="mt-2 text-muted-foreground text-sm">
-					Alterar o acesso ao painel não remove os dispositivos pareados.
+					Atualize as credenciais deste host.
 				</p>
 			</div>
 			<Card className="max-w-3xl">

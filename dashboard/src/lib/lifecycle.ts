@@ -19,7 +19,7 @@ export async function requestLifecycle(command: "restart" | "quit") {
 		return "Solicitação enviada. Verifique o console e a disponibilidade do host antes de continuar."
 	} catch (failure) {
 		if (failure instanceof ApiError) throw failure
-		return "A conexão foi encerrada ou não respondeu. Isso não confirma o reinício/encerramento. Verifique o console e a porta configurada; não repetiremos a ação automaticamente."
+		return "A conexão caiu ou não respondeu. Isso não confirma a operação. Confira o console e a porta antes de tentar novamente."
 	}
 }
 

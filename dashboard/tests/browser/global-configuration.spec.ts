@@ -2,15 +2,12 @@ import { expect, test } from "@playwright/test"
 import { strFromU8, unzipSync } from "fflate"
 import { mockHost } from "../fixtures/mock-api"
 
-test("complete export explains the eleven Windows sections and the additional Linux section", async ({
-	page
-}) => {
+test("configuration files distinguish defaults from saved values", async ({ page }) => {
 	await mockHost(page)
 	await page.goto("/config")
 	const card = page.locator('[data-slot="card"]').filter({ hasText: "Todas as configurações" })
-	await expect(card).toContainText("104 campos das 12 seções de todas as plataformas")
-	await expect(card).toContainText("Neste host, o painel mostra 11 seções")
-	await expect(card).toContainText("inclui também VA-API")
+	await expect(card).toContainText("O template usa padrões de todas as plataformas")
+	await expect(card).toContainText("a exportação usa as configurações salvas")
 })
 
 function configuration(sections: Record<string, unknown>, kind = "saved") {

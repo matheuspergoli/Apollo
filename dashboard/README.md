@@ -13,11 +13,11 @@ Revisar e aplicar altera apenas o rascunho; salvar é uma ação separada.
 
 Em Configurações, selecione uma seção e use **Baixar template da seção**. O ZIP
 contém `configuracao.json` com os padrões e `LEIA-ME.md` com tipos, valores aceitos,
-limites, efeitos e exemplos. Não é uma exportação dos dados atuais do host.
+limites, efeitos e exemplos.
 
 Edite o JSON, importe na mesma seção e confirme **Aplicar ao rascunho**. Campos
 ausentes e outras seções permanecem intactos. Arquivos inválidos são rejeitados
-integralmente. Só **Revisar e salvar** grava o arquivo; nada reinicia automaticamente.
+integralmente.
 O limite de importação é 256 KiB, UTF-8. Não coloque senhas/chaves privadas no JSON.
 
 ## Configuração global
@@ -34,14 +34,11 @@ O bloco **Todas as configurações** mantém os controles por seção e acrescen
 
 Cada ZIP contém `configuracao.json`, `LEIA-ME.md` e a documentação das seções.
 O formato global é `apollo-settings`, versão 1, separado do JSON por seção.
-Depois da importação, **Revisar e salvar** continua obrigatório para gravar.
-Não há reinício automático, nem conversão silenciosa de opções entre plataformas.
+Adapte opções e caminhos à plataforma de destino antes de salvar.
 
-Isto não é backup da instalação inteira: não inclui biblioteca, pareamentos,
+O arquivo não inclui biblioteca, pareamentos,
 conta, conteúdo de certificados/chaves, logs ou opções desconhecidas. Caminhos
-e comandos podem conter dados privados. A exportação ocorre localmente, sem
-enviar arquivos a serviços externos; o ZIP não é criptografado. Não compartilhe
-o arquivo sem revisão.
+e comandos podem conter dados privados; o ZIP não é criptografado. Revise antes de compartilhar.
 
 ## Configuração de um aplicativo
 
@@ -69,8 +66,7 @@ salvar cria cópias locais dos scripts com novos IDs e reconstrói os vínculos.
 Conteúdo e nome do arquivo, argumentos e bypass são preservados, não o histórico
 ou a identidade da biblioteca de origem. O bypass usa
 `"execution-policy": "bypass"`, não `true`; vale apenas para o PowerShell filho e
-não altera políticas permanentes ou Política de Grupo. Importar e salvar não
-executam os scripts.
+não altera políticas permanentes nem supera Política de Grupo.
 
 O limite é 512 KiB no formato básico e 2 MiB no pacote com scripts. Cada script
 aceita até 128 KiB em ASCII ou UTF-8 com BOM. Para criar um modelo reutilizável
@@ -80,12 +76,9 @@ Base64 manualmente no template básico.
 UUID/identidade do host, estado de execução e campos desconhecidos não são
 exportados nem aceitos no arquivo. Ao editar, a identidade e os campos extras
 locais são preservados; ao criar, a identidade é gerada pelo host ao salvar.
-Exportar inclui o rascunho, não necessariamente o último arquivo salvo, e exige
-confirmação de privacidade. O ZIP não é criptografado nem transfere capas/binários.
+O ZIP não é criptografado nem transfere capas/binários.
 Módulos PowerShell e arquivos acessados pelos scripts também não são transferidos;
-caminhos e argumentos não são adaptados ao destino. Não há importação global da
-biblioteca nesta funcionalidade; `.art` continua
-sendo apenas um atalho Artemis, não um arquivo de configuração de aplicativo.
+caminhos e argumentos não são adaptados ao destino.
 
 ## Permissões de dispositivos e valores por seção
 
@@ -97,9 +90,8 @@ desconhecidos são rejeitados; salvar permissões pode desconectar um cliente se
 a visualização for revogada. Pareamento/criação continuam com o fluxo anterior.
 
 Cada seção de configurações agora também exporta **valores salvos da seção**,
-lidos novamente do host, sem o rascunho e sem depender de seções inválidas não
-relacionadas. Template continua sendo padrões; ambos usam o mesmo formato fechado
-por seção. Exportações de valores atuais pedem confirmação de privacidade.
+lidos novamente do host, sem depender de seções inválidas não relacionadas.
+Template e exportação usam o mesmo formato por seção.
 
 Configurações e dispositivos aceitam comandos manuais, mas não vínculos de scripts
 gerenciados. Um comando pode chamar um arquivo já existente no host; exportar o
@@ -120,8 +112,7 @@ Arquivos corrompidos por versões anteriores precisam ser enviados novamente;
 o original não é substituído e não há reparo automático de arquivos privados.
 
 Abrir no Artemis oferece link e QR: o protocolo `art://launch` é tratado pelo
-cliente instalado no dispositivo que abre o link, com o host já pareado. Não é
-um comando de abertura remota do PC para o celular e não confirma que o cliente abriu.
+cliente instalado no dispositivo que abre o link, com o host já pareado.
 
 O atalho global de reinício exige confirmação, bloqueia rascunhos/operações pendentes
 e usa feedback conservador quando a conexão cai. Primeiro acesso redireciona ao login

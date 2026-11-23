@@ -25,8 +25,7 @@ export function WindowManagementStatus() {
 		<section aria-label="Estado do gerenciamento de janelas" className="space-y-3">
 			<h3 className="font-medium">Estado da sessão em execução</h3>
 			<p className="text-muted-foreground text-sm">
-				Este estado usa a configuração carregada pelo host. Alterar as opções em Configurações
-				pode exigir reinício para aplicar os ajustes.
+				Alterações nas configurações podem exigir reinício do host.
 			</p>
 			<RequestError error={query.error || recover.error} />
 			{query.isPending ? (
@@ -38,17 +37,15 @@ export function WindowManagementStatus() {
 							<strong>{phaseLabels[state.phase]}</strong> — {windowStatusDescription(state)}
 						</p>
 						<p className="text-muted-foreground text-xs">
-							Geração {state.generation}. Contadores desta sessão, não um histórico do host.
+							Geração {state.generation} · contadores da sessão.
 						</p>
 						{state.recovery_required &&
 							(state.phase === "active" || state.phase === "paused") && (
 								<Alert>
 									<AlertTitle>Recuperação manual recomendada</AlertTitle>
 									<AlertDescription>
-										Uma interrupção invalidou o controle anterior. Voltar ao estado ativo não
-										reassume essas janelas. Quando a sessão permitir, use Recuperar janelas
-										agora se desejar estabelecer uma nova origem; alterações manuais não são
-										desfeitas automaticamente.
+										O controle das janelas foi interrompido. Use Recuperar janelas agora para
+										retomá-lo a partir das posições atuais.
 									</AlertDescription>
 								</Alert>
 							)}
@@ -82,9 +79,8 @@ export function WindowManagementStatus() {
 								))}
 							</dl>
 							<p className="mt-3 text-muted-foreground text-xs">
-								São ocorrências e tentativas, não quantidades de aplicativos. Categorias podem
-								se sobrepor. Uma recusa de inspeção não comprova falha de movimentação; somente
-								resultados confirmados contam como movidos ou restaurados.
+								Contadores de tentativas, com categorias sobrepostas. Movidas e restauradas
+								incluem apenas resultados confirmados.
 							</p>
 						</details>
 					</>
@@ -97,8 +93,7 @@ export function WindowManagementStatus() {
 					<Alert role="status">
 						<AlertTitle>Recuperação solicitada</AlertTitle>
 						<AlertDescription>
-							A solicitação foi enviada. Somente movimentos observados e confirmados aparecem
-							na contagem; algumas janelas podem recusar a operação.
+							Acompanhe o resultado nos contadores da sessão.
 						</AlertDescription>
 					</Alert>
 				)}
@@ -124,9 +119,8 @@ export function WindowManagementStatus() {
 				</Button>
 			</div>
 			<p className="text-muted-foreground text-xs">
-				A recuperação manual age somente na sessão autorizada atual e pode estabelecer uma nova
-				origem para janelas alteradas manualmente. Não restaura janelas minimizadas nem muda
-				monitores.
+				A recuperação pode usar as posições atuais como nova origem. Janelas minimizadas são
+				preservadas.
 			</p>
 		</section>
 	)

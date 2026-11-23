@@ -175,7 +175,7 @@ export function QuickHostRestart() {
 						? "Salve ou descarte as alterações e aguarde operações pendentes antes de reiniciar"
 						: "Reiniciar host"
 			}
-			description="Interrompe aplicativos e streams. Não salva rascunhos. O painel pode perder a conexão e pode ser necessário entrar novamente; confira o console e a porta configurada antes de repetir."
+			description="Interrompe aplicativos e transmissões. Salve seu progresso antes de continuar."
 			execute={async () => {
 				context.setFeedback("")
 				try {
@@ -196,8 +196,7 @@ export function HostActionNotice() {
 			<Alert variant="destructive" role="status">
 				<AlertTitle>Entre novamente</AlertTitle>
 				<AlertDescription>
-					Entre novamente para autorizar ações no host. Rascunhos desta aba serão preservados;
-					abrir o login não envia comandos de reinício.
+					Abra o login em outra aba para renovar a sessão sem perder seu rascunho.
 					<div className="mt-2 flex flex-wrap gap-2">
 						<Link
 							to="/login"

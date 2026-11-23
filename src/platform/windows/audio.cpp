@@ -1097,7 +1097,7 @@ namespace platf::audio {
             break;
           case ERROR_FILE_NOT_FOUND:
           case ERROR_PATH_NOT_FOUND:
-            BOOST_LOG(info) << "Steam audio drivers not found. This is expected if you don't have Steam installed."sv;
+            BOOST_LOG(info) << "Steam audio drivers not found."sv;
             break;
           default:
             BOOST_LOG(warning) << "Failed to install Steam audio drivers: "sv << err;

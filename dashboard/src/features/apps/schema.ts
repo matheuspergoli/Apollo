@@ -25,16 +25,10 @@ export const applicationOptionsSchema = z.strictObject({
 		.describe(
 			"Nome do aplicativo, em uma única linha. Deve ser preenchido antes de importar ou salvar."
 		),
-	cmd: command.describe(
-		"Comando executado no host. Vazio transmite o desktop. Importar nunca executa o comando."
-	),
-	"working-dir": path.describe(
-		"Diretório de trabalho no host; o arquivo JSON não transfere pastas."
-	),
+	cmd: command.describe("Comando executado no host. Vazio transmite o desktop."),
+	"working-dir": path.describe("Diretório de trabalho no host."),
 	output: path.describe("Caminho do arquivo de saída do processo no host."),
-	"image-path": path.describe(
-		"Caminho da capa no host. A imagem não é embutida ou baixada ao importar."
-	),
+	"image-path": path.describe("Caminho da capa no host."),
 	"exclude-global-prep-cmd": z
 		.boolean()
 		.describe("Ignorar os comandos globais de preparação."),
@@ -75,9 +69,7 @@ export const applicationOptionsSchema = z.strictObject({
 	"allow-client-commands": z
 		.boolean()
 		.describe("Permitir comandos enviados pelo cliente para este aplicativo."),
-	"virtual-display": z
-		.boolean()
-		.describe("Usar display virtual; exige driver funcional e não instala drivers."),
+	"virtual-display": z.boolean().describe("Usar display virtual; exige driver funcional."),
 	"terminate-on-pause": z
 		.boolean()
 		.describe("Encerrar o aplicativo quando a sessão for pausada."),

@@ -88,19 +88,19 @@ ${file.kind === "template" ? "Template básico com padrões e o nome de exemplo 
 1. Extraia o ZIP e edite aplicativo.json em UTF-8, sem comentários. Limite: 512 KiB; profundidade máxima: 20.
 2. Mantenha format="apollo-application", version=1 e kind. Consulte schema.json para a estrutura.
 3. Use **Importar JSON de aplicativo** no editor de um aplicativo novo ou existente. Importe o JSON, não o ZIP.
-4. Revise e confirme **Aplicar ao rascunho**. Só **Salvar aplicativo** grava no host; importar não executa comandos nem inicia transmissão.
+4. Revise, confirme **Aplicar ao rascunho** e use **Salvar aplicativo**.
 
 Campos omitidos preservam o rascunho. Campos presentes substituem o valor inteiro, inclusive listas vazias. Uma opção inválida rejeita o arquivo inteiro. O nome precisa estar preenchido no JSON ou no editor.
 
 ## Scripts gerenciados
 
-Este formato básico aceita comandos manuais, não vínculos de scripts gerenciados. Para transportar scripts, configure-os no editor e use **Exportar aplicativo do editor**: o Apollo gera automaticamente um pacote apollo-application-bundle com os arquivos, argumentos e a política de execução de cada vínculo. Esse pacote usa o mesmo botão de importação e exige revisão antes de salvar.
+Este formato aceita comandos manuais. Para incluir scripts, use **Exportar aplicativo do editor**: o pacote apollo-application-bundle preserva arquivos, argumentos e políticas por vínculo e usa o mesmo botão de importação.
 
-Ao importar este formato básico, cmd substitui o comando de inicialização e remove seu vínculo de script; prep-cmd, state-cmd e detached substituem suas listas inteiras. Omita os campos que deseja preservar.
+cmd substitui também o vínculo de script da inicialização; prep-cmd, state-cmd e detached substituem as listas inteiras.
 
 ## Identidade, arquivos e segurança
 
-Ao editar, o UUID e os campos desconhecidos locais são preservados; ao criar, o host gera um UUID ao salvar. Identidades, estado de execução e campos desconhecidos não transitam no arquivo. Não é exportação da biblioteca inteira nem atalho .art.
+O arquivo contém um aplicativo, sem UUID, estado de execução ou campos desconhecidos. Ao editar, os dados locais são preservados; ao criar, o host gera um UUID.
 
 O ZIP não é criptografado e pode conter comandos e caminhos privados. Capas, executáveis e outros arquivos externos não são transferidos. Revise comandos, caminhos e elevação: podem executar ações no host nos eventos configurados após salvar.
 
@@ -110,7 +110,7 @@ O ZIP não é criptografado e pode conter comandos e caminhos privados. Capas, e
 [{"do":"echo preparar","undo":"echo desfazer","elevated":false}]
 \`\`\`
 
-prep-cmd e state-cmd aceitam até 256 etapas; do/undo são textos opcionais de até 16384 caracteres. detached aceita até 256 textos de comando, não objetos neste formato. Booleanos usam true/false sem aspas; números são inteiros sem aspas. Os limites de cada campo estão abaixo.
+prep-cmd e state-cmd aceitam até 256 etapas; do/undo são textos opcionais de até 16384 caracteres. detached aceita até 256 textos de comando. Consulte os tipos e limites abaixo.
 
 ## Campos
 

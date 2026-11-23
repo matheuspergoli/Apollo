@@ -107,8 +107,8 @@ export function ApplicationConfigurationControls({
 			<CardHeader>
 				<CardTitle>Arquivo de configuração do aplicativo</CardTitle>
 				<CardDescription>
-					Template com padrões e comandos manuais; exportação com os valores do editor e os
-					scripts utilizados. Um aplicativo por arquivo, sem copiar UUIDs.
+					O template usa padrões; a exportação inclui os valores do editor e os scripts
+					utilizados.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-3">
@@ -124,7 +124,7 @@ export function ApplicationConfigurationControls({
 					<ConfirmedAction
 						label="Exportar aplicativo do editor"
 						disabled={disabled || busy}
-						description="Exporta o rascunho deste editor, inclusive alterações ainda não salvas. O ZIP não é criptografado e pode conter comandos, scripts e caminhos privados. Não inclui UUID, estado de execução, dados do host ou campos desconhecidos. Capas e executáveis não são transferidos."
+						description="Inclui alterações não salvas e scripts. O ZIP pode conter dados privados; revise antes de compartilhar."
 						execute={exportCurrent}
 					/>
 					<Button
@@ -198,16 +198,14 @@ export function ApplicationConfigurationControls({
 					<DialogHeader>
 						<DialogTitle>Revisar importação de aplicativo</DialogTitle>
 						<DialogDescription>
-							{filename}: {changes.length} opções diferentes. A identidade do aplicativo
-							editado será preservada.
+							{filename}: {changes.length} opções diferentes.
 						</DialogDescription>
 					</DialogHeader>
 					<Alert>
 						<AlertTitle>Revise comandos, caminhos e elevação</AlertTitle>
 						<AlertDescription>
-							Campos presentes substituem o valor inteiro, inclusive listas vazias. Scripts
-							embutidos serão copiados ao salvar; arquivos externos não são transferidos.
-							Revise os caminhos; comandos podem executar nos eventos configurados.
+							Comandos podem executar após salvar. Scripts embutidos serão copiados; capas,
+							executáveis e outras dependências precisam existir no destino.
 						</AlertDescription>
 					</Alert>
 					<RequestError error={error} />

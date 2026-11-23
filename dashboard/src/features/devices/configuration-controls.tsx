@@ -90,8 +90,7 @@ export function DeviceConfigurationControls({
 			<CardHeader>
 				<CardTitle>Arquivo de permissões</CardTitle>
 				<CardDescription>
-					Template com permissões conservadoras; exportação com os valores do editor. Não
-					transfere nome, UUID ou certificados de um dispositivo já pareado.
+					O template permite listar e visualizar; a exportação usa os valores do editor.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-3">
@@ -107,7 +106,7 @@ export function DeviceConfigurationControls({
 					<ConfirmedAction
 						label="Exportar permissões do editor"
 						disabled={disabled || busy}
-						description="Exporta os valores conhecidos do rascunho, inclusive alterações ainda não salvas, sem nome/UUID/certificados. O ZIP não é criptografado e pode conter comandos e caminhos privados; revise antes de compartilhar. Não salva o dispositivo."
+						description="Inclui alterações não salvas. O ZIP pode conter dados privados; revise antes de compartilhar."
 						execute={exportCurrent}
 					/>
 					<Button
@@ -166,17 +165,13 @@ export function DeviceConfigurationControls({
 				<DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
 					<DialogHeader>
 						<DialogTitle>Revisar importação de permissões</DialogTitle>
-						<DialogDescription>
-							{changes.length} opções diferentes. A identidade, o nome e o pareamento
-							permanecem intactos.
-						</DialogDescription>
+						<DialogDescription>{changes.length} opções diferentes.</DialogDescription>
 					</DialogHeader>
 					<Alert>
 						<AlertTitle>Revise os privilégios deste dispositivo</AlertTitle>
 						<AlertDescription>
-							O template é conservador e pode revogar permissões atuais. Comandos e elevação
-							podem executar ações no host nos eventos configurados após salvar. Importe apenas
-							arquivos confiáveis.
+							A importação pode revogar permissões e incluir comandos de conexão ou desconexão.
+							Use apenas arquivos confiáveis.
 						</AlertDescription>
 					</Alert>
 					<RequestError error={error} />

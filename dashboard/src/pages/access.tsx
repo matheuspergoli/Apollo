@@ -97,8 +97,7 @@ export function AccessPage({
 							: "Vincule seus dispositivos e revise o display, a captura e as configurações do streaming."}
 					</p>
 					<p className="max-w-md border-l-2 pl-4 text-muted-foreground text-sm leading-6">
-						Este acesso pertence a este host Apollo. Não é sua conta Steam nem o PIN de
-						pareamento.
+						Use as credenciais deste host Apollo.
 					</p>
 				</section>
 				<Card>
@@ -106,18 +105,14 @@ export function AccessPage({
 						<CardTitle className="text-xl">
 							{setup ? "Criar acesso ao painel" : "Entrar no painel"}
 						</CardTitle>
-						<CardDescription>
-							Use seu gerenciador de senhas. O painel não grava sua senha no armazenamento do
-							site.
-						</CardDescription>
+						<CardDescription>Use uma senha exclusiva para este host.</CardDescription>
 					</CardHeader>
 					<CardContent>
 						{created && (
 							<Alert role="status" className="mb-5">
 								<AlertTitle>Acesso criado com sucesso</AlertTitle>
 								<AlertDescription>
-									Entre com as credenciais que você acabou de criar para continuar no painel.
-									Nenhuma senha foi salva no navegador pelo Apollo.
+									Entre com suas novas credenciais para continuar.
 								</AlertDescription>
 							</Alert>
 						)}

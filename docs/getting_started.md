@@ -59,9 +59,8 @@ não equivalem a imagens ou pacotes mantidos em um repositório público de dist
 Adicione o endereço do host no cliente e conclua o pareamento pelo painel. Revise
 as permissões de cada dispositivo. Desconectar mantém o pareamento; desvincular o remove.
 
-Cadastre aplicativos com comandos e caminhos conhecidos. Excluir uma entrada da
-biblioteca não desinstala o aplicativo. Comandos de preparação/retorno podem alterar
-o computador; revise-os antes de salvar ou iniciar uma sessão.
+Cadastre aplicativos com comandos e caminhos conhecidos. Revise comandos de
+preparação/desfazer antes de salvar ou iniciar uma sessão.
 
 ### Scripts PowerShell
 
@@ -69,8 +68,7 @@ No Windows, **Aplicativos → Scripts** permite adicionar arquivos `.ps1` à
 biblioteca do host. No editor de aplicativo, use **Usar script** na inicialização,
 nas etapas de preparação/desfazer, nos eventos de sessão ou em comandos desanexados.
 Selecione a versão, confira o conteúdo e informe os argumentos em campos separados.
-Salvar vínculos novos ou alterados exige revisão; selecionar ou salvar não executa
-o script.
+Salvar vínculos novos ou alterados exige revisão.
 
 Cada vínculo usa uma versão fixa. Adicionar uma nova versão à biblioteca não
 atualiza os aplicativos existentes. A opção **Permitir execução neste processo**
@@ -81,8 +79,7 @@ Scripts desanexados não encerram com o aplicativo: devem definir seu próprio
 critério de saída. Para voltar a um comando escrito no editor, use
 **Usar comando manual**.
 
-Abrir no Artemis usa o aplicativo instalado no dispositivo que abre o link. Um
-link aberto no navegador do PC não manda o celular abrir o cliente remotamente.
+Para abrir no Artemis do celular, escaneie o QR exibido no painel.
 
 ## Configurações e arquivos
 
@@ -99,9 +96,8 @@ o rascunho do editor, incluindo alterações não salvas.
 O template de aplicativo usa comandos manuais. Para transportar um aplicativo com
 scripts gerenciados, configure os vínculos no editor e exporte o aplicativo:
 o pacote inclui os arquivos, argumentos e política por vínculo. Importe pelo mesmo
-controle, revise e salve para criar cópias locais. Importar e salvar não executam
-os scripts. Executáveis, módulos e arquivos externos usados por eles continuam
-dependendo do host de destino.
+controle, revise e salve para criar cópias locais. Executáveis, módulos e arquivos
+externos usados por eles continuam dependendo do host de destino.
 Os formatos e controles estão documentados em [dashboard/README.md](../dashboard/README.md).
 
 ## Acesso e diagnóstico

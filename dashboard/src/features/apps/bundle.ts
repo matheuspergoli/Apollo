@@ -108,13 +108,13 @@ export async function applicationBundleArchive(bundle: ApplicationBundle) {
 		"schema.json": `${JSON.stringify(z.toJSONSchema(applicationBundleSchema), null, 2)}\n`,
 		"LEIA-ME.md": `# Apollo — aplicativo com scripts
 
-Exportação dos campos conhecidos do rascunho do editor, incluindo alterações não salvas. Exige um host Windows com suporte a scripts gerenciados. Os scripts estão embutidos em aplicativo.json com seus bytes originais; não é necessário localizar os arquivos no host de origem.
+Exportação do editor, incluindo alterações não salvas e os bytes originais dos scripts em aplicativo.json. Exige Windows com suporte a scripts gerenciados.
 
 ## Como importar
 
-1. Extraia o ZIP e use **Importar JSON de aplicativo** em um editor novo ou existente. Importe aplicativo.json, não o ZIP. Limite: 2 MiB, UTF-8; profundidade máxima: 20.
+1. Extraia o ZIP e importe aplicativo.json com **Importar JSON de aplicativo**. Limite: 2 MiB, UTF-8; profundidade máxima: 20.
 2. Revise comandos, conteúdo dos scripts, argumentos, elevação e política de execução. Confirme **Aplicar ao rascunho**.
-3. Use **Salvar aplicativo** e revise os vínculos de scripts. Só essa confirmação grava o aplicativo e cria cópias locais dos scripts; importar e salvar não os executam.
+3. Use **Salvar aplicativo** e autorize os vínculos para gravar o aplicativo e criar cópias locais dos scripts.
 
 O pacote usa format="apollo-application-bundle", version=1 e kind="application". schema.json descreve a estrutura. Uma opção inválida rejeita o arquivo inteiro. Campos presentes substituem o valor inteiro, inclusive listas; campos omitidos preservam o rascunho.
 
@@ -122,13 +122,13 @@ O pacote usa format="apollo-application-bundle", version=1 e kind="application".
 
 - Comandos manuais e scripts na inicialização, preparação/undo, eventos de sessão e comandos desanexados.
 - Conteúdo e nome de cada arquivo, argumentos, ordem das etapas, elevação e diretório de trabalho configurado.
-- Política por vínculo: "execution-policy": "bypass" permite execução somente no processo PowerShell filho; ausente herda a política. Não é um booleano e não altera a política permanente do Windows nem supera Política de Grupo.
+- Política por vínculo: "execution-policy": "bypass" vale só para o processo PowerShell filho, sem alterar a política permanente nem superar Política de Grupo. Ausente, herda a política.
 
 Cada script aceita até 128 KiB em ASCII ou UTF-8 com BOM, sem bytes nulos. São até 32 vínculos por aplicativo e 16 argumentos por vínculo. Cada argumento é um texto literal de 1 a 1024 bytes, em uma linha, sem aspas duplas ou bytes nulos. O pacote transporta a revisão utilizada, não atualizações futuras do script de origem. Os arquivos estão em file.data, codificados em Base64; prefira o editor para adicionar ou alterar scripts.
 
 ## Identidade e dependências
 
-Ao editar, o UUID local do aplicativo é preservado; ao criar, o host gera outro UUID ao salvar. Scripts importados recebem IDs locais novos, sem substituir os scripts existentes. Os vínculos são reconstruídos com essas cópias; não há sincronização da biblioteca ou do histórico de revisões.
+O UUID do aplicativo editado é preservado; novos aplicativos e scripts recebem IDs locais. Os vínculos usam cópias independentes, sem sincronizar bibliotecas ou históricos.
 
 Capas, executáveis, módulos PowerShell, credenciais e arquivos acessados pelos scripts não são transferidos. Caminhos e argumentos não são adaptados ao destino: confira essas dependências antes de executar.
 

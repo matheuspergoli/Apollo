@@ -74,7 +74,7 @@ export function SectionTemplates({
 				<ConfirmedAction
 					label="Exportar configurações salvas da seção"
 					disabled={disabled || busy}
-					description="Lê novamente os valores salvos desta seção, não o rascunho. O ZIP não é criptografado e pode conter nomes, comandos e caminhos privados. Revise antes de compartilhar. Não inclui outras seções, conta, pareamentos ou conteúdo de certificados."
+					description="O ZIP pode conter dados privados. Revise antes de compartilhar."
 					execute={exportSaved}
 				/>
 				<Button
@@ -117,8 +117,8 @@ export function SectionTemplates({
 				/>
 			</div>
 			<p className="text-muted-foreground text-xs">
-				{section.title}: template usa padrões; exportar valores salvos consulta o host sem
-				incluir o rascunho. Importar altera só esta seção no rascunho; revise e salve depois.
+				O template usa padrões; a exportação usa valores salvos. Importe o JSON e revise o
+				rascunho antes de salvar.
 			</p>
 			{busy && (
 				<p role="status" className="text-xs">
@@ -137,16 +137,12 @@ export function SectionTemplates({
 						<DialogTitle>Importar em {section.title}?</DialogTitle>
 						<DialogDescription>
 							{filename}: {Object.keys(pending || {}).length} opções serão aplicadas ao
-							rascunho. Os campos ausentes e as outras seções permanecem intactos. Nenhum
-							arquivo do host será gravado agora.
+							rascunho.
 						</DialogDescription>
 					</DialogHeader>
 					<Alert>
 						<AlertTitle>Valores presentes substituem o rascunho</AlertTitle>
-						<AlertDescription>
-							Templates usam padrões; exportações usam os valores salvos. Em ambos, remova do
-							JSON os campos que não quer alterar, inclusive porta e descoberta de rede.
-						</AlertDescription>
+						<AlertDescription>Remova do JSON os campos que deseja preservar.</AlertDescription>
 					</Alert>
 					{pending &&
 						Object.hasOwn(pending, "port") &&

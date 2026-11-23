@@ -36,8 +36,8 @@ export function UnsavedChanges({
 					<AlertDialogTitle>Descartar alterações não salvas?</AlertDialogTitle>
 					<AlertDialogDescription>
 						{pending
-							? "Há uma operação em andamento. Aguarde: sair da página não cancela uma solicitação já enviada ao host."
-							: "Seu rascunho existe apenas nesta página. Sair não grava alterações no host."}
+							? "Aguarde a conclusão da operação em andamento."
+							: "As alterações desta página serão perdidas."}
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>

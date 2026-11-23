@@ -369,11 +369,11 @@ namespace system_tray {
     tray.notification_icon = NULL;
     tray_update(&tray);
     char msg[256];
-    snprintf(msg, std::size(msg), "Device %s paired Succesfully. Please make sure you have access to the device.", device_name.c_str());
+    snprintf(msg, std::size(msg), "%s is now authorized.", device_name.c_str());
   #ifdef _WIN32
     strncpy(msg, utf8ToAcp(msg).c_str(), std::size(msg) - 1);
   #endif
-    tray.notification_title = "Device Paired Succesfully";
+    tray.notification_title = "Device Paired";
     tray.notification_text = msg;
     tray.notification_icon = TRAY_ICON;
     tray.tooltip = PROJECT_NAME;

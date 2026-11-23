@@ -156,10 +156,10 @@ export function DiagnosticsPage() {
 						<ConfirmedAction
 							label="Baixar log completo"
 							disabled={!logs.data}
-							description="O log pode conter nomes, caminhos, endereços e comandos privados. Revise antes de compartilhar. O download permanece no seu dispositivo."
+							description="O log pode conter dados privados. Revise antes de compartilhar."
 							execute={async () => {
 								downloadFile("apollo-log.txt", logs.data || "")
-								setFeedback("Download solicitado. Revise o arquivo antes de compartilhar.")
+								setFeedback("Download solicitado.")
 							}}
 						/>
 					</div>
@@ -190,25 +190,25 @@ export function DiagnosticsPage() {
 						<ConfirmedAction
 							label="Encerrar aplicativo"
 							destructive
-							description="Encerra o aplicativo em execução e pode interromper todos os streams. Não salva o progresso do jogo."
+							description="Pode interromper todas as transmissões. Salve seu progresso antes de continuar."
 							execute={() => action("apps/close")}
 						/>
 						<ConfirmedAction
 							label="Restaurar persistência de display"
 							destructive
-							description="Solicita a restauração das configurações de display persistidas pelo Apollo. Pode alterar a topologia e interromper o stream. Não instala nem troca o driver."
+							description="Restaura as configurações de display salvas pelo Apollo. Pode alterar os monitores e interromper a transmissão."
 							execute={() => action("reset-display-device-persistence")}
 						/>
 						<ConfirmedAction
 							label="Reiniciar Apollo"
 							destructive
-							description="Interrompe sessões e reinicia o processo quando suportado. Em execução manual, pode ser necessário iniciar novamente pelo launcher. A conexão pode cair sem resposta."
+							description="Interrompe as transmissões. Em execução manual, pode ser necessário abrir o launcher novamente."
 							execute={() => lifecycle("restart")}
 						/>
 						<ConfirmedAction
 							label="Encerrar Apollo"
 							destructive
-							description="Encerra este host e seus aplicativos. O painel ficará indisponível. Você deverá restaurar o serviço ou executar o launcher manualmente."
+							description="Encerra os aplicativos e deixa o painel indisponível até iniciar o Apollo novamente."
 							execute={() => lifecycle("quit")}
 						/>
 					</CardContent>
@@ -236,8 +236,7 @@ export function DiagnosticsPage() {
 						</p>
 						<p>Captura configurada: {config.data?.capture || "Automática"}</p>
 						<p className="text-muted-foreground">
-							Confira codec, FPS, rede e decodificação nas estatísticas do Artemis. A latência
-							de ponta a ponta não é medida por este painel.
+							Confira as estatísticas da transmissão no Artemis.
 						</p>
 						<p role="status" className="text-muted-foreground text-xs">
 							{config.isFetching

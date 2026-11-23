@@ -71,7 +71,7 @@ describe("global configuration files", () => {
 		expect(parsed.values).not.toHaveProperty("locale")
 		expect(parsed.values).not.toHaveProperty("status")
 		expect(JSON.stringify(source)).toBe(before)
-		expect(globalDocumentation(configuration)).toContain("não inclui o rascunho não salvo")
+		expect(globalDocumentation(configuration)).toContain("sem o rascunho")
 	})
 
 	it("rejects missing sections, fields, documentation and extra private files in the native archive contract", async () => {

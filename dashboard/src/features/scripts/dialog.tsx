@@ -164,10 +164,7 @@ export function ScriptsDialog({
 					}}
 				/>
 				{deleting ? (
-					<p>
-						O arquivo será removido da biblioteca. Scripts vinculados a aplicativos ou em
-						execução não podem ser excluídos.
-					</p>
+					<p>Excluir este script da biblioteca?</p>
 				) : selected ? (
 					<div className="min-w-0 space-y-3">
 						<Textarea

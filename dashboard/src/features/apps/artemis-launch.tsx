@@ -61,15 +61,12 @@ export function ArtemisLaunch({
 				<DialogHeader>
 					<DialogTitle>Continuar no Artemis</DialogTitle>
 					<DialogDescription>
-						O link abre o Artemis no dispositivo onde este navegador está aberto, se ele
-						estiver instalado e associado ao protocolo art://. Não envia um comando do PC para
-						abrir o aplicativo no celular.
+						Abra o link no dispositivo com Artemis instalado e o host pareado.
 					</DialogDescription>
 				</DialogHeader>
 				<p className="text-sm">
-					No celular, escaneie o QR ou abra este painel nele. O host precisa estar previamente
-					adicionado e pareado no Artemis. Se não houver aplicativo associado, use o atalho
-					.art ou abra o Artemis manualmente.
+					No celular, escaneie o QR. Se o link não abrir, use o atalho .art ou abra o Artemis
+					manualmente.
 				</p>
 				{qr && (
 					<img

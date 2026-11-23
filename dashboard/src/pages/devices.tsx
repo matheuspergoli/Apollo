@@ -312,7 +312,7 @@ function DeviceEditor({
 				{changed ? (
 					<ConfirmedAction
 						label="Cancelar edição"
-						description="Descarta os ajustes de dispositivo que ainda não foram salvos. As permissões no host permanecem intactas."
+						description="As alterações não salvas serão descartadas."
 						disabled={mutation.isPending}
 						execute={async () => onClose()}
 					/>
@@ -342,8 +342,7 @@ function DeviceEditor({
 					<CardHeader>
 						<CardTitle>Identificação e display</CardTitle>
 						<CardDescription>
-							Os ajustes são exclusivos deste cliente. Salvar aplica permissões e pode
-							desconectá-lo se a visualização for revogada; não remove o pareamento dos demais.
+							Revogar a permissão de visualização pode desconectar este cliente.
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
@@ -391,10 +390,7 @@ function DeviceEditor({
 							<IconShieldLock className="size-4" />
 							Permissões
 						</CardTitle>
-						<CardDescription>
-							Privilégios concedidos ao dispositivo, não ao usuário do painel. Nenhuma
-							permissão é ampliada automaticamente.
-						</CardDescription>
+						<CardDescription>Escolha o que este dispositivo pode acessar.</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
 						<div className="flex flex-wrap gap-2">
@@ -522,7 +518,7 @@ export function DevicesPage() {
 					</p>
 					<h1 className="mt-2 font-semibold text-3xl tracking-tight">Dispositivos</h1>
 					<p className="mt-2 text-muted-foreground text-sm">
-						{query.data.clients.length} vinculados · permissões, pareamento e sessões.
+						{query.data.clients.length} dispositivos vinculados.
 					</p>
 				</div>
 				<Pairing refresh={refresh} />
@@ -547,7 +543,7 @@ export function DevicesPage() {
 					label="Desvincular todos"
 					destructive
 					disabled={!query.data.clients.length}
-					description="Revoga o pareamento de todos os dispositivos. Eles precisarão ser vinculados novamente. O acesso ao painel não é apagado."
+					description="Todos os dispositivos precisarão ser pareados novamente."
 					execute={async () => {
 						await action("clients/unpair-all")
 						await refresh()
@@ -557,10 +553,7 @@ export function DevicesPage() {
 			{!devices.length && (
 				<Alert role="status">
 					<AlertTitle>Nenhum dispositivo encontrado</AlertTitle>
-					<AlertDescription>
-						Vincule seu Artemis ou ajuste a busca. Nenhuma autorização é criada
-						automaticamente.
-					</AlertDescription>
+					<AlertDescription>Vincule seu Artemis ou ajuste a busca.</AlertDescription>
 				</Alert>
 			)}
 			<div className="grid gap-4 xl:grid-cols-2">
@@ -591,7 +584,7 @@ export function DevicesPage() {
 							{device.connected === true && (
 								<ConfirmedAction
 									label="Desconectar"
-									description="Encerra a conexão atual deste cliente, sem revogar o pareamento."
+									description="Interromper a transmissão deste dispositivo?"
 									execute={async () => {
 										await action("clients/disconnect", { uuid: device.uuid })
 										await refresh()
@@ -601,7 +594,7 @@ export function DevicesPage() {
 							<ConfirmedAction
 								label={`Desvincular ${text(device.name) || "dispositivo"}`}
 								destructive
-								description="Revoga o pareamento deste cliente. Será necessário vinculá-lo novamente para conectar."
+								description="Este dispositivo precisará ser pareado novamente."
 								execute={async () => {
 									await action("clients/unpair", { uuid: device.uuid })
 									await refresh()

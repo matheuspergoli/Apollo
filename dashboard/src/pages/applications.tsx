@@ -57,11 +57,7 @@ import { downloadFile } from "@/lib/download"
 
 const appText = [
 	["name", "Nome", "Nome exibido na biblioteca do Artemis."],
-	[
-		"cmd",
-		"Comando de inicialização",
-		"Um comando vazio abre somente o desktop. Os comandos são executados no host."
-	],
+	["cmd", "Comando de inicialização", "Deixe vazio para transmitir o desktop."],
 	["working-dir", "Diretório de trabalho", "Pasta usada como diretório atual do aplicativo."],
 	["output", "Arquivo de saída", "Caminho no host para registrar a saída do processo."],
 	["image-path", "Caminho da capa", "Caminho completo de uma imagem PNG no host, sem aspas."]
@@ -144,7 +140,7 @@ function AppEditor({
 				{changed ? (
 					<ConfirmedAction
 						label="Cancelar edição"
-						description="Descarta as alterações deste aplicativo que ainda não foram salvas. O arquivo no host permanece intacto."
+						description="As alterações não salvas serão descartadas."
 						disabled={mutation.isPending}
 						execute={async () => onClose()}
 					/>
@@ -297,8 +293,7 @@ function AppEditor({
 					<CardHeader>
 						<CardTitle>Automação e processos</CardTitle>
 						<CardDescription>
-							Preparação/desfazer, eventos de sessão e processos independentes. Revise
-							privilégios antes de salvar.
+							Ações de preparação, sessão e processos independentes.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-8">
@@ -373,10 +368,7 @@ function AppEditor({
 				<Card>
 					<CardHeader>
 						<CardTitle>Variáveis disponíveis</CardTitle>
-						<CardDescription>
-							Use estas referências nos seus comandos. Não alteram o ambiente até os eventos
-							correspondentes ocorrerem.
-						</CardDescription>
+						<CardDescription>Use estas referências nos comandos.</CardDescription>
 					</CardHeader>
 					<CardContent className="grid gap-2 font-mono text-xs sm:grid-cols-2">
 						{[
@@ -560,9 +552,7 @@ export function ApplicationsPage() {
 						Biblioteca do host
 					</p>
 					<h1 className="mt-2 font-semibold text-3xl tracking-tight">Aplicativos</h1>
-					<p className="mt-2 text-muted-foreground text-sm">
-						{data.apps.length} entradas · lançar, organizar e configurar sem sair do painel.
-					</p>
+					<p className="mt-2 text-muted-foreground text-sm">{data.apps.length} aplicativos.</p>
 				</div>
 				<div className="flex flex-wrap gap-2">
 					{data.scriptsSupported && (
@@ -665,7 +655,7 @@ export function ApplicationsPage() {
 									label="Encerrar"
 									disabled={query.isError}
 									destructive
-									description="Encerra o aplicativo atual e pode interromper sua sessão. Salve o progresso antes de continuar."
+									description="Pode interromper a transmissão. Salve seu progresso antes de continuar."
 									execute={async () => {
 										await action("apps/close")
 										await refresh()
@@ -676,7 +666,7 @@ export function ApplicationsPage() {
 									key={`launch-${text(app.uuid)}`}
 									label="Iniciar no host"
 									disabled={query.isError}
-									description={`Inicia ${text(app.name)} no computador. Pode encerrar o aplicativo atual e ativar display, comandos e encoder. Não inicia automaticamente o stream no celular.`}
+									description="Pode encerrar o aplicativo atual e executar os comandos configurados."
 									execute={async () => {
 										await action("apps/launch", { uuid: app.uuid })
 										await refresh()
@@ -716,7 +706,7 @@ export function ApplicationsPage() {
 							<ConfirmedAction
 								label={`Excluir ${text(app.name)}`}
 								destructive
-								description="Remove somente a entrada da biblioteca do Apollo; não desinstala o jogo. Essa remoção não pode ser desfeita pelo painel."
+								description="Excluir este aplicativo da biblioteca?"
 								execute={async () => {
 									await action("apps/delete", { uuid: app.uuid })
 									setOrder(null)

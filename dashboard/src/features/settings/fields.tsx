@@ -48,8 +48,8 @@ function MappingRecovery({
 	return (
 		<div className="space-y-3">
 			<p className="text-destructive text-sm">
-				As regras de display existentes são inválidas. Corrija o JSON completo com as listas
-				mixed, resolution_only e refresh_rate_only. Nenhum dado foi descartado.
+				Regras de display inválidas. Corrija o JSON com as listas mixed, resolution_only e
+				refresh_rate_only.
 			</p>
 			<Textarea
 				aria-label="Corrigir JSON de regras de display"

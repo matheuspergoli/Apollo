@@ -49,13 +49,13 @@
 				"key": "global_prep_cmd",
 				"defaultValue": [],
 				"label": "Comandos de preparação",
-				"description": "Executa comandos antes de iniciar aplicativos e comandos de desfazer ao encerrar. Uma falha na preparação interrompe a inicialização do aplicativo."
+				"description": "Executados antes de iniciar e desfeitos ao encerrar aplicativos. Falhas na preparação impedem a inicialização."
 			},
 			{
 				"key": "global_state_cmd",
 				"defaultValue": [],
 				"label": "Comandos de retomada e pausa",
-				"description": "Executa os comandos de retomada quando o primeiro cliente conecta e os de pausa quando o último desconecta. Use desfazer para limpar efeitos dos comandos. O comando de pausa não é executado ao encerrar definitivamente a sessão."
+				"description": "Retomada: primeiro cliente conecta. Pausa: último desconecta, exceto ao encerrar a sessão. Use desfazer para limpar os efeitos."
 			},
 			{
 				"key": "server_cmd",
@@ -103,7 +103,7 @@
 				"key": "wsm_mode",
 				"defaultValue": "smart",
 				"label": "Gerenciamento de janelas",
-				"description": "Move somente janelas elegíveis para o display virtual capturado. Não altera a topologia dos monitores. Smart exige entrada remota recente para eventos de ativação e exibição; essa correlação não distingue perfeitamente ações locais e remotas.",
+				"description": "Move janelas elegíveis para o display virtual capturado. Smart exige entrada remota recente, mas pode incluir ações locais.",
 				"options": [
 					{ "value": "disabled", "label": "Desativado" },
 					{ "value": "smart", "label": "Smart" },
@@ -114,7 +114,7 @@
 				"key": "wsm_application_uuid",
 				"defaultValue": "",
 				"label": "Aplicativo da sessão Desktop",
-				"description": "Selecione explicitamente o aplicativo pelo UUID. Nenhum aplicativo é escolhido pelo nome ou comando vazio. Sem seleção, o gerenciamento permanece inativo. A sessão precisa usar um display virtual; o WSM não cria displays."
+				"description": "Aplicativo associado pelo UUID. Exige seleção e uma sessão com display virtual."
 			},
 			{
 				"key": "wsm_recover_existing",
@@ -132,7 +132,7 @@
 				"key": "wsm_restore_positions",
 				"defaultValue": "enabled",
 				"label": "Restaurar posições ao encerrar",
-				"description": "Restaura somente movimentos confirmados do WSM, se a origem e a identidade ainda forem válidas e não houver mudança posterior. A restauração é limitada por prazo e pode ser recusada."
+				"description": "Restaura posições confirmadas se a janela e a origem continuarem válidas, sem alterações posteriores. Pode falhar ou exceder o prazo."
 			}
 		]
 	},
@@ -188,19 +188,19 @@
 				"key": "motion_as_ds4",
 				"defaultValue": "enabled",
 				"label": "Preferir DS4 para controles com sensores de movimento",
-				"description": "Se estiver desativado, os sensores de movimento não serão levados em conta durante a seleção do tipo de gamepad."
+				"description": "Considera os sensores de movimento na seleção automática do gamepad."
 			},
 			{
 				"key": "touchpad_as_ds4",
 				"defaultValue": "enabled",
 				"label": "Preferir DS4 para controles com touchpad",
-				"description": "Se estiver desativado, a presença do touchpad não será levada em conta durante a seleção do tipo de gamepad."
+				"description": "Considera o touchpad na seleção automática do gamepad."
 			},
 			{
 				"key": "ds5_inputtino_randomize_mac",
 				"defaultValue": "enabled",
 				"label": "MAC aleatório para DualSense no Linux",
-				"description": "Usa um endereço MAC aleatório na emulação DualSense do Inputtino. Não se aplica ao driver de controles do Windows."
+				"description": "Usa um endereço MAC aleatório na emulação DualSense do Inputtino."
 			},
 			{
 				"key": "back_button_timeout",
@@ -224,13 +224,13 @@
 				"key": "key_repeat_frequency",
 				"defaultValue": 24.9,
 				"label": "Frequência de repetição da tecla",
-				"description": "A frequência com que as teclas se repetem a cada segundo. Essa configuração aceita decimais."
+				"description": "Repetições por segundo. Aceita decimais."
 			},
 			{
 				"key": "always_send_scancodes",
 				"defaultValue": "enabled",
 				"label": "Sempre enviar scancodes do teclado",
-				"description": "O envio dos scancodes de teclado aumenta a compatibilidade com jogos e aplicativos, mas pode resultar em entrada incorreta do teclado de determinados clientes que não estejam usando um layout de teclado em inglês dos EUA. Ative se a entrada do teclado não estiver funcionando em determinados aplicativos. Desative se as teclas do cliente estiverem gerando a entrada incorreta no servidor."
+				"description": "Pode melhorar a compatibilidade com jogos, mas causar teclas incorretas em layouts diferentes de inglês dos EUA."
 			},
 			{
 				"key": "key_rightalt_to_key_win",
@@ -302,7 +302,7 @@
 				"key": "install_steam_audio_drivers",
 				"defaultValue": "enabled",
 				"label": "Instalar os drivers de áudio do Steam",
-				"description": "Se o Steam estiver instalado, isso instalará automaticamente o driver Steam Streaming Speakers para oferecer suporte a som surround 5.1/7.1 e silenciar o áudio do servidor."
+				"description": "Instala Steam Streaming Speakers para surround 5.1/7.1 e silenciamento local. Exige Steam instalado."
 			},
 			{
 				"key": "keep_sink_default",
@@ -434,7 +434,7 @@
 				"key": "dd_wa_hdr_toggle_delay",
 				"defaultValue": 0,
 				"label": "Atraso da correção de cores HDR (ms)",
-				"description": "Atraso em milissegundos da alternância de HDR usada como solução para cores com contraste incorreto. Zero desativa essa correção; não altera o driver instalado.",
+				"description": "Atraso da alternância de HDR para corrigir o contraste. Zero desativa a correção.",
 				"min": 0,
 				"max": 3000
 			},
@@ -465,7 +465,7 @@
 				"key": "headless_mode",
 				"defaultValue": "disabled",
 				"label": "Modo sem monitor físico (headless)",
-				"description": "Inicia os aplicativos em um monitor virtual. Exige que o driver de display virtual esteja instalado e funcional; ativar esta opção não instala o driver."
+				"description": "Inicia aplicativos em um monitor virtual. Exige driver de display virtual funcional."
 			},
 			{
 				"key": "double_refreshrate",
@@ -477,13 +477,13 @@
 				"key": "max_bitrate",
 				"defaultValue": 0,
 				"label": "Taxa de bits máxima",
-				"description": "Limite de taxa de bits em Kbps para codificar o stream. Zero usa a taxa solicitada pelo Artemis/Moonlight; não representa a taxa efetivamente medida na rede."
+				"description": "Limite de codificação em Kbps. Zero usa a taxa solicitada pelo cliente."
 			},
 			{
 				"key": "minimum_fps_target",
 				"defaultValue": 0,
 				"label": "FPS mínimo alvo",
-				"description": "Menor frequência efetiva permitida ao stream. Zero deixa o comportamento automático; não é uma medição do FPS do jogo.",
+				"description": "Menor frequência efetiva permitida à transmissão. Zero usa o comportamento automático.",
 				"min": 0,
 				"max": 1000
 			},
@@ -559,7 +559,7 @@
 				"key": "lan_encryption_mode",
 				"defaultValue": 0,
 				"label": "Modo de criptografia da LAN",
-				"description": "Isso determina quando a criptografia será usada durante a transmissão pela rede local. A criptografia pode reduzir o desempenho da transmissão, principalmente em servidores e clientes menos potentes.",
+				"description": "Quando criptografar a transmissão na rede local. Pode reduzir o desempenho em dispositivos menos potentes.",
 				"options": [
 					{
 						"value": "0",
@@ -579,7 +579,7 @@
 				"key": "wan_encryption_mode",
 				"defaultValue": 1,
 				"label": "Modo de criptografia WAN",
-				"description": "Isso determina quando a criptografia será usada durante a transmissão pela Internet. A criptografia pode reduzir o desempenho da transmissão, principalmente em servidores e clientes menos potentes.",
+				"description": "Quando criptografar a transmissão pela Internet. Pode reduzir o desempenho em dispositivos menos potentes.",
 				"options": [
 					{
 						"value": "0",
@@ -629,13 +629,13 @@
 				"key": "pkey",
 				"defaultValue": "",
 				"label": "Chave privada",
-				"description": "A chave privada usada para a interface do usuário da Web e o pareamento do cliente Moonlight. Para melhor compatibilidade, essa deve ser uma chave privada RSA-2048."
+				"description": "Chave privada do painel e do pareamento. Use RSA-2048 para maior compatibilidade."
 			},
 			{
 				"key": "cert",
 				"defaultValue": "",
 				"label": "Certificado",
-				"description": "O certificado usado para a interface Web e o emparelhamento do cliente Moonlight. Para melhor compatibilidade, ele deve ter uma chave pública RSA-2048."
+				"description": "Certificado do painel e do pareamento. Use chave pública RSA-2048 para maior compatibilidade."
 			},
 			{
 				"key": "file_state",
@@ -653,19 +653,19 @@
 				"key": "fec_percentage",
 				"defaultValue": 20,
 				"label": "Porcentagem de FEC",
-				"description": "Porcentagem de pacotes de correção de erros por pacote de dados em cada quadro de vídeo. Valores mais altos podem corrigir mais perdas de pacotes na rede, mas ao custo de aumentar o uso da largura de banda."
+				"description": "Redundância para recuperar pacotes perdidos. Valores maiores consomem mais banda."
 			},
 			{
 				"key": "qp",
 				"defaultValue": 28,
 				"label": "Parâmetro de quantização",
-				"description": "Alguns dispositivos podem não suportar Constant Bit Rate. Para esses dispositivos, o QP (parâmetro de quantização) é usado em seu lugar. Um valor mais alto significa mais compactação, mas menos qualidade."
+				"description": "Usado quando o encoder não suporta taxa de bits constante. Valores maiores aumentam a compressão e reduzem a qualidade."
 			},
 			{
 				"key": "min_threads",
 				"defaultValue": 2,
 				"label": "Quantidade mínima de threads da CPU",
-				"description": "Aumentar o valor reduz ligeiramente a eficiência da codificação, mas a troca geralmente vale a pena para obter o uso de mais núcleos de CPU para codificação. O valor ideal é o menor valor que pode ser codificado de forma confiável nas configurações de transmissão desejadas em seu hardware.",
+				"description": "Mais threads permitem usar mais núcleos, com menor eficiência de compressão. Use o menor valor que sustente a transmissão.",
 				"min": 1
 			},
 			{
@@ -690,7 +690,7 @@
 				"key": "ignore_encoder_probe_failure",
 				"defaultValue": "disabled",
 				"label": "Ignorar falha na detecção do encoder",
-				"description": "Permite continuar a inicialização quando a detecção falha. Isso não cria um encoder disponível e a conexão ainda pode falhar. Use apenas para diagnóstico."
+				"description": "Continua a inicialização após falha de detecção; a conexão ainda pode falhar. Use apenas para diagnóstico."
 			},
 			{
 				"key": "hevc_mode",
@@ -780,7 +780,7 @@
 				"key": "encoder",
 				"defaultValue": "",
 				"label": "Forçar um codificador específico",
-				"description": "Seleciona o encoder do host, não o decoder do cliente. No Windows, o encoder de hardware deve corresponder à GPU do display capturado. Autodetecção escolhe uma opção disponível; Software usa a CPU.",
+				"description": "No Windows, o encoder de hardware deve corresponder à GPU do display capturado. Automático escolhe um disponível; Software usa a CPU.",
 				"options": [
 					{
 						"value": "",
@@ -818,7 +818,7 @@
 				"key": "nvenc_preset",
 				"defaultValue": 1,
 				"label": "Predefinição de desempenho",
-				"description": "Números mais altos melhoram a compactação (qualidade em uma determinada taxa de bits) ao custo de uma maior latência de codificação. Recomenda-se alterar somente quando limitado pela rede ou pelo decodificador; caso contrário, prefira aumentar a taxa de bits para ter maior qualidade.",
+				"description": "Valores maiores melhoram a compressão e aumentam a latência. Sem restrição de banda, prefira aumentar a taxa de bits.",
 				"options": [
 					{
 						"value": "1",
@@ -854,7 +854,7 @@
 				"key": "nvenc_twopass",
 				"defaultValue": "quarter_res",
 				"label": "Modo de duas passagens",
-				"description": "Adiciona uma passagem de codificação preliminar. Isso permite detectar mais vetores de movimento, distribuir melhor a taxa de bits pelo quadro e aderir mais rigorosamente aos limites de taxa de bits. Não é recomendável desativá-lo, pois isso pode levar a um excesso ocasional de taxa de bits e à subsequente perda de pacotes.",
+				"description": "A análise preliminar melhora a distribuição de bits. Desativar pode causar picos e perda de pacotes.",
 				"options": [
 					{
 						"value": "disabled",
@@ -874,13 +874,13 @@
 				"key": "nvenc_spatial_aq",
 				"defaultValue": "disabled",
 				"label": "AQ espacial",
-				"description": "Atribui valores de QP (parâmetros de quantização) mais altos a regiões planas do vídeo. Recomenda-se ativá-lo ao fazer transmissão com taxas de bits mais baixas."
+				"description": "Reduz bits em regiões planas. Útil em taxas de bits baixas."
 			},
 			{
 				"key": "nvenc_vbv_increase",
 				"defaultValue": 0,
 				"label": "Aumento percentual de VBV/HRD em um único quadro",
-				"description": "Por padrão, o Apollo usa VBV/HRD de quadro único, o que significa que não se espera que o tamanho do quadro de vídeo codificado exceda a taxa de bits solicitada dividida pela taxa de quadros solicitada. O relaxamento dessa restrição pode ser benéfico e atuar como taxa de bits variável de baixa latência, mas também pode levar à perda de pacotes se a rede não tiver espaço no buffer para lidar com picos de taxa de bits. O valor máximo aceito é 400, o que corresponde a um limite superior de tamanho de quadro de vídeo codificado 5x maior.",
+				"description": "Permite quadros maiores para melhorar a qualidade, com risco de picos e perda de pacotes. 400 permite até 5 vezes o tamanho padrão.",
 				"min": 0,
 				"max": 400
 			},
@@ -888,25 +888,25 @@
 				"key": "nvenc_realtime_hags",
 				"defaultValue": "enabled",
 				"label": "Usar prioridade Tempo Real no escalonador GPU acelerado por hardware",
-				"description": "Atualmente, os drivers da NVIDIA podem travar no codificador quando o HAGS está ativado, a prioridade em tempo real é usada e a utilização da VRAM está próxima do máximo. A desativação dessa opção reduz a prioridade de Tempo Real para Alta, evitando o congelamento ao custo de um desempenho de captura reduzido quando a GPU está muito carregada."
+				"description": "Pode travar o encoder com HAGS e VRAM quase cheia. Desativar usa prioridade Alta, com possível perda de desempenho sob carga."
 			},
 			{
 				"key": "nvenc_latency_over_power",
 				"defaultValue": "enabled",
 				"label": "Preferir uma latência de codificação menor do que a economia de energia",
-				"description": "O Apollo solicita a velocidade máxima do clock da GPU durante a transmissão para reduzir a latência da codificação. Não é recomendável desativar, pois isso pode levar a um aumento significativo da latência de codificação."
+				"description": "Solicita clock máximo da GPU durante a transmissão para reduzir a latência, com maior consumo de energia."
 			},
 			{
 				"key": "nvenc_opengl_vulkan_on_dxgi",
 				"defaultValue": "enabled",
 				"label": "Apresentar OpenGL/Vulkan por cima do DXGI",
-				"description": "O Apollo não consegue capturar programas OpenGL e Vulkan em tela cheia com taxa de quadros total, a menos que eles sejam apresentados em cima do DXGI. Essa é uma configuração de todo o sistema e que é revertida ao sair do programa Apollo."
+				"description": "Permite captura em FPS completo de OpenGL/Vulkan em tela cheia. Afeta todo o sistema e é revertido ao sair do Apollo."
 			},
 			{
 				"key": "nvenc_h264_cavlc",
 				"defaultValue": "disabled",
 				"label": "Prefira o CAVLC ao CABAC em H.264",
-				"description": "Forma mais simples de codificação de entropia. O CAVLC precisa de cerca de 10% a mais de taxa de bits para obter a mesma qualidade. Só é relevante para dispositivos de decodificação muito antigos."
+				"description": "Para decodificadores antigos. Exige cerca de 10% mais banda para a mesma qualidade."
 			},
 			{
 				"key": "nvenc_intra_refresh",
@@ -990,7 +990,7 @@
 				"key": "qsv_slow_hevc",
 				"defaultValue": "disabled",
 				"label": "Permitir codificação lenta de HEVC",
-				"description": "Isso pode permitir a codificação HEVC em GPUs Intel mais antigas, ao custo de maior uso da GPU e pior desempenho."
+				"description": "Permite HEVC em algumas GPUs Intel antigas, com maior uso da GPU e menor desempenho."
 			}
 		]
 	},
@@ -1118,7 +1118,7 @@
 				"key": "vaapi_strict_rc_buffer",
 				"defaultValue": "disabled",
 				"label": "Impor limites estritos de taxa de bits de quadros para H.264/HEVC em GPUs AMD",
-				"description": "A ativação dessa opção pode evitar a queda de quadros na rede durante as mudanças de cena, mas a qualidade do vídeo pode ser reduzida durante o movimento."
+				"description": "Reduz picos em mudanças de cena, com possível perda de qualidade em movimento."
 			}
 		]
 	},
@@ -1130,7 +1130,7 @@
 				"key": "sw_preset",
 				"defaultValue": "superfast",
 				"label": "Predefinições de SW",
-				"description": "Otimiza o equilíbrio entre a velocidade de codificação (quadros codificados por segundo) e a eficiência da compactação (qualidade por bit no fluxo de bits). O padrão é super rápido.",
+				"description": "Equilíbrio entre velocidade de codificação e eficiência de compressão.",
 				"options": [
 					{
 						"value": "ultrafast",
@@ -1174,7 +1174,7 @@
 				"key": "sw_tune",
 				"defaultValue": "zerolatency",
 				"label": "Ajustes finos do SW",
-				"description": "Opções de ajuste, que são aplicadas após a predefinição. O padrão é zerolatency.",
+				"description": "Ajustes aplicados após a predefinição.",
 				"options": [
 					{
 						"value": "film",
