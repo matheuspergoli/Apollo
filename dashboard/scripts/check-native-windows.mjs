@@ -896,7 +896,7 @@ try {
 	await navigate("/troubleshooting")
 	await page
 		.getByRole("region", { name: "Estado do gerenciamento de janelas" })
-		.getByText(/Geração 0\./)
+		.getByText(/Geração 0\b/)
 		.waitFor()
 	assert(await page.getByRole("button", { name: "Recuperar janelas agora" }).isDisabled())
 	const inactiveWindows = (await http("/api/window-management", { cookie })).json
